@@ -4,6 +4,7 @@ import {
   maskCpf,
   maskDate,
   maskPhone,
+  maskTime,
   onlyDigits,
 } from '@/utils/masks';
 
@@ -35,6 +36,14 @@ describe('maskDate', () => {
   it('formata como DD/MM/AAAA', () => {
     expect(maskDate('31121990')).toBe('31/12/1990');
     expect(maskDate('3112')).toBe('31/12');
+  });
+});
+
+describe('maskTime', () => {
+  it('formata como HH:MM', () => {
+    expect(maskTime('1930')).toBe('19:30');
+    expect(maskTime('19')).toBe('19');
+    expect(maskTime('193045')).toBe('19:30');
   });
 });
 

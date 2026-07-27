@@ -7,9 +7,9 @@ import {
 import type { RouteProp } from '@react-navigation/native';
 
 import type { Fonts } from '@/constants/theme';
+import { AulasStackNavigator } from '@/navigation/AulasStackNavigator';
 import { DadosStackNavigator } from '@/navigation/DadosStackNavigator';
 import type { MainTabParamList } from '@/navigation/types';
-import { AulasScreen } from '@/screens/aulas/AulasScreen';
 import { FinanceiroScreen } from '@/screens/financeiro/FinanceiroScreen';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -25,8 +25,8 @@ const TAB_ICONS: Record<keyof MainTabParamList, IoniconName> = {
   Dados: 'person-outline',
 };
 
-// A aba "Dados" tem sua própria stack com header — evita header duplicado.
-const DADOS_TAB_OPTIONS: BottomTabNavigationOptions = { headerShown: false };
+// As abas com stack própria escondem o header do tab (evita header duplicado).
+const NESTED_STACK_TAB_OPTIONS: BottomTabNavigationOptions = { headerShown: false };
 
 function makeScreenOptions(colors: ColorScheme, fonts: Fonts) {
   return ({
@@ -62,12 +62,16 @@ export function MainTabNavigator(): React.JSX.Element {
 
   return (
     <Tab.Navigator screenOptions={screenOptions}>
-      <Tab.Screen name="Aulas" component={AulasScreen} />
+      <Tab.Screen
+        name="Aulas"
+        component={AulasStackNavigator}
+        options={NESTED_STACK_TAB_OPTIONS}
+      />
       <Tab.Screen name="Financeiro" component={FinanceiroScreen} />
       <Tab.Screen
         name="Dados"
         component={DadosStackNavigator}
-        options={DADOS_TAB_OPTIONS}
+        options={NESTED_STACK_TAB_OPTIONS}
       />
     </Tab.Navigator>
   );
