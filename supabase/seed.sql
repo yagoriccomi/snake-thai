@@ -1,0 +1,25 @@
+-- ============================================================================
+-- Snake Thai — Seed (dados iniciais de desenvolvimento)
+-- ----------------------------------------------------------------------------
+-- Este arquivo roda após as migrations em `supabase db reset`.
+-- NÃO inclua PII real nem segredos aqui [#37][#63].
+--
+-- Bootstrap do PRIMEIRO admin
+-- ---------------------------
+-- Como a política de INSERT em profiles exige que quem insere já seja admin,
+-- o primeiro administrador precisa ser semeado por fora da RLS (papel elevado).
+--
+-- Passo a passo (execute manualmente, NÃO deixe hardcoded):
+--   1. Crie o usuário de autenticação (Dashboard > Authentication, ou API Admin).
+--   2. Descubra o UID desse usuário (auth.users.id).
+--   3. Rode, conectado como service_role / postgres (que ignora RLS):
+--
+--        insert into public.profiles (id, role, name, cpf, is_first_login)
+--        values ('<UID_DO_ADMIN>', 'admin', 'Administrador', '00000000000', false);
+--
+--   Ou promova um perfil já existente:
+--        update public.profiles set role = 'admin' where id = '<UID>';
+--
+-- Deixe estas linhas COMENTADAS no repositório: cada ambiente semeia o seu
+-- próprio admin com o UID real, que nunca deve ser versionado.
+-- ============================================================================
