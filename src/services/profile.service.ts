@@ -78,14 +78,44 @@ export async function updateProfile(
 }
 
 /**
- * Cadastra um novo aluno. A criação da conta (com senha padrão) e a
- * inicialização do perfil ocorrem numa Edge Function com `service_role`
- * (nunca no cliente), que valida se o chamador é admin.
+ * Cadastra um novo aluno (com turma opcional). A criação da conta (com senha
+ * padrão) e a inicialização do perfil ocorrem numa Edge Function com
+ * `service_role` (nunca no cliente), que valida se o chamador é admin.
  */
-export async function createStudent(email: string): Promise<void> {
+export async function createStudent(
+  email: string,
+  groupId: string | null,
+): Promise<void> {
   const { error } = await supabase.functions.invoke('create-student', {
-    body: { email: email.trim().toLowerCase() },
+    body: { email: email.trim().toLowerCase(), groupId },
   });
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/** Lista todos os alunos (visão do admin). */
+export async function fetchAllStudents(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'user')
+    .order('name', { ascending: true });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/** Atribui/altera a turma de um aluno (apenas admin — enforced por RLS). */
+export async function updateStudentGroup(
+  studentId: string,
+  groupId: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ group_id: groupId })
+    .eq('id', studentId);
   if (error !== null) {
     throw error;
   }

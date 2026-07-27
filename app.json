@@ -35,6 +35,12 @@
         {
           "faceIDPermission": "Permita que o Snake Thai use o FaceID para proteger o acesso do administrador."
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Snake Thai acessa suas fotos para você anexar o comprovante de pagamento."
+        }
       ]
     ]
   }

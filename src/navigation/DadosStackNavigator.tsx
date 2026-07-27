@@ -7,6 +7,7 @@ import {
 import type { DadosStackParamList } from '@/navigation/types';
 import { CadastrarAlunoScreen } from '@/screens/dados/CadastrarAlunoScreen';
 import { DadosScreen } from '@/screens/dados/DadosScreen';
+import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<DadosStackParamList>();
@@ -34,9 +35,15 @@ export function DadosStackNavigator(): React.JSX.Element {
         component={CadastrarAlunoScreen}
         options={CADASTRO_OPTIONS}
       />
+      <Stack.Screen
+        name="GerenciarAlunos"
+        component={GerenciarAlunosScreen}
+        options={GERENCIAR_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
 
 const PERFIL_OPTIONS: NativeStackNavigationOptions = { title: 'Dados' };
 const CADASTRO_OPTIONS: NativeStackNavigationOptions = { title: 'Cadastrar Aluno' };
+const GERENCIAR_OPTIONS: NativeStackNavigationOptions = { title: 'Gerenciar Alunos' };

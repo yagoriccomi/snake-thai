@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { GroupPicker } from '@/components/GroupPicker';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { DEFAULT_STUDENT_PASSWORD } from '@/constants/auth';
@@ -21,6 +22,7 @@ export function CadastrarAlunoScreen({
 }: DadosStackScreenProps<'CadastrarAluno'>): React.JSX.Element {
   const { colors } = useTheme();
   const [email, setEmail] = useState('');
+  const [groupId, setGroupId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -33,7 +35,7 @@ export function CadastrarAlunoScreen({
     }
     setSubmitting(true);
     try {
-      await createStudent(email);
+      await createStudent(email, groupId);
       setSuccess(true);
     } catch (submitError) {
       const message =
@@ -45,10 +47,11 @@ export function CadastrarAlunoScreen({
     } finally {
       setSubmitting(false);
     }
-  }, [email]);
+  }, [email, groupId]);
 
   const handleReset = useCallback(() => {
     setEmail('');
+    setGroupId(null);
     setSuccess(false);
     setError(null);
   }, []);
@@ -102,6 +105,8 @@ export function CadastrarAlunoScreen({
           onChangeText={setEmail}
           error={error ?? undefined}
         />
+
+        <GroupPicker label="Turma (opcional)" value={groupId} onChange={setGroupId} />
 
         <Button
           title="Cadastrar aluno"

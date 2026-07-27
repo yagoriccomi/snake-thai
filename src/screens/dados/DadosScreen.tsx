@@ -108,6 +108,10 @@ export function DadosScreen({
     navigation.navigate('CadastrarAluno');
   }, [navigation]);
 
+  const goToManageStudents = useCallback(() => {
+    navigation.navigate('GerenciarAlunos');
+  }, [navigation]);
+
   const handleSignOut = useCallback(() => {
     void signOut();
   }, [signOut]);
@@ -122,6 +126,12 @@ export function DadosScreen({
         {isAdmin ? (
           <View style={styles.adminActions}>
             <Button title="Cadastrar Novo Aluno" onPress={goToCreateStudent} />
+            <Button
+              title="Gerenciar Alunos"
+              variant="secondary"
+              onPress={goToManageStudents}
+              style={styles.adminSecondary}
+            />
           </View>
         ) : null}
 
@@ -189,6 +199,9 @@ const styles = StyleSheet.create({
   },
   adminActions: {
     marginBottom: 16,
+  },
+  adminSecondary: {
+    marginTop: 12,
   },
   section: {
     marginBottom: 8,
