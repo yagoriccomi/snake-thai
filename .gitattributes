@@ -1,0 +1,18 @@
+# Normalização de fim de linha — evita churn entre Windows/Mac/Linux.
+* text=auto eol=lf
+
+# Scripts de shell e hooks DEVEM ser LF para executar no bash.
+*.sh text eol=lf
+.husky/* text eol=lf
+
+# Scripts do Windows precisam de CRLF.
+*.bat text eol=crlf
+
+# Binários (não normalizar).
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.otf binary

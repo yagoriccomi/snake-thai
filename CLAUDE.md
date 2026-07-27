@@ -46,3 +46,49 @@ Você deve atuar como um Engenheiro de Software Sênior especializado em React N
     - [x] O que foi feito.
     - [!] Arquivos afetados.
     - [?] Próximos passos recomendados.
+
+## 7. Arquitetura do Projeto (Snake Thai)
+
+* **Objetivo:** App mobile de gestão/controle de alunos de academia (perfis, turmas, presença, pagamentos com comprovante PIX).
+* **Stack:** React Native + Expo (SDK 57) + TypeScript estrito · Supabase (Auth, Postgres com RLS, Storage). [#11][#86]
+* **Padrão de estrutura:** organização por camadas/feature com o alias `@/*` → `src/*`. [#22]
+
+```
+App.tsx                 # Componente raiz (Dark Mode)
+index.ts                # Entry point do Expo
+src/
+├── config/env.ts       # Leitura validada (fail-fast) das variáveis de ambiente [#80]
+├── constants/theme.ts  # Design tokens da marca (sem magic strings de cor) [#3]
+├── lib/
+│   ├── supabase.ts     # Cliente único do Supabase (singleton) [#21]
+│   └── secureStorage.ts# Sessão cifrada (AES-256) — tokens nunca em texto puro [#54]
+└── types/database.types.ts  # Tipos gerados pelo Supabase CLI [#11]
+supabase/migrations/    # Esquema versionado (migrations first) [#87]
+scripts/                # dev.bat / dev.sh — controle do ambiente local
+```
+
+## 8. Ambiente Local (Nativo + Supabase CLI)
+
+* **Sem Docker para o app:** Expo/React Native exige SDK do host (Android Studio/JDK/Xcode) — não é containerizável. [#23]
+* **Backend local:** gerenciado pela **Supabase CLI** (que orquestra o próprio Docker); por isso **não** há `docker-compose.yml` próprio, que causaria conflito de portas/stack. [#81]
+* **Comandos:**
+  - Windows: `scripts\dev.bat start` | `stop` | `restart` | `status`
+  - Linux/Mac: `./scripts/dev.sh start` | `stop` | `restart` | `status`
+
+## 9. Protocolo de Atualização do README.md (CRÍTICO)
+
+O `README.md` é a documentação pública. **Sempre que** ocorrer uma das mudanças abaixo, atualize-o no mesmo ciclo: [#96]
+1. Nova variável de ambiente (`.env`).
+2. Mudança nos comandos de instalação/execução.
+3. Novo serviço/integração de terceiros essencial.
+4. Finalização de um módulo principal.
+
+> Manter o README dessincronizado é tratado como bug de documentação.
+
+## 10. Integrações e Versionamento
+
+* **Jira:** adiado em 2026-07-27 (fora do escopo desta rodada, por escolha do usuário). Não é recusa definitiva — pode ser ativado depois via skill `jira-projeto` (Smart Commits linkando `PROJ-XXX`).
+* **Convenção de branches:** `feat/…`, `fix/…`, `refactor/…` — curta duração, integradas com frequência. [#33][#36]
+* **Convenção de commits:** Conventional Commits obrigatório, validado pelo hook `commit-msg` (Husky). [#32]
+* **Proteção de borda (Husky):** `pre-commit` roda `tsc --noEmit` (typecheck) como gate antes de cada commit. [#5][#49]
+* **Remoto:** ainda não configurado. Ao adicionar (GitHub/Bitbucket), gerar chave SSH (ed25519) e cadastrar apenas a chave pública. [#37][#55]

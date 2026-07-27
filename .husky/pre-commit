@@ -1,0 +1,2 @@
+echo "🔎 Rodando checagem de tipos (tsc --noEmit)..."
+npm run typecheck
