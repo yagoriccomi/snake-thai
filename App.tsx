@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AuthProvider } from '@/context/AuthProvider';
 import { useAppFonts } from '@/hooks/useAppFonts';
 import { RootNavigator } from '@/navigation/RootNavigator';
 import { ThemeProvider } from '@/theme/ThemeProvider';
@@ -12,9 +13,8 @@ void SplashScreen.preventAutoHideAsync();
 /**
  * Componente raiz do aplicativo Snake Thai.
  *
- * Ordem de composição: área segura → tema → navegação. As fontes da marca são
- * carregadas antes de renderizar a UI (a splash só é escondida quando o
- * container de navegação está pronto), evitando flash de fonte incorreta.
+ * Composição: área segura → tema → autenticação → navegação. As fontes da marca
+ * carregam antes da UI (a splash só some quando a navegação está pronta).
  */
 export default function App(): React.JSX.Element | null {
   const { fontsLoaded, fontError } = useAppFonts();
@@ -23,7 +23,6 @@ export default function App(): React.JSX.Element | null {
     void SplashScreen.hideAsync();
   }, []);
 
-  // Segura a renderização enquanto as fontes carregam (a menos que haja erro).
   if (!fontsLoaded && fontError === null) {
     return null;
   }
@@ -31,7 +30,9 @@ export default function App(): React.JSX.Element | null {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <RootNavigator onReady={handleNavigationReady} />
+        <AuthProvider>
+          <RootNavigator onReady={handleNavigationReady} />
+        </AuthProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

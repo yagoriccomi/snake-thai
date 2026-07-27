@@ -7,24 +7,36 @@ import {
 } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { useAuth } from '@/context/AuthProvider';
 import { MainTabNavigator } from '@/navigation/MainTabNavigator';
 import type { RootStackParamList } from '@/navigation/types';
+import { LoadingScreen } from '@/screens/LoadingScreen';
+import { BiometricLockScreen } from '@/screens/auth/BiometricLockScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
+import { OnboardingScreen } from '@/screens/onboarding/OnboardingScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 interface RootNavigatorProps {
-  /** Chamado quando o container de navegação está pronto (esconde o splash). */
   onReady?: () => void;
 }
 
 /**
- * Navegador raiz. Aplica o tema da marca ao React Navigation (cores de fundo,
- * header e destaque) e define o fluxo: Login (auth) → Main (abas).
+ * Navegador raiz orientado pelo estado de autenticação:
+ *   inicializando/carregando → Loading
+ *   sem sessão               → Login
+ *   primeiro login           → Onboarding (bloqueante)
+ *   admin com lock ativo     → BiometricLock
+ *   caso contrário           → Main (abas)
+ *
+ * Não há navegação manual entre esses estados: mudanças em `useAuth` remontam
+ * a rota apropriada automaticamente.
  */
 export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
+  const { initializing, loadingProfile, session, profile, isAdmin, adminLocked } =
+    useAuth();
 
   const navigationTheme = useMemo<NavigationTheme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -42,12 +54,28 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
     };
   }, [isDark, colors]);
 
+  const renderScreen = (): React.JSX.Element => {
+    if (initializing) {
+      return <Stack.Screen name="Loading" component={LoadingScreen} />;
+    }
+    if (session === null) {
+      return <Stack.Screen name="Login" component={LoginScreen} />;
+    }
+    if (loadingProfile || profile === null) {
+      return <Stack.Screen name="Loading" component={LoadingScreen} />;
+    }
+    if (profile.is_first_login) {
+      return <Stack.Screen name="Onboarding" component={OnboardingScreen} />;
+    }
+    if (isAdmin && adminLocked) {
+      return <Stack.Screen name="BiometricLock" component={BiometricLockScreen} />;
+    }
+    return <Stack.Screen name="Main" component={MainTabNavigator} />;
+  };
+
   return (
     <NavigationContainer theme={navigationTheme} onReady={onReady}>
-      <Stack.Navigator initialRouteName="Login" screenOptions={SCREEN_OPTIONS}>
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Main" component={MainTabNavigator} />
-      </Stack.Navigator>
+      <Stack.Navigator screenOptions={SCREEN_OPTIONS}>{renderScreen()}</Stack.Navigator>
     </NavigationContainer>
   );
 }

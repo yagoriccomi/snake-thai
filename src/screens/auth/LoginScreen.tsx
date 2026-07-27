@@ -5,24 +5,41 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import type { RootStackScreenProps } from '@/navigation/types';
+import { useAuth } from '@/context/AuthProvider';
+import { useTheme } from '@/theme/ThemeProvider';
+import { isValidEmail } from '@/utils/validation';
 
 /**
- * Tela de login (fluxo de autenticação).
- *
- * Provisória: demonstra os componentes do design system (Input/Button). O fluxo
- * real de autenticação com o Supabase entra na próxima fase; por ora, "Entrar"
- * apenas navega para o painel principal.
+ * Tela de login. A mesma tela atende administradores e alunos — o roteamento
+ * pós-login (onboarding, lock de admin, painel) é decidido pelo estado de auth.
  */
-export function LoginScreen({
-  navigation,
-}: RootStackScreenProps<'Login'>): React.JSX.Element {
+export function LoginScreen(): React.JSX.Element {
+  const { colors } = useTheme();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleEnter = useCallback(() => {
-    navigation.replace('Main', { screen: 'Aulas' });
-  }, [navigation]);
+  const handleSubmit = useCallback(async () => {
+    setError(null);
+    if (!isValidEmail(email)) {
+      setError('Informe um e-mail válido.');
+      return;
+    }
+    if (password.length === 0) {
+      setError('Informe sua senha.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await signIn(email, password);
+    } catch {
+      setError('E-mail ou senha inválidos.');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [email, password, signIn]);
 
   return (
     <ScreenWrapper>
@@ -51,10 +68,17 @@ export function LoginScreen({
           onChangeText={setPassword}
         />
 
+        {error !== null ? (
+          <AppText variant="caption" color={colors.error} style={styles.error}>
+            {error}
+          </AppText>
+        ) : null}
+
         <Button
           title="Entrar"
-          onPress={handleEnter}
-          accessibilityHint="Acessa o painel principal do aplicativo"
+          onPress={handleSubmit}
+          loading={submitting}
+          accessibilityHint="Autentica e acessa o aplicativo"
           style={styles.submit}
         />
       </View>
@@ -72,6 +96,9 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     marginBottom: 24,
+  },
+  error: {
+    marginBottom: 8,
   },
   submit: {
     marginTop: 8,

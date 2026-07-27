@@ -5,16 +5,28 @@ import type {
 } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-/** Abas do painel principal (usuário autenticado). */
+/** Stack interna da aba "Dados" (perfil + cadastro de aluno pelo admin). */
+export type DadosStackParamList = {
+  Perfil: undefined;
+  CadastrarAluno: undefined;
+};
+
+/** Abas do painel principal (usuário autenticado e onboarded). */
 export type MainTabParamList = {
   Aulas: undefined;
   Financeiro: undefined;
-  Dados: undefined;
+  Dados: NavigatorScreenParams<DadosStackParamList>;
 };
 
-/** Stack raiz: fluxo de autenticação + painel principal. */
+/**
+ * Stack raiz. As rotas são exibidas condicionalmente conforme o estado de
+ * autenticação (sessão, onboarding, lock de admin) — ver `RootNavigator`.
+ */
 export type RootStackParamList = {
+  Loading: undefined;
   Login: undefined;
+  Onboarding: undefined;
+  BiometricLock: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
 };
 
@@ -29,10 +41,13 @@ export type MainTabScreenProps<T extends keyof MainTabParamList> =
     RootStackScreenProps<keyof RootStackParamList>
   >;
 
-/**
- * Registra os tipos de rota globalmente, dando autocomplete e checagem
- * estrita ao `useNavigation()` em qualquer ponto do app.
- */
+/** Props tipadas para telas da stack de "Dados". */
+export type DadosStackScreenProps<T extends keyof DadosStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<DadosStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace ReactNavigation {
