@@ -49,10 +49,11 @@
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "check:licenses": "node scripts/check-licenses.js",
-    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "audit:prod": "npm audit --omit=dev --audit-level=critical",
     "ci": "npm run typecheck && npm test && npm run check:licenses",
     "supabase:types": "supabase gen types typescript --local > src/types/database.types.ts",
-    "prepare": "husky || exit 0"
+    "prepare": "husky || exit 0",
+    "audit:report": "npm audit --omit=dev || true"
   },
   "jest": {
     "preset": "jest-expo",

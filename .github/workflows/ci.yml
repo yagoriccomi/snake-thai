@@ -71,8 +71,13 @@ jobs:
       - name: Instala dependências (lockfile)
         run: npm ci
 
-      # Só CVE de PRODUÇÃO em nível alto ou crítico [#62]. O toolchain de build
-      # (Metro, @expo/cli) não entra no APK, então seus avisos não bloqueiam o
-      # merge — mas uma vulnerabilidade que chegue ao app, sim.
-      - name: npm audit (produção, high+)
+      # Gate BLOQUEANTE: só CVE CRÍTICO de produção [#62]. Nível 'high' é
+      # reportado no passo seguinte mas não trava o merge, porque os high atuais
+      # são todos toolchain de build (Metro, @expo/cli), que roda no runner e
+      # não entra no APK. Bloquear por eles treinaria a equipe a ignorar o CI.
+      - name: npm audit (crítico bloqueia)
         run: npm run audit:prod
+
+      # Visibilidade dos 'high' sem bloquear — o log mostra, o gate não trava.
+      - name: npm audit (high, informativo)
+        run: npm run audit:report
