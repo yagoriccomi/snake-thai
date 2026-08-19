@@ -64,17 +64,42 @@ class LargeSecureStore {
     return aesjs.utils.utf8.fromBytes(decryptedBytes);
   }
 
-  /** Lê e decifra o valor associado a `key`. */
+  /**
+   * Lê e decifra o valor associado a `key`.
+   *
+   * Blindagem da permanência de login: se o par ciphertext/chave ficar
+   * inconsistente — app reinstalado (o Keychain sobrevive ao AsyncStorage e
+   * vice-versa, dependendo do backup do sistema), escrita interrompida, ou
+   * chave rotacionada pelo SO — a decifragem produz lixo. Devolver esse lixo
+   * faria o Supabase estourar ao interpretar o JSON e a sessão sumiria de
+   * forma silenciosa. Aqui detectamos e limpamos a entrada, de modo que o pior
+   * caso vira "pedir login de novo" em vez de "erro inexplicável".
+   */
   async getItem(key: string): Promise<string | null> {
-    const encrypted = await AsyncStorage.getItem(key);
-    if (encrypted === null) {
+    try {
+      const encrypted = await AsyncStorage.getItem(key);
+      if (encrypted === null) {
+        return null;
+      }
+      const decrypted = await this.decrypt(key, encrypted);
+      if (decrypted === null) {
+        await this.removeItem(key);
+        return null;
+      }
+      // A sessão do Supabase é sempre JSON; qualquer outra coisa é corrupção.
+      JSON.parse(decrypted);
+      return decrypted;
+    } catch {
+      await this.removeItem(key);
       return null;
     }
-    return this.decrypt(key, encrypted);
   }
 
   /** Cifra `value` e persiste o ciphertext em `key`. */
   async setItem(key: string, value: string): Promise<void> {
+    // A chave nova precisa estar salva ANTES do ciphertext: se o processo
+    // morrer entre as duas escritas, sobra um ciphertext sem chave (tratado
+    // como ausente na leitura) e nunca um ciphertext indecifrável.
     const encrypted = await this.encrypt(key, value);
     await AsyncStorage.setItem(key, encrypted);
   }
@@ -82,7 +107,11 @@ class LargeSecureStore {
   /** Remove tanto o ciphertext quanto a chave de criptografia associada. */
   async removeItem(key: string): Promise<void> {
     await AsyncStorage.removeItem(key);
-    await SecureStore.deleteItemAsync(key);
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {
+      // Chave já ausente: o estado desejado (nada persistido) foi atingido.
+    }
   }
 }
 
