@@ -90,6 +90,10 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ---
 
+## Infraestrutura
+
+- [x] **P1** Esteira de CI (GitHub Actions) — typecheck, 125 testes, gate de licenças e auditoria de CVE a cada push/PR; verde no runner · OK
+
 ## Experiência e interface
 
 - [x] **P0** Redesenho profissional — tokens de tipografia/elevação, `Card`, `ErrorState` com retry nas 6 telas de dados e log estruturado · OK
