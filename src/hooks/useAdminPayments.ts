@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { createLogger } from '@/lib/logger';
+
 import { fetchAllStudents } from '@/services/profile.service';
 import {
   fetchPaymentsByStatus,
@@ -11,11 +13,15 @@ export interface PaymentWithName extends PaymentRow {
   studentName: string;
 }
 
+const log = createLogger('useAdminPayments');
+
 interface UseAdminPaymentsResult {
   pending: PaymentWithName[];
   open: PaymentWithName[];
   overdue: PaymentWithName[];
   loading: boolean;
+  /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
+  error: string | null;
   reload: () => Promise<void>;
 }
 
@@ -28,9 +34,11 @@ export function useAdminPayments(): UseAdminPaymentsResult {
   const [open, setOpen] = useState<PaymentWithName[]>([]);
   const [overdue, setOverdue] = useState<PaymentWithName[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [students, pendingRows, openRows, overdueRows] = await Promise.all([
         fetchAllStudents(),
@@ -49,7 +57,11 @@ export function useAdminPayments(): UseAdminPaymentsResult {
       setPending(attach(pendingRows));
       setOpen(attach(openRows));
       setOverdue(attach(overdueRows));
-    } catch {
+    } catch (loadError) {
+      // Devolver vazio faria o usuário concluir que não há dados, quando na
+      // verdade a carga falhou. Sinaliza para a tela poder oferecer retry.
+      log.error('Falha ao carregar dados', loadError);
+      setError('Não foi possível carregar os pagamentos.');
       setPending([]);
       setOpen([]);
       setOverdue([]);
@@ -62,5 +74,5 @@ export function useAdminPayments(): UseAdminPaymentsResult {
     void load();
   }, [load]);
 
-  return { pending, open, overdue, loading, reload: load };
+  return { pending, open, overdue, loading, error, reload: load };
 }

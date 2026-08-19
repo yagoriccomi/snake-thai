@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { createLogger } from '@/lib/logger';
+
 import {
   createPlan,
   deactivatePlan,
@@ -9,9 +11,13 @@ import {
   type PlanRow,
 } from '@/services/plans.service';
 
+const log = createLogger('usePlans');
+
 interface UsePlansResult {
   plans: PlanRow[];
   loading: boolean;
+  /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
+  error: string | null;
   reload: () => Promise<void>;
   add: (input: PlanInput) => Promise<void>;
   edit: (id: string, input: PlanInput) => Promise<void>;
@@ -26,12 +32,18 @@ interface UsePlansResult {
 export function usePlans(onlyActive = false): UsePlansResult {
   const [plans, setPlans] = useState<PlanRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       setPlans(await fetchPlans(onlyActive));
-    } catch {
+    } catch (loadError) {
+      // Lista vazia mentiria: o usuário concluiria que não há dados, quando na
+      // verdade a carga falhou. Sinaliza o erro e deixa a tela oferecer retry.
+      log.error('Falha ao carregar dados', loadError);
+      setError('Não foi possível carregar. Verifique sua conexão.');
       setPlans([]);
     } finally {
       setLoading(false);
@@ -66,5 +78,5 @@ export function usePlans(onlyActive = false): UsePlansResult {
     [load],
   );
 
-  return { plans, loading, reload: load, add, edit, deactivate };
+  return { plans, loading, error, reload: load, add, edit, deactivate };
 }

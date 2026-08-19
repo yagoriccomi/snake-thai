@@ -3,6 +3,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ErrorState } from '@/components/ErrorState';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
@@ -37,7 +38,7 @@ const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
  */
 export function ConfiguracoesScreen(): React.JSX.Element {
   const { colors, spacing } = useTheme();
-  const { settings, loading, save } = useAcademySettings();
+  const { settings, loading, error: loadError, reload, save } = useAcademySettings();
 
   const [academyName, setAcademyName] = useState('');
   const [primaryColor, setPrimaryColor] = useState('');
@@ -137,6 +138,14 @@ export function ConfiguracoesScreen(): React.JSX.Element {
   ]);
 
   const handlePress = useCallback(() => void handleSave(), [handleSave]);
+
+  if (loadError !== null && settings === null) {
+    return (
+      <ScreenWrapper edges={SCREEN_EDGES}>
+        <ErrorState message={loadError} onRetry={() => void reload()} />
+      </ScreenWrapper>
+    );
+  }
 
   if (loading) {
     return (

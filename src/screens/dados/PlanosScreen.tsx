@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
@@ -62,7 +63,7 @@ const ITEM_HEIGHT = 92;
  */
 export function PlanosScreen(): React.JSX.Element {
   const { colors } = useTheme();
-  const { plans, loading, add, edit, deactivate } = usePlans();
+  const { plans, loading, error, reload, add, edit, deactivate } = usePlans();
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
@@ -290,6 +291,16 @@ export function PlanosScreen(): React.JSX.Element {
       resetForm,
     ],
   );
+
+  // Erro antes de lista: uma lista vazia por falha de rede faria o admin
+  // concluir que nao ha planos cadastrados.
+  if (error !== null && plans.length === 0) {
+    return (
+      <ScreenWrapper edges={SCREEN_EDGES}>
+        <ErrorState message={error} onRetry={() => void reload()} />
+      </ScreenWrapper>
+    );
+  }
 
   if (loading && plans.length === 0) {
     return (

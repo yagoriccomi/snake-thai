@@ -7,7 +7,14 @@ import React, {
 } from 'react';
 import { useColorScheme } from 'react-native';
 
-import { fonts, MIN_HIT_SLOP, radius, spacing } from '@/constants/theme';
+import {
+  elevation,
+  fonts,
+  MIN_HIT_SLOP,
+  radius,
+  spacing,
+  typography,
+} from '@/constants/theme';
 import { darkColors, lightColors, type ColorScheme } from '@/theme/colors';
 
 /** Modos de tema suportados. */
@@ -21,6 +28,8 @@ export interface Theme {
   spacing: typeof spacing;
   radius: typeof radius;
   fonts: typeof fonts;
+  typography: typeof typography;
+  elevation: typeof elevation;
   minHitSlop: number;
 }
 
@@ -30,6 +39,14 @@ export interface ThemeContextValue extends Theme {
   toggleTheme: () => void;
   /** Define explicitamente o modo. */
   setMode: (mode: ThemeMode) => void;
+  /**
+   * Aplica a cor da marca da academia (white-label).
+   *
+   * Chamado quando `academy_settings` chega do servidor. Cor inválida é
+   * ignorada em silêncio — a paleta padrão continua valendo, porque uma cor
+   * quebrada não pode tornar o app ilegível.
+   */
+  applyBrandColor: (color: string | null) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
@@ -37,6 +54,9 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
+
+/** Cor de marca aceita: hexadecimal de 6 dígitos, como o banco valida. */
+const BRAND_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 /**
  * Provedor global de tema.
@@ -51,24 +71,41 @@ export function ThemeProvider({ children }: ThemeProviderProps): React.JSX.Eleme
     systemScheme === 'light' ? 'light' : 'dark',
   );
 
+  const [brandColor, setBrandColor] = useState<string | null>(null);
+
   const toggleTheme = useCallback(() => {
     setMode((previous) => (previous === 'dark' ? 'light' : 'dark'));
   }, []);
 
+  const applyBrandColor = useCallback((color: string | null) => {
+    if (color !== null && !BRAND_COLOR_PATTERN.test(color)) {
+      return;
+    }
+    setBrandColor(color);
+  }, []);
+
   const value = useMemo<ThemeContextValue>(() => {
     const isDark = mode === 'dark';
+    const base = isDark ? darkColors : lightColors;
+    // A marca sobrescreve apenas a cor de ação; fundo, texto e semânticas
+    // (erro, sucesso) continuam da paleta, para não quebrar contraste.
+    const colors =
+      brandColor === null ? base : { ...base, primary: brandColor };
     return {
       mode,
       isDark,
-      colors: isDark ? darkColors : lightColors,
+      colors,
       spacing,
       radius,
       fonts,
+      typography,
+      elevation,
       minHitSlop: MIN_HIT_SLOP,
       toggleTheme,
       setMode,
+      applyBrandColor,
     };
-  }, [mode, toggleTheme]);
+  }, [mode, brandColor, toggleTheme, applyBrandColor]);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
+import { createLogger } from '@/lib/logger';
+
 import {
   fetchAttendanceForClass,
   fetchStudentsForGroup,
@@ -13,8 +15,12 @@ export interface AttendanceBreakdown {
   pending: Profile[];
 }
 
+const log = createLogger('useClassAttendance');
+
 interface UseClassAttendanceResult extends AttendanceBreakdown {
   loading: boolean;
+  /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
+  error: string | null;
   reload: () => Promise<void>;
 }
 
@@ -31,9 +37,11 @@ export function useClassAttendance(
 ): UseClassAttendanceResult {
   const [breakdown, setBreakdown] = useState<AttendanceBreakdown>(EMPTY);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const [students, attendance] = await Promise.all([
         fetchStudentsForGroup(groupId),
@@ -54,7 +62,11 @@ export function useClassAttendance(
         }
       }
       setBreakdown({ present, absent, pending });
-    } catch {
+    } catch (loadError) {
+      // Devolver vazio faria o usuário concluir que não há dados, quando na
+      // verdade a carga falhou. Sinaliza para a tela poder oferecer retry.
+      log.error('Falha ao carregar dados', loadError);
+      setError('Não foi possível carregar a lista de presença.');
       setBreakdown(EMPTY);
     } finally {
       setLoading(false);
@@ -65,5 +77,5 @@ export function useClassAttendance(
     void load();
   }, [load]);
 
-  return { ...breakdown, loading, reload: load };
+  return { ...breakdown, loading, error, reload: load };
 }
