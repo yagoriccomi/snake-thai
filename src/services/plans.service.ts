@@ -114,9 +114,13 @@ export async function deactivatePlan(id: string): Promise<void> {
 
 /** Converte o input de domínio na forma da tabela. */
 function toRow(input: PlanInput): Database['public']['Tables']['plans']['Insert'] {
+  // `?? null` só cobre null/undefined: uma descrição composta apenas de espaços
+  // vira string vazia no trim e seria gravada como '' — dois estados diferentes
+  // no banco significando a mesma coisa ("sem descrição").
+  const description = input.description?.trim();
   return {
     name: input.name.trim(),
-    description: input.description?.trim() ?? null,
+    description: description === undefined || description === '' ? null : description,
     price_cents: input.priceCents,
     billing_period: input.billingPeriod,
     due_day: input.dueDay,
