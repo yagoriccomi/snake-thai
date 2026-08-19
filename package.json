@@ -22,6 +22,7 @@
     "expo-secure-store": "~57.0.1",
     "expo-splash-screen": "~57.0.5",
     "expo-status-bar": "~57.0.1",
+    "expo-system-ui": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.0",
     "react-native-get-random-values": "~1.11.0",
@@ -34,20 +35,21 @@
     "@types/aes-js": "^3.1.4",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.2.2",
+    "husky": "^9.1.7",
     "jest": "^29.7.0",
     "jest-expo": "^57.0.2",
     "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "start": "expo start --port 6969",
+    "android": "expo run:android --port 6969",
+    "ios": "expo run:ios --port 6969",
+    "web": "expo start --web --port 6969",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "supabase:types": "supabase gen types typescript --local > src/types/database.types.ts",
-    "prepare": "husky"
+    "prepare": "husky || exit 0"
   },
   "jest": {
     "preset": "jest-expo",

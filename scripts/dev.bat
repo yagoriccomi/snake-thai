@@ -27,7 +27,7 @@ exit /b 1
 
 :start
 if "%HAS_SUPABASE%"=="1" ( supabase start ) else ( echo [aviso] Supabase CLI nao encontrado - subindo apenas o app Expo. )
-npx expo start
+call npm start
 goto fim
 
 :stop
@@ -36,7 +36,7 @@ goto fim
 
 :restart
 if "%HAS_SUPABASE%"=="1" ( supabase stop ^& supabase start )
-npx expo start
+call npm start
 goto fim
 
 :status
