@@ -4,7 +4,9 @@
 > **cliente que compra o sistema opere sozinho**, sem depender do desenvolvedor.
 > Serve como checklist de execução: marque `[x]` conforme cada item for entregue.
 >
-> Legenda de estado: **OK** = pronto · **PARCIAL** = existe incompleto · **FALTA** = não existe
+> Legenda de estado: **OK** = pronto · **BANCO OK** = esquema pronto, falta a interface
+> · **PARCIAL** = existe incompleto · **FALTA** = não existe
+> Marcadores: `[x]` concluído · `[~]` fundação de dados pronta, aguardando UI · `[ ]` não iniciado
 > Prioridade: **P0** trava a venda · **P1** esperado pelo cliente · **P2** diferencial
 
 ---
@@ -13,9 +15,9 @@
 
 Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
-- [ ] **P0** Nome, logo e cores da academia configuráveis — hoje fixos em `src/constants/theme.ts` · FALTA
-- [ ] **P0** Textos legais (LGPD/Termos) editáveis e versionados — hoje fixos na tela de onboarding · FALTA
-- [ ] **P0** Chave PIX / dados de recebimento configuráveis · FALTA
+- [~] **P0** Nome, logo e cores da academia — tabela `academy_settings`; falta a UI ler dela · BANCO OK
+- [~] **P0** Textos legais versionados — `legal_documents` + `consents` com prova de aceite · BANCO OK
+- [~] **P0** Chave PIX configurável — `academy_settings.pix_key` · BANCO OK
 - [ ] **P1** Dados de contato, endereço e redes sociais · FALTA
 
 ## B. Pessoas — alunos e equipe
@@ -24,9 +26,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [x] Listar alunos e trocar turma · OK
 - [x] Redefinir senha do aluno para a padrão (Edge Function `reset-student-password`) · OK
 - [ ] **P0** Editar dados do aluno pelo admin · FALTA
-- [ ] **P0** Desativar / reativar aluno (trancamento) · FALTA
+- [~] **P0** Desativar / reativar aluno — `profiles.status` + `deactivated_at` · BANCO OK
 - [ ] **P0** Excluir aluno com apagamento LGPD · FALTA
-- [ ] **P0** Promover / rebaixar administrador — hoje **só via SQL**, dependência direta do dev · FALTA
+- [~] **P0** Promover / rebaixar admin — trava do último admin ativa no banco; falta a UI · BANCO OK
 - [ ] **P1** Busca, filtro e ordenação na lista de alunos · FALTA
 - [ ] **P1** Ficha do aluno (histórico de presença + financeiro consolidado) · FALTA
 - [ ] **P1** Papéis intermediários (professor, recepção) · FALTA
@@ -52,9 +54,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 > QUANDO vence, mas não QUANTO. É mudança de esquema — precede qualquer UI.
 
 - [x] Aprovar / recusar comprovante PIX · OK
-- [ ] **P0** Planos com preço e periodicidade (mensal/trimestral/anual) · FALTA
-- [ ] **P0** Campo de valor no pagamento · FALTA
-- [ ] **P0** Dia de vencimento configurável · FALTA
+- [~] **P0** Planos com preço e periodicidade — tabela `plans` criada com RLS; falta a UI · BANCO OK
+- [~] **P0** Campo de valor no pagamento — `payments.amount_cents` + FK real para `plans` · BANCO OK
+- [~] **P0** Dia de vencimento configurável — `plans.due_day` e `academy_settings.default_due_day` · BANCO OK
 - [ ] **P0** Geração automática das mensalidades — hoje o cron só marca atraso · PARCIAL
 - [ ] **P0** Relatório de inadimplência e faturamento · FALTA
 - [ ] **P1** Descontos, bolsas e isenções · FALTA
@@ -75,15 +77,15 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ## G. Governança, LGPD e continuidade
 
-- [ ] **P0** Exportar dados do titular · FALTA
+- [x] **P0** Exportar dados do titular — função `export_my_data()` respeitando RLS · OK
 - [ ] **P0** Excluir conta — direito ao esquecimento · FALTA
-- [ ] **P0** Log de auditoria (quem alterou o quê e quando) · FALTA
-- [ ] **P1** Consentimento LGPD versionado — hoje o aceite não guarda versão · PARCIAL
+- [x] **P0** Log de auditoria — `audit_log` + trigger em profiles/payments/plans/settings · OK
+- [~] **P1** Consentimento versionado — tabela `consents` por versão de documento · BANCO OK
 - [ ] **P1** Backup testado periodicamente (não basta agendar) · FALTA
 
 ## H. Configurações do sistema
 
-- [ ] **P1** Senha padrão do aluno configurável — hoje constante em `src/constants/auth.ts` · FALTA
+- [~] **P1** Senha padrão configurável — `academy_settings.default_student_password` · BANCO OK
 - [ ] **P2** Política de exigir biometria para administradores — hoje é escolha individual · PARCIAL
 
 ---
