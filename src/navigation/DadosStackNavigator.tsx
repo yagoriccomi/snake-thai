@@ -7,6 +7,8 @@ import {
 import type { DadosStackParamList } from '@/navigation/types';
 import { AlterarSenhaScreen } from '@/screens/dados/AlterarSenhaScreen';
 import { CadastrarAlunoScreen } from '@/screens/dados/CadastrarAlunoScreen';
+import { ConfiguracoesScreen } from '@/screens/dados/ConfiguracoesScreen';
+import { PlanosScreen } from '@/screens/dados/PlanosScreen';
 import { DadosScreen } from '@/screens/dados/DadosScreen';
 import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -46,6 +48,12 @@ export function DadosStackNavigator(): React.JSX.Element {
         component={AlterarSenhaScreen}
         options={SENHA_OPTIONS}
       />
+      <Stack.Screen name="Planos" component={PlanosScreen} options={PLANOS_OPTIONS} />
+      <Stack.Screen
+        name="Configuracoes"
+        component={ConfiguracoesScreen}
+        options={CONFIG_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
@@ -54,3 +62,5 @@ const PERFIL_OPTIONS: NativeStackNavigationOptions = { title: 'Dados' };
 const CADASTRO_OPTIONS: NativeStackNavigationOptions = { title: 'Cadastrar Aluno' };
 const GERENCIAR_OPTIONS: NativeStackNavigationOptions = { title: 'Gerenciar Alunos' };
 const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };
+const PLANOS_OPTIONS: NativeStackNavigationOptions = { title: 'Planos' };
+const CONFIG_OPTIONS: NativeStackNavigationOptions = { title: 'Configurações' };

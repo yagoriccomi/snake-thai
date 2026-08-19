@@ -123,6 +123,14 @@ export function DadosScreen({
     navigation.navigate('GerenciarAlunos');
   }, [navigation]);
 
+  const goToPlans = useCallback(() => {
+    navigation.navigate('Planos');
+  }, [navigation]);
+
+  const goToSettings = useCallback(() => {
+    navigation.navigate('Configuracoes');
+  }, [navigation]);
+
   const handleSignOut = useCallback(() => {
     void signOut();
   }, [signOut]);
@@ -165,6 +173,20 @@ export function DadosScreen({
               title="Gerenciar Alunos"
               variant="secondary"
               onPress={goToManageStudents}
+              style={styles.adminSecondary}
+            />
+            <Button
+              title="Planos e Mensalidades"
+              variant="secondary"
+              onPress={goToPlans}
+              accessibilityHint="Cadastra e edita os planos cobrados pela academia"
+              style={styles.adminSecondary}
+            />
+            <Button
+              title="Configurações da Academia"
+              variant="secondary"
+              onPress={goToSettings}
+              accessibilityHint="Edita marca, chave PIX, vencimento e senha padrão"
               style={styles.adminSecondary}
             />
           </View>

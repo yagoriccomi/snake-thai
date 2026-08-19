@@ -14,11 +14,13 @@ import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
 import { GroupPicker } from '@/components/GroupPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { DEFAULT_STUDENT_PASSWORD } from '@/constants/auth';
+import { useAcademySettings } from '@/hooks/useAcademySettings';
 import {
   fetchAllStudents,
   resetStudentPassword,
+  setStudentActive,
   updateStudentGroup,
+  updateUserRole,
 } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Profile } from '@/types/models';
@@ -32,6 +34,11 @@ const SCREEN_EDGES = ['bottom'] as const;
  */
 export function GerenciarAlunosScreen(): React.JSX.Element {
   const { colors } = useTheme();
+  const { settings } = useAcademySettings();
+
+  // Senha inicial definida pelo admin nas configuracoes da academia.
+  const defaultPassword = settings?.default_student_password ?? 'Snake@123';
+
   const [students, setStudents] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [resettingId, setResettingId] = useState<string | null>(null);
@@ -76,7 +83,7 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
     const label = student.name ?? 'este aluno';
     Alert.alert(
       'Redefinir senha?',
-      `A senha de ${label} voltará para a padrão (${DEFAULT_STUDENT_PASSWORD}) e ele precisará criar uma nova no próximo acesso.`,
+      `A senha de ${label} voltará para a padrão (${defaultPassword}) e ele precisará criar uma nova no próximo acesso.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -88,7 +95,7 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
               .then(() => {
                 Alert.alert(
                   'Senha redefinida',
-                  `Informe a senha padrão ${DEFAULT_STUDENT_PASSWORD} para ${label}.`,
+                  `Informe a senha padrão ${defaultPassword} para ${label}.`,
                 );
               })
               .catch(() => {
@@ -104,7 +111,74 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
         },
       ],
     );
-  }, []);
+  }, [defaultPassword]);
+
+  /**
+   * Tranca ou reativa a matricula. Trancar preserva historico de presenca e
+   * financeiro — apagar aluno destruiria a contabilidade do periodo.
+   */
+  const handleToggleActive = useCallback(
+    (student: Profile) => {
+      const isActive = student.status === 'active';
+      const label = student.name ?? 'este aluno';
+      Alert.alert(
+        isActive ? 'Trancar matricula?' : 'Reativar matricula?',
+        isActive
+          ? `${label} deixa de constar entre os alunos ativos. O historico e mantido e a matricula pode ser reativada depois.`
+          : `${label} volta a constar entre os alunos ativos.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: isActive ? 'Trancar' : 'Reativar',
+            style: isActive ? 'destructive' : 'default',
+            onPress: () => {
+              void setStudentActive(student.id, !isActive)
+                .then(load)
+                .catch(() => {
+                  Alert.alert('Nao foi possivel alterar', 'Tente novamente.');
+                });
+            },
+          },
+        ],
+      );
+    },
+    [load],
+  );
+
+  /**
+   * Promove a administrador ou rebaixa a aluno. A trava contra ficar sem
+   * administrador vive no banco; aqui apenas traduzimos a recusa.
+   */
+  const handleToggleRole = useCallback(
+    (student: Profile) => {
+      const willPromote = student.role !== 'admin';
+      const label = student.name ?? 'este aluno';
+      Alert.alert(
+        willPromote ? 'Promover a administrador?' : 'Rebaixar a aluno?',
+        willPromote
+          ? `${label} passa a gerenciar alunos, planos, aulas e configuracoes.`
+          : `${label} perde o acesso administrativo.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: willPromote ? 'Promover' : 'Rebaixar',
+            style: willPromote ? 'default' : 'destructive',
+            onPress: () => {
+              void updateUserRole(student.id, willPromote ? 'admin' : 'user')
+                .then(load)
+                .catch(() => {
+                  Alert.alert(
+                    'Nao foi possivel alterar',
+                    'Se este e o ultimo administrador ativo, promova outro antes de rebaixa-lo.',
+                  );
+                });
+            },
+          },
+        ],
+      );
+    },
+    [load],
+  );
 
   const renderItem = useCallback<ListRenderItem<Profile>>(
     ({ item }) => (
@@ -113,6 +187,43 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
           <AppText variant="subtitle" numberOfLines={1} style={styles.rowName}>
             {item.name ?? 'Aluno pendente'}
           </AppText>
+          <Pressable
+            onPress={() => handleToggleRole(item)}
+            hitSlop={RESET_HIT_SLOP}
+            style={styles.resetButton}
+            accessible
+            accessibilityRole="button"
+            accessibilityState={{ selected: item.role === 'admin' }}
+            accessibilityLabel={
+              item.role === 'admin'
+                ? `Rebaixar ${item.name ?? 'aluno'} a aluno`
+                : `Promover ${item.name ?? 'aluno'} a administrador`
+            }
+          >
+            <Ionicons
+              name={item.role === 'admin' ? 'shield-checkmark' : 'shield-outline'}
+              size={22}
+              color={item.role === 'admin' ? colors.primary : colors.textSecondary}
+            />
+          </Pressable>
+          <Pressable
+            onPress={() => handleToggleActive(item)}
+            hitSlop={RESET_HIT_SLOP}
+            style={styles.resetButton}
+            accessible
+            accessibilityRole="button"
+            accessibilityLabel={
+              item.status === 'active'
+                ? `Trancar matricula de ${item.name ?? 'aluno'}`
+                : `Reativar matricula de ${item.name ?? 'aluno'}`
+            }
+          >
+            <Ionicons
+              name={item.status === 'active' ? 'pause-circle-outline' : 'play-circle-outline'}
+              size={22}
+              color={colors.textSecondary}
+            />
+          </Pressable>
           <Pressable
             onPress={() => handleResetPassword(item)}
             disabled={resettingId === item.id}
@@ -136,7 +247,16 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
         />
       </View>
     ),
-    [colors.border, colors.primary, colors.textSecondary, handleChangeGroup, handleResetPassword, resettingId],
+    [
+      colors.border,
+      colors.primary,
+      colors.textSecondary,
+      handleChangeGroup,
+      handleResetPassword,
+      handleToggleActive,
+      handleToggleRole,
+      resettingId,
+    ],
   );
 
   if (loading && students.length === 0) {

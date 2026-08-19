@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { ACADEMY_PIX_KEY } from '@/constants/payments';
+import { useAcademySettings } from '@/hooks/useAcademySettings';
 import { useAuth } from '@/context/AuthProvider';
 import type { FinanceiroStackScreenProps } from '@/navigation/types';
 import {
@@ -28,7 +28,12 @@ export function PagamentoScreen({
 }: FinanceiroStackScreenProps<'Pagamento'>): React.JSX.Element {
   const { colors } = useTheme();
   const { session } = useAuth();
+  const { settings } = useAcademySettings();
   const { paymentId, dueDate } = route.params;
+
+  // A chave PIX vive na configuracao da academia, editavel pelo admin. Enquanto
+  // ela nao carrega (ou nao foi preenchida), avisamos em vez de exibir vazio.
+  const pixKey = settings?.pix_key ?? 'Chave PIX nao configurada';
 
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -100,7 +105,7 @@ export function PagamentoScreen({
         <View style={[styles.pixBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           <AppText variant="label">Chave PIX da academia</AppText>
           <AppText variant="subtitle" color={colors.primary} style={styles.pixKey}>
-            {ACADEMY_PIX_KEY}
+            {pixKey}
           </AppText>
           <AppText variant="caption">
             Pague pelo app do seu banco e anexe o comprovante abaixo.

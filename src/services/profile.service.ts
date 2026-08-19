@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import type { Database } from '@/types/database.types';
 import type { Profile } from '@/types/models';
 
 /**
@@ -136,6 +137,56 @@ export async function resetStudentPassword(userId: string): Promise<void> {
   const { error } = await supabase.functions.invoke('reset-student-password', {
     body: { userId },
   });
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Promove ou rebaixa um usuário entre aluno e administrador.
+ *
+ * A trava contra ficar sem administrador vive no banco (trigger
+ * `prevent_last_admin_removal`), não aqui: validar só no app deixaria a brecha
+ * aberta para qualquer outro cliente da API. O erro do banco sobe para a UI.
+ *
+ * @param userId Id do usuário alvo.
+ * @param role   Novo papel.
+ * @throws Quando é a última conta de administrador ativa.
+ */
+export async function updateUserRole(
+  userId: string,
+  role: Database['public']['Enums']['user_role'],
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ role })
+    .eq('id', userId);
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Ativa ou tranca a matrícula de um aluno.
+ *
+ * Trancar não apaga: o histórico de presença e o financeiro precisam
+ * sobreviver. `deactivated_at` acompanha o status por causa da constraint de
+ * coerência no banco.
+ *
+ * @param userId Id do aluno.
+ * @param active `true` para reativar, `false` para trancar.
+ */
+export async function setStudentActive(
+  userId: string,
+  active: boolean,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      status: active ? 'active' : 'inactive',
+      deactivated_at: active ? null : new Date().toISOString(),
+    })
+    .eq('id', userId);
   if (error !== null) {
     throw error;
   }

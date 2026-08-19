@@ -15,9 +15,9 @@
 
 Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
-- [~] **P0** Nome, logo e cores da academia — tabela `academy_settings`; falta a UI ler dela · BANCO OK
+- [x] **P0** Nome, cor e contato da academia — tela `ConfiguracoesScreen` · OK (logo: falta upload)
 - [~] **P0** Textos legais versionados — `legal_documents` + `consents` com prova de aceite · BANCO OK
-- [~] **P0** Chave PIX configurável — `academy_settings.pix_key` · BANCO OK
+- [x] **P0** Chave PIX configurável — editável e já consumida na tela de pagamento · OK
 - [ ] **P1** Dados de contato, endereço e redes sociais · FALTA
 
 ## B. Pessoas — alunos e equipe
@@ -26,9 +26,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [x] Listar alunos e trocar turma · OK
 - [x] Redefinir senha do aluno para a padrão (Edge Function `reset-student-password`) · OK
 - [ ] **P0** Editar dados do aluno pelo admin · FALTA
-- [~] **P0** Desativar / reativar aluno — `profiles.status` + `deactivated_at` · BANCO OK
+- [x] **P0** Desativar / reativar aluno — trancar matrícula preservando histórico · OK
 - [ ] **P0** Excluir aluno com apagamento LGPD · FALTA
-- [~] **P0** Promover / rebaixar admin — trava do último admin ativa no banco; falta a UI · BANCO OK
+- [x] **P0** Promover / rebaixar admin — botão na lista de alunos, com trava do último admin · OK
 - [ ] **P1** Busca, filtro e ordenação na lista de alunos · FALTA
 - [ ] **P1** Ficha do aluno (histórico de presença + financeiro consolidado) · FALTA
 - [ ] **P1** Papéis intermediários (professor, recepção) · FALTA
@@ -54,9 +54,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 > QUANDO vence, mas não QUANTO. É mudança de esquema — precede qualquer UI.
 
 - [x] Aprovar / recusar comprovante PIX · OK
-- [~] **P0** Planos com preço e periodicidade — tabela `plans` criada com RLS; falta a UI · BANCO OK
+- [x] **P0** Planos com preço e periodicidade — tela de CRUD em `PlanosScreen` · OK
 - [~] **P0** Campo de valor no pagamento — `payments.amount_cents` + FK real para `plans` · BANCO OK
-- [~] **P0** Dia de vencimento configurável — `plans.due_day` e `academy_settings.default_due_day` · BANCO OK
+- [x] **P0** Dia de vencimento configurável — por plano e padrão da academia · OK
 - [ ] **P0** Geração automática das mensalidades — hoje o cron só marca atraso · PARCIAL
 - [ ] **P0** Relatório de inadimplência e faturamento · FALTA
 - [ ] **P1** Descontos, bolsas e isenções · FALTA
@@ -85,7 +85,7 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ## H. Configurações do sistema
 
-- [~] **P1** Senha padrão configurável — `academy_settings.default_student_password` · BANCO OK
+- [x] **P1** Senha padrão configurável — editável e consumida no cadastro e no reset · OK
 - [ ] **P2** Política de exigir biometria para administradores — hoje é escolha individual · PARCIAL
 
 ---

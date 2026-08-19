@@ -10,6 +10,8 @@ export type DadosStackParamList = {
   Perfil: undefined;
   CadastrarAluno: undefined;
   AlterarSenha: undefined;
+  Planos: undefined;
+  Configuracoes: undefined;
   GerenciarAlunos: undefined;
 };
 

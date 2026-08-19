@@ -6,7 +6,7 @@ import { Button } from '@/components/Button';
 import { GroupPicker } from '@/components/GroupPicker';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { DEFAULT_STUDENT_PASSWORD } from '@/constants/auth';
+import { useAcademySettings } from '@/hooks/useAcademySettings';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { createStudent } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -21,6 +21,11 @@ export function CadastrarAlunoScreen({
   navigation,
 }: DadosStackScreenProps<'CadastrarAluno'>): React.JSX.Element {
   const { colors } = useTheme();
+  const { settings } = useAcademySettings();
+
+  // Senha inicial definida pelo admin nas configuracoes da academia.
+  const defaultPassword = settings?.default_student_password ?? 'Snake@123';
+
   const [email, setEmail] = useState('');
   const [groupId, setGroupId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -68,7 +73,7 @@ export function CadastrarAlunoScreen({
           <AppText variant="caption" style={styles.message}>
             A conta foi criada com a senha padrão{' '}
             <AppText variant="caption" color={colors.primary}>
-              {DEFAULT_STUDENT_PASSWORD}
+              {defaultPassword}
             </AppText>
             . O aluno deverá trocá-la no primeiro acesso.
           </AppText>
@@ -90,7 +95,7 @@ export function CadastrarAlunoScreen({
         <AppText variant="caption" style={styles.message}>
           Informe o e-mail do aluno. A conta será criada com a senha padrão{' '}
           <AppText variant="caption" color={colors.primary}>
-            {DEFAULT_STUDENT_PASSWORD}
+            {defaultPassword}
           </AppText>
           , exigindo troca no primeiro acesso.
         </AppText>
