@@ -85,7 +85,7 @@ export function CriarAulaScreen({
   const styles = useMemo(() => makeStyles(spacing.xxl), [spacing.xxl]);
 
   return (
-    <ScreenWrapper edges={SCREEN_EDGES}>
+    <ScreenWrapper edges={SCREEN_EDGES} avoidKeyboard>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"

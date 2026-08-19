@@ -62,7 +62,7 @@ export function CadastrarAlunoScreen({
 
   if (success) {
     return (
-      <ScreenWrapper>
+      <ScreenWrapper avoidKeyboard>
         <View style={styles.center}>
           <AppText variant="heading">Aluno cadastrado! ✅</AppText>
           <AppText variant="caption" style={styles.message}>
@@ -85,7 +85,7 @@ export function CadastrarAlunoScreen({
   }
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper avoidKeyboard>
       <View style={styles.form}>
         <AppText variant="caption" style={styles.message}>
           Informe o e-mail do aluno. A conta será criada com a senha padrão{' '}
