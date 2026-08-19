@@ -1,0 +1,78 @@
+# Esteira de Integração Contínua — Snake Thai
+#
+# Gate de qualidade a cada push e pull request [#76]. NÃO faz deploy: o app é
+# React Native (Expo) e o APK é assinado e gerado localmente (menu.bat) — não há
+# artefato de servidor para publicar. Um build sem assinatura no CI seria teatro.
+#
+# Nenhum Secret é necessário: typecheck e testes rodam com mocks; a esteira não
+# toca no Supabase nem em provedor de nuvem. Zero segredo no repositório [#37][#80].
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+# Cancela execuções antigas do mesmo ref quando um novo push chega — economiza
+# minutos de runner sem prejudicar o gate do commit mais recente.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualidade:
+    name: Tipos, testes e licenças
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configura Node 20 com cache de dependências
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # npm ci é determinístico (respeita o lockfile) e mais rápido que install
+      # em CI — reinstala do zero, sem herdar estado da máquina [#81].
+      - name: Instala dependências (lockfile)
+        run: npm ci
+
+      # tsc é o mesmo gate que roda no pre-commit local (Husky): tipagem estrita,
+      # nenhum `any` nas fronteiras. Falhou aqui, não passa [#49].
+      - name: Checagem de tipos
+        run: npm run typecheck
+
+      # Os 125 testes: dinheiro em centavos, trava do último admin, senha com
+      # reautenticação, falha de rede que não vira lista vazia [#49].
+      - name: Testes (Jest)
+        run: npm test -- --ci
+
+      # Barra qualquer GPL/AGPL/LGPL que entre na árvore de produção via
+      # transitiva — impede a regressão do que a auditoria confirmou limpo.
+      - name: Gate de licenças
+        run: npm run check:licenses
+
+  seguranca:
+    name: Auditoria de CVE (produção)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configura Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Instala dependências (lockfile)
+        run: npm ci
+
+      # Só CVE de PRODUÇÃO em nível alto ou crítico [#62]. O toolchain de build
+      # (Metro, @expo/cli) não entra no APK, então seus avisos não bloqueiam o
+      # merge — mas uma vulnerabilidade que chegue ao app, sim.
+      - name: npm audit (produção, high+)
+        run: npm run audit:prod

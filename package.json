@@ -48,6 +48,9 @@
     "web": "expo start --web --port 6969",
     "typecheck": "tsc --noEmit",
     "test": "jest",
+    "check:licenses": "node scripts/check-licenses.js",
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
+    "ci": "npm run typecheck && npm test && npm run check:licenses",
     "supabase:types": "supabase gen types typescript --local > src/types/database.types.ts",
     "prepare": "husky || exit 0"
   },
