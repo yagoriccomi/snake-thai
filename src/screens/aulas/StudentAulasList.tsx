@@ -14,6 +14,7 @@ import {
   ClassCard,
 } from '@/components/ClassCard';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useStudentClasses, type StudentClassItem } from '@/hooks/useStudentClasses';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -29,6 +30,16 @@ export function StudentAulasList(): React.JSX.Element {
     ({ item }) => <ClassCard item={item} onRespond={respond} />,
     [respond],
   );
+
+  // Falha com lista vazia nao pode virar "nenhuma aula": o aluno concluiria
+  // que nao ha treino marcado quando, na verdade, a carga falhou.
+  if (error !== null && items.length === 0) {
+    return (
+      <ScreenWrapper edges={SCREEN_EDGES}>
+        <ErrorState message={error} onRetry={() => void reload()} />
+      </ScreenWrapper>
+    );
+  }
 
   if (loading && items.length === 0) {
     return (

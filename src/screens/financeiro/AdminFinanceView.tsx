@@ -13,6 +13,7 @@ import {
   AdminPaymentCard,
 } from '@/components/AdminPaymentCard';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
   SegmentedControl,
@@ -39,7 +40,7 @@ interface AdminFinanceViewProps {
  */
 export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.JSX.Element {
   const { colors } = useTheme();
-  const { pending, open, overdue, loading, reload } = useAdminPayments();
+  const { pending, open, overdue, loading, error, reload } = useAdminPayments();
   const [category, setCategory] = useState<Category>('pending');
 
   useFocusEffect(
@@ -82,7 +83,9 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
         <SegmentedControl options={options} value={category} onChange={setCategory} />
       </View>
 
-      {loading && data.length === 0 ? (
+      {error !== null && data.length === 0 ? (
+        <ErrorState message={error} onRetry={() => void reload()} />
+      ) : loading && data.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { PaymentCard, PAYMENT_CARD_TOTAL } from '@/components/PaymentCard';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
@@ -77,7 +78,9 @@ export function StudentFinanceList({
         </AppText>
       ) : null}
 
-      {loading && items.length === 0 ? (
+      {error !== null && items.length === 0 ? (
+        <ErrorState message={error} onRetry={() => void reload()} />
+      ) : loading && items.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

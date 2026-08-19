@@ -92,7 +92,7 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ## Experiência e interface
 
-- [~] **P0** Redesenho profissional — tokens de tipografia/elevação, componente `Card`, `ErrorState` e fim das falhas silenciosas; falta aplicar aos cards de aula/pagamento · EM ANDAMENTO
+- [x] **P0** Redesenho profissional — tokens de tipografia/elevação, `Card`, `ErrorState` com retry nas 6 telas de dados e log estruturado · OK
 - [ ] **P1** Acessibilidade sobre a interface nova (leitores de tela, foco, contraste, alvo de toque)
 
 ---
