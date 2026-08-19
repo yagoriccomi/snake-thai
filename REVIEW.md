@@ -1,5 +1,9 @@
 # 🔍 Relatório de Auditoria e Revisão de Código
 
+> ✅ **Os três achados críticos foram corrigidos e reverificados** — ver
+> `## Correções aplicadas` ao final. O relatório abaixo preserva o diagnóstico
+> original, com a evidência de exploração de cada um.
+>
 > **Projeto:** Snake Thai — gestão de alunos de academia
 > **Data:** 2026-08-19 · **Branch:** `feat/financial-module` · **Commit:** `00227bd`
 > **Escopo:** base completa (app React Native, migrations SQL, Edge Functions Deno)
@@ -267,3 +271,63 @@ Registrado para não ser reauditado à toa:
 | PII em log de aplicação [#63] | Mascarada em `src/lib/logger.ts:24-38` |
 | Portabilidade LGPD | `export_my_data()` respeitando RLS |
 | Dinheiro [#3] | Centavos em `integer`; nenhum float em cálculo financeiro |
+
+
+---
+
+## ✅ Correções aplicadas (mesma sessão)
+
+### Crítico 1 — controle de acesso · `20260819170000_harden_profile_updates.sql`
+
+A lista de proibidos virou **lista de permitidos**: o titular só altera `name`,
+`phone`, `dob` e `is_first_login`. Qualquer outra diferença é recusada nomeando
+o campo. Coluna nova passa a nascer restrita ao administrador — o padrão agora
+é negar.
+
+Reexecutei o mesmo exploit:
+
+```text
+{"status":"inactive"} → 42501 Operação negada: o campo "status" só pode ser
+                               alterado por um administrador   ✅ FECHADO
+{"plan_id":"..."}     → 42501 Operação negada: o campo "plan_id" ...   ✅ FECHADO
+{"phone":"..."}       → 200 OK  ✅ sem regressão (o aluno segue editando o seu)
+```
+
+### Crítico 2 — PII na auditoria · mesma migration
+
+Campos pessoais entram como `{"alterado": true}`. A trilha continua provando que
+houve mudança, sem copiar o conteúdo. As linhas gravadas em claro **antes** da
+correção foram expurgadas pela própria migration.
+
+Verificado: `{"phone": {"alterado": true}}`.
+
+### Crítico 3 — exclusão do titular · `delete-my-account` + `20260819180000`
+
+Edge Function publicada, exigindo confirmação explícita no corpo. Durante o teste
+descobri um erro grave na **primeira versão da própria função**: ela chamava
+`auth.admin.deleteUser`, e a cadeia `auth.users → profiles → payments` é toda
+`ON DELETE CASCADE`. Ou seja, apagaria todo o histórico financeiro — o oposto do
+que a mensagem de sucesso prometia ao usuário.
+
+A versão corrigida não apaga a linha de autenticação: substitui o e-mail por um
+identificador aleatório, troca a senha por outra que ninguém conhece e bane a
+conta. Não sobra dado pessoal nem porta de entrada.
+
+Também foi preciso criar a coluna `profiles.anonymized_at`, porque a constraint
+`profiles_complete_when_onboarded` exige nome e CPF em perfil integrado. A saída
+preguiçosa seria marcar `is_first_login = true`, mas isso mentiria no modelo — a
+pessoa não está aguardando onboarding, ela saiu. Estado mal representado vira
+relatório errado depois.
+
+Verificado de ponta a ponta, com um titular que tinha um pagamento quitado:
+
+| Verificação | Resultado |
+| --- | --- |
+| Nome, CPF, telefone e nascimento | ✅ apagados |
+| E-mail em `auth.users` | ✅ `removido-<uuid>@anonimizado.invalid` |
+| Conta banida | ✅ sim |
+| Login com a senha antiga | ✅ recusado |
+| **Histórico financeiro** | ✅ **preservado** — 1 pagamento, 12990 centavos |
+
+**Permanecem abertos:** os achados de Risco Médio (paginação, rate limiting nas
+Edge Functions e esteira de CI) e os de Risco Baixo. Nenhum é explorável hoje.
