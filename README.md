@@ -151,6 +151,16 @@ snake-thai/
 | `npm test` | Executa os testes (Jest + React Native Testing Library). |
 | `npm run supabase:types` | Gera os tipos do banco local. |
 
+## 📚 Documentação
+
+A documentação completa vive em [`docs/`](docs/README.md):
+
+- **[Manual do Administrador](docs/MANUAL-DO-ADMINISTRADOR.md)** — operar o sistema pelo celular, sem depender do dev.
+- **[Arquitetura](docs/ARQUITETURA.md)** — camadas, RLS e Edge Functions (comece aqui se é dev novo no projeto).
+- **[Runbook](docs/RUNBOOK.md)** — migrations, tipos, APK, rotação de chaves.
+- **[Edge Functions](docs/EDGE-FUNCTIONS.md)** — contratos das funções server-side.
+- Auditorias: [REVIEW.md](REVIEW.md) · [SECURITY.md](SECURITY.md) · [LICENSE_AUDIT.md](LICENSE_AUDIT.md)
+
 ## ⚡ Edge Functions
 
 Operações que exigem a `service_role` (nunca exposta no app) vivem em Edge

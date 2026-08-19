@@ -90,6 +90,11 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ---
 
+## Documentação
+
+- [x] **P1** Manual do administrador — `docs/MANUAL-DO-ADMINISTRADOR.md`, passo a passo sem exigir técnica · OK
+- [x] **P1** Documentação técnica — arquitetura, edge functions e runbook em `docs/` · OK
+
 ## Infraestrutura
 
 - [x] **P1** Esteira de CI (GitHub Actions) — typecheck, 125 testes, gate de licenças e auditoria de CVE a cada push/PR; verde no runner · OK
