@@ -5,6 +5,7 @@ import {
 } from '@react-navigation/native-stack';
 
 import type { DadosStackParamList } from '@/navigation/types';
+import { AlterarSenhaScreen } from '@/screens/dados/AlterarSenhaScreen';
 import { CadastrarAlunoScreen } from '@/screens/dados/CadastrarAlunoScreen';
 import { DadosScreen } from '@/screens/dados/DadosScreen';
 import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
@@ -40,6 +41,11 @@ export function DadosStackNavigator(): React.JSX.Element {
         component={GerenciarAlunosScreen}
         options={GERENCIAR_OPTIONS}
       />
+      <Stack.Screen
+        name="AlterarSenha"
+        component={AlterarSenhaScreen}
+        options={SENHA_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
@@ -47,3 +53,4 @@ export function DadosStackNavigator(): React.JSX.Element {
 const PERFIL_OPTIONS: NativeStackNavigationOptions = { title: 'Dados' };
 const CADASTRO_OPTIONS: NativeStackNavigationOptions = { title: 'Cadastrar Aluno' };
 const GERENCIAR_OPTIONS: NativeStackNavigationOptions = { title: 'Gerenciar Alunos' };
+const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };

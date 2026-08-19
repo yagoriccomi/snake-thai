@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -31,7 +31,18 @@ export function DadosScreen({
   navigation,
 }: DadosStackScreenProps<'Perfil'>): React.JSX.Element {
   const { colors, spacing } = useTheme();
-  const { profile, session, isAdmin, signOut, refreshProfile } = useAuth();
+  const {
+    profile,
+    session,
+    isAdmin,
+    signOut,
+    refreshProfile,
+    biometricEnabled,
+    biometricAvailable,
+    chooseBiometric,
+  } = useAuth();
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricError, setBiometricError] = useState<string | null>(null);
 
   const email = session?.user.email ?? '';
   const cpfDisplay = profile?.cpf !== null && profile?.cpf !== undefined
@@ -116,8 +127,32 @@ export function DadosScreen({
     void signOut();
   }, [signOut]);
 
+  const goToChangePassword = useCallback(() => {
+    navigation.navigate('AlterarSenha');
+  }, [navigation]);
+
+  /**
+   * Liga/desliga o desbloqueio biométrico. Ativar dispara a confirmação da
+   * digital na hora; se o usuário cancelar, o switch volta ao estado anterior
+   * (a preferência só muda quando a identidade é confirmada).
+   */
+  const handleToggleBiometric = useCallback(
+    (value: boolean) => {
+      setBiometricError(null);
+      setBiometricBusy(true);
+      void chooseBiometric(value)
+        .catch(() => {
+          setBiometricError('Não foi possível alterar essa configuração.');
+        })
+        .finally(() => {
+          setBiometricBusy(false);
+        });
+    },
+    [chooseBiometric],
+  );
+
   return (
-    <ScreenWrapper>
+    <ScreenWrapper avoidKeyboard>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl }]}
         keyboardShouldPersistTaps="handled"
@@ -182,6 +217,43 @@ export function DadosScreen({
           loading={saving}
           style={styles.save}
         />
+
+        <AppText variant="subtitle" style={styles.securitySection}>
+          Segurança
+        </AppText>
+
+        <View style={[styles.settingRow, { borderColor: colors.border }]}>
+          <View style={styles.settingText}>
+            <AppText variant="body">Desbloqueio por digital</AppText>
+            <AppText variant="caption">
+              {biometricAvailable
+                ? 'Pede a digital ao abrir o app e ao voltar do segundo plano.'
+                : 'Cadastre uma digital nas configurações do aparelho para usar.'}
+            </AppText>
+          </View>
+          <Switch
+            value={biometricEnabled}
+            onValueChange={handleToggleBiometric}
+            disabled={!biometricAvailable || biometricBusy}
+            trackColor={TRACK_COLOR}
+            thumbColor={biometricEnabled ? colors.primary : colors.textSecondary}
+            accessibilityLabel="Desbloqueio por digital"
+            accessibilityHint="Ativa ou desativa a exigência da digital para abrir o aplicativo"
+          />
+        </View>
+        {biometricError !== null ? (
+          <AppText variant="caption" color={colors.error}>
+            {biometricError}
+          </AppText>
+        ) : null}
+
+        <Button
+          title="Alterar minha senha"
+          variant="secondary"
+          onPress={goToChangePassword}
+          accessibilityHint="Abre a tela para trocar a senha da conta"
+          style={styles.changePassword}
+        />
         <Button
           title="Sair da conta"
           variant="secondary"
@@ -193,9 +265,34 @@ export function DadosScreen({
   );
 }
 
+/** Cores da trilha do switch — constante, para não recriar objeto por render. */
+const TRACK_COLOR = { false: '#3A3A3C', true: 'rgba(57, 255, 20, 0.4)' } as const;
+
 const styles = StyleSheet.create({
   content: {
     paddingTop: 16,
+  },
+  securitySection: {
+    marginTop: 24,
+    marginBottom: 8,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 16,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 64,
+  },
+  settingText: {
+    flex: 1,
+    gap: 2,
+  },
+  changePassword: {
+    marginTop: 16,
   },
   adminActions: {
     marginBottom: 16,

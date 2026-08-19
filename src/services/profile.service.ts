@@ -120,3 +120,23 @@ export async function updateStudentGroup(
     throw error;
   }
 }
+
+/**
+ * Redefine a senha de um aluno para a padrão (ação exclusiva do admin).
+ *
+ * Roda na Edge Function `reset-student-password`, porque trocar a senha de
+ * OUTRO usuário exige a `service_role`, que jamais pode existir no app. A
+ * função também remarca `is_first_login`, forçando o aluno a definir uma senha
+ * própria no próximo acesso — a senha padrão nunca vira definitiva.
+ *
+ * @param userId Id do aluno cuja senha será redefinida.
+ * @throws Quando o chamador não é admin ou o aluno não existe.
+ */
+export async function resetStudentPassword(userId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('reset-student-password', {
+    body: { userId },
+  });
+  if (error !== null) {
+    throw error;
+  }
+}
