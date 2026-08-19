@@ -12,6 +12,7 @@ import { MainTabNavigator } from '@/navigation/MainTabNavigator';
 import type { RootStackParamList } from '@/navigation/types';
 import { LoadingScreen } from '@/screens/LoadingScreen';
 import { BiometricLockScreen } from '@/screens/auth/BiometricLockScreen';
+import { BiometricSetupScreen } from '@/screens/auth/BiometricSetupScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { OnboardingScreen } from '@/screens/onboarding/OnboardingScreen';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -27,7 +28,8 @@ interface RootNavigatorProps {
  *   inicializando/carregando → Loading
  *   sem sessão               → Login
  *   primeiro login           → Onboarding (bloqueante)
- *   admin com lock ativo     → BiometricLock
+ *   lock biométrico ativo    → BiometricLock
+ *   biometria ainda não decidida → BiometricSetup (pergunta única)
  *   caso contrário           → Main (abas)
  *
  * Não há navegação manual entre esses estados: mudanças em `useAuth` remontam
@@ -35,8 +37,14 @@ interface RootNavigatorProps {
  */
 export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Element {
   const { colors, isDark } = useTheme();
-  const { initializing, loadingProfile, session, profile, isAdmin, adminLocked } =
-    useAuth();
+  const {
+    initializing,
+    loadingProfile,
+    session,
+    profile,
+    adminLocked,
+    biometricSetupPending,
+  } = useAuth();
 
   const navigationTheme = useMemo<NavigationTheme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -67,8 +75,13 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
     if (profile.is_first_login) {
       return <Stack.Screen name="Onboarding" component={OnboardingScreen} />;
     }
-    if (isAdmin && adminLocked) {
+    if (adminLocked) {
       return <Stack.Screen name="BiometricLock" component={BiometricLockScreen} />;
+    }
+    if (biometricSetupPending) {
+      return (
+        <Stack.Screen name="BiometricSetup" component={BiometricSetupScreen} />
+      );
     }
     return <Stack.Screen name="Main" component={MainTabNavigator} />;
   };

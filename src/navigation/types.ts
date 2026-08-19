@@ -9,6 +9,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 export type DadosStackParamList = {
   Perfil: undefined;
   CadastrarAluno: undefined;
+  AlterarSenha: undefined;
   GerenciarAlunos: undefined;
 };
 
@@ -46,6 +47,7 @@ export type RootStackParamList = {
   Login: undefined;
   Onboarding: undefined;
   BiometricLock: undefined;
+  BiometricSetup: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
 };
 
