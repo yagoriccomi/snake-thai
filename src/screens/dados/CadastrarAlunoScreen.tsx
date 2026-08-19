@@ -72,7 +72,7 @@ export function CadastrarAlunoScreen({
           <AppText variant="heading">Aluno cadastrado! ✅</AppText>
           <AppText variant="caption" style={styles.message}>
             A conta foi criada com a senha padrão{' '}
-            <AppText variant="caption" color={colors.primary}>
+            <AppText variant="caption" color={colors.primaryText}>
               {defaultPassword}
             </AppText>
             . O aluno deverá trocá-la no primeiro acesso.
@@ -94,7 +94,7 @@ export function CadastrarAlunoScreen({
       <View style={styles.form}>
         <AppText variant="caption" style={styles.message}>
           Informe o e-mail do aluno. A conta será criada com a senha padrão{' '}
-          <AppText variant="caption" color={colors.primary}>
+          <AppText variant="caption" color={colors.primaryText}>
             {defaultPassword}
           </AppText>
           , exigindo troca no primeiro acesso.

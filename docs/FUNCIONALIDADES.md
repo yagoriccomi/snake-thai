@@ -93,7 +93,7 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 ## Experiência e interface
 
 - [x] **P0** Redesenho profissional — tokens de tipografia/elevação, `Card`, `ErrorState` com retry nas 6 telas de dados e log estruturado · OK
-- [ ] **P1** Acessibilidade sobre a interface nova (leitores de tela, foco, contraste, alvo de toque)
+- [x] **P1** Acessibilidade — contraste WCAG AA nas duas paletas com teste de regressão, rótulos e estados anunciados · OK (ver `docs/A11Y.md`)
 
 ---
 

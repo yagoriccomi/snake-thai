@@ -54,7 +54,7 @@ function PaymentCardComponent({ item, onPress }: PaymentCardProps): React.JSX.El
         </Text>
       </View>
       {actionable ? (
-        <Ionicons name="cloud-upload-outline" size={22} color={colors.primary} />
+        <Ionicons name="cloud-upload-outline" size={22} color={colors.primaryText} />
       ) : null}
     </Pressable>
   );

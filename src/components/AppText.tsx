@@ -34,7 +34,7 @@ function AppTextComponent({
   const variantStyle = useMemo<TextStyle>(() => {
     switch (variant) {
       case 'title':
-        return { fontFamily: fonts.headingBold, fontSize: 32, color: colors.primary };
+        return { fontFamily: fonts.headingBold, fontSize: 32, color: colors.primaryText };
       case 'heading':
         return { fontFamily: fonts.heading, fontSize: 24, color: colors.textPrimary };
       case 'subtitle':

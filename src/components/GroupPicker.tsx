@@ -89,7 +89,7 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
       >
         <AppText variant="body">{item.name}</AppText>
         {item.id === value ? (
-          <Ionicons name="checkmark" size={18} color={colors.primary} />
+          <Ionicons name="checkmark" size={18} color={colors.primaryText} />
         ) : null}
       </Pressable>
     ),
@@ -129,7 +129,7 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
           >
             <AppText variant="body">Sem turma</AppText>
             {value === null ? (
-              <Ionicons name="checkmark" size={18} color={colors.primary} />
+              <Ionicons name="checkmark" size={18} color={colors.primaryText} />
             ) : null}
           </Pressable>
 

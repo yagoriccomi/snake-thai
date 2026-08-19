@@ -104,7 +104,7 @@ export function PagamentoScreen({
 
         <View style={[styles.pixBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           <AppText variant="label">Chave PIX da academia</AppText>
-          <AppText variant="subtitle" color={colors.primary} style={styles.pixKey}>
+          <AppText variant="subtitle" color={colors.primaryText} style={styles.pixKey}>
             {pixKey}
           </AppText>
           <AppText variant="caption">
