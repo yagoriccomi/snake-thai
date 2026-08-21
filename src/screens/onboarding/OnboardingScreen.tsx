@@ -129,14 +129,17 @@ export function OnboardingScreen(): React.JSX.Element {
 
     setSubmitting(true);
     try {
-      // Ordem importa: troca a senha ANTES de marcar o onboarding como concluído.
-      await updatePassword(password);
+      // Conclui o PERFIL antes de trocar a senha. `updatePassword` emite o evento
+      // USER_UPDATED, que dispara um reload do perfil no AuthProvider; se a senha
+      // viesse primeiro, esse reload poderia reler is_first_login=true (cadastro
+      // ainda não concluído) e remontar o Onboarding no passo 1 — o loop.
       await completeProfileOnboarding(userId, {
         name,
         cpf: onlyDigits(cpf),
         phone: onlyDigits(phone),
         dob: isoDob,
       });
+      await updatePassword(password);
       await refreshProfile();
     } catch (submitError) {
       const message =
