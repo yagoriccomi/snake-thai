@@ -5,6 +5,7 @@ import {
   FlatList,
   Pressable,
   StyleSheet,
+  Text,
   View,
   type ListRenderItem,
 } from 'react-native';
@@ -51,20 +52,22 @@ const PERIOD_OPTIONS: ReadonlyArray<SegmentOption<BillingPeriod>> = PERIOD_ORDER
   (period) => ({ value: period, label: BILLING_PERIOD_LABELS[period] }),
 );
 
-/** Altura fixa de cada item — permite getItemLayout na lista (CLAUDE.md §4). */
-const ITEM_HEIGHT = 92;
-
 /**
- * Gestão de planos (somente administrador).
+ * Gestão de planos (somente administrador) — Painel, vitrine de cartões.
  *
  * É aqui que o preço da mensalidade deixa de ser assunto do desenvolvedor.
  * Planos desativados somem das novas contratações mas continuam existindo, para
  * não quebrar o vínculo dos pagamentos já emitidos.
+ *
+ * O formulário fica recolhido atrás de "Novo plano" e reaparece ao criar ou ao
+ * editar um cartão; cada plano é um cartão com o valor em destaque.
  */
 export function PlanosScreen(): React.JSX.Element {
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { plans, loading, error, reload, add, edit, deactivate } = usePlans();
 
+  const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -75,6 +78,7 @@ export function PlanosScreen(): React.JSX.Element {
   const [submitting, setSubmitting] = useState(false);
 
   const resetForm = useCallback(() => {
+    setFormOpen(false);
     setEditingId(null);
     setName('');
     setDescription('');
@@ -84,6 +88,12 @@ export function PlanosScreen(): React.JSX.Element {
     setErrors({});
   }, []);
 
+  /** Abre o formulário em branco para cadastrar um plano novo. */
+  const openNewForm = useCallback(() => {
+    resetForm();
+    setFormOpen(true);
+  }, [resetForm]);
+
   const startEditing = useCallback((plan: PlanRow) => {
     setEditingId(plan.id);
     setName(plan.name);
@@ -92,6 +102,7 @@ export function PlanosScreen(): React.JSX.Element {
     setPeriod(plan.billing_period);
     setDueDay(String(plan.due_day));
     setErrors({});
+    setFormOpen(true);
   }, []);
 
   const handleSubmit = useCallback(async () => {
@@ -171,113 +182,138 @@ export function PlanosScreen(): React.JSX.Element {
   );
 
   const renderItem = useCallback<ListRenderItem<PlanRow>>(
-    ({ item }) => (
-      <View style={[styles.row, { borderColor: colors.border }]}>
-        <View style={styles.rowInfo}>
-          <AppText variant="subtitle" numberOfLines={1}>
-            {item.name}
-          </AppText>
-          <AppText variant="caption">
-            {formatCents(item.price_cents)} ·{' '}
-            {BILLING_PERIOD_LABELS[item.billing_period]} · vence dia {item.due_day}
-          </AppText>
-          {!item.is_active ? (
-            <AppText variant="caption" color={colors.textSecondary}>
-              Desativado
+    ({ item }) => {
+      const inactive = !item.is_active;
+      return (
+        <View style={[styles.card, inactive ? styles.cardInactive : null]}>
+          <View style={styles.cardTop}>
+            <AppText variant="subtitle" numberOfLines={1} style={styles.cardName}>
+              {item.name}
             </AppText>
-          ) : null}
+            <View style={styles.cardActions}>
+              <Pressable
+                onPress={() => startEditing(item)}
+                hitSlop={HIT_SLOP}
+                style={styles.action}
+                accessibilityRole="button"
+                accessibilityLabel={`Editar plano ${item.name}`}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
+              </Pressable>
+              {item.is_active ? (
+                <Pressable
+                  onPress={() => handleDeactivate(item)}
+                  hitSlop={HIT_SLOP}
+                  style={styles.action}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Desativar plano ${item.name}`}
+                >
+                  <Ionicons name="archive-outline" size={20} color={colors.textSecondary} />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+
+          <Text style={styles.cardPrice}>{formatCents(item.price_cents)}</Text>
+
+          <View style={styles.cardMeta}>
+            {inactive ? (
+              <View style={styles.pillOff}>
+                <Text style={styles.pillOffText}>Desativado</Text>
+              </View>
+            ) : (
+              <View style={styles.pillPeriod}>
+                <Text style={styles.pillPeriodText}>
+                  {BILLING_PERIOD_LABELS[item.billing_period]}
+                </Text>
+              </View>
+            )}
+            <Text style={styles.cardDue}>
+              {inactive
+                ? BILLING_PERIOD_LABELS[item.billing_period]
+                : `vence dia ${item.due_day}`}
+            </Text>
+          </View>
         </View>
-        <Pressable
-          onPress={() => startEditing(item)}
-          hitSlop={HIT_SLOP}
-          style={styles.action}
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel={`Editar plano ${item.name}`}
-        >
-          <Ionicons name="create-outline" size={22} color={colors.textSecondary} />
-        </Pressable>
-        {item.is_active ? (
-          <Pressable
-            onPress={() => handleDeactivate(item)}
-            hitSlop={HIT_SLOP}
-            style={styles.action}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel={`Desativar plano ${item.name}`}
-          >
-            <Ionicons name="archive-outline" size={22} color={colors.textSecondary} />
-          </Pressable>
-        ) : null}
-      </View>
-    ),
-    [colors.border, colors.textSecondary, startEditing, handleDeactivate],
+      );
+    },
+    [styles, colors.textSecondary, startEditing, handleDeactivate],
   );
 
   const listHeader = useMemo(
-    () => (
-      <View style={styles.form}>
-        <AppText variant="subtitle" style={styles.formTitle}>
-          {editingId === null ? 'Novo plano' : 'Editando plano'}
-        </AppText>
-        <Input
-          label="Nome"
-          placeholder="Mensal 3x por semana"
-          value={name}
-          onChangeText={setName}
-          error={errors.name}
-        />
-        <Input
-          label="Descrição (opcional)"
-          value={description}
-          onChangeText={setDescription}
-        />
-        <Input
-          label="Valor"
-          placeholder="129,90"
-          keyboardType="decimal-pad"
-          value={price}
-          onChangeText={setPrice}
-          error={errors.price}
-        />
-        <AppText variant="caption" style={styles.label}>
-          Periodicidade
-        </AppText>
-        <SegmentedControl
-          options={PERIOD_OPTIONS}
-          value={period}
-          onChange={setPeriod}
-        />
-        <Input
-          label="Dia de vencimento"
-          placeholder="10"
-          keyboardType="number-pad"
-          value={dueDay}
-          onChangeText={setDueDay}
-          error={errors.dueDay}
-          containerStyle={styles.dueDay}
-        />
-        {errors.form !== undefined ? (
-          <AppText variant="caption" color={colors.error}>
-            {errors.form}
+    () =>
+      formOpen ? (
+        <View style={styles.form}>
+          <AppText variant="subtitle" style={styles.formTitle}>
+            {editingId === null ? 'Novo plano' : 'Editando plano'}
           </AppText>
-        ) : null}
-        <Button
-          title={editingId === null ? 'Criar plano' : 'Salvar alterações'}
-          onPress={handlePress}
-          loading={submitting}
-        />
-        {editingId !== null ? (
+          <Input
+            label="Nome"
+            placeholder="Mensal 3x por semana"
+            value={name}
+            onChangeText={setName}
+            error={errors.name}
+          />
+          <Input
+            label="Descrição (opcional)"
+            value={description}
+            onChangeText={setDescription}
+          />
+          <Input
+            label="Valor"
+            placeholder="129,90"
+            keyboardType="decimal-pad"
+            value={price}
+            onChangeText={setPrice}
+            error={errors.price}
+          />
+          <AppText variant="caption" style={styles.label}>
+            Periodicidade
+          </AppText>
+          <SegmentedControl
+            options={PERIOD_OPTIONS}
+            value={period}
+            onChange={setPeriod}
+          />
+          <Input
+            label="Dia de vencimento"
+            placeholder="10"
+            keyboardType="number-pad"
+            value={dueDay}
+            onChangeText={setDueDay}
+            error={errors.dueDay}
+            containerStyle={styles.dueDay}
+          />
+          {errors.form !== undefined ? (
+            <AppText variant="caption" color={colors.error}>
+              {errors.form}
+            </AppText>
+          ) : null}
           <Button
-            title="Cancelar edição"
+            title={editingId === null ? 'Criar plano' : 'Salvar alterações'}
+            onPress={handlePress}
+            loading={submitting}
+          />
+          <Button
+            title="Cancelar"
             variant="secondary"
             onPress={resetForm}
             style={styles.cancel}
           />
-        ) : null}
-      </View>
-    ),
+        </View>
+      ) : (
+        <View style={styles.headerActions}>
+          <Button title="Novo plano" onPress={openNewForm} />
+          {plans.length > 0 ? (
+            <Text style={styles.sectionLabel}>
+              {plans.length === 1 ? '1 PLANO' : `${plans.length} PLANOS`}
+            </Text>
+          ) : null}
+        </View>
+      ),
     [
+      formOpen,
+      styles,
       editingId,
       name,
       description,
@@ -289,6 +325,8 @@ export function PlanosScreen(): React.JSX.Element {
       handlePress,
       submitting,
       resetForm,
+      openNewForm,
+      plans.length,
     ],
   );
 
@@ -318,18 +356,19 @@ export function PlanosScreen(): React.JSX.Element {
         data={plans}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
-        getItemLayout={getItemLayout}
         removeClippedSubviews
         ListHeaderComponent={listHeader}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         ListEmptyComponent={
-          <EmptyState
-            icon="pricetags-outline"
-            title="Nenhum plano"
-            message="Cadastre o primeiro plano para começar a cobrar mensalidades."
-          />
+          formOpen ? null : (
+            <EmptyState
+              icon="pricetags-outline"
+              title="Nenhum plano"
+              message="Cadastre o primeiro plano para começar a cobrar mensalidades."
+            />
+          )
         }
       />
     </ScreenWrapper>
@@ -338,58 +377,119 @@ export function PlanosScreen(): React.JSX.Element {
 
 const keyExtractor = (item: PlanRow): string => item.id;
 
-/** Altura fixa conhecida — evita medição por item na rolagem (CLAUDE.md §4). */
-const getItemLayout = (
-  _data: ArrayLike<PlanRow> | null | undefined,
-  index: number,
-): { length: number; offset: number; index: number } => ({
-  length: ITEM_HEIGHT,
-  offset: ITEM_HEIGHT * index,
-  index,
-});
-
 const HIT_SLOP = { top: 10, bottom: 10, left: 10, right: 10 } as const;
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    paddingTop: 16,
-    flexGrow: 1,
-  },
-  form: {
-    marginBottom: 16,
-  },
-  formTitle: {
-    marginBottom: 12,
-  },
-  label: {
-    marginBottom: 8,
-  },
-  dueDay: {
-    marginTop: 16,
-  },
-  cancel: {
-    marginTop: 12,
-  },
-  row: {
-    height: ITEM_HEIGHT,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  rowInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  action: {
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+function makeStyles(
+  colors: ReturnType<typeof useTheme>['colors'],
+  fonts: ReturnType<typeof useTheme>['fonts'],
+) {
+  return StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: {
+      paddingTop: 16,
+      paddingBottom: 24,
+      flexGrow: 1,
+    },
+    headerActions: {
+      marginBottom: 8,
+    },
+    sectionLabel: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      letterSpacing: 1,
+      color: colors.textSecondary,
+      marginTop: 20,
+      marginLeft: 4,
+    },
+    form: {
+      marginBottom: 16,
+    },
+    formTitle: {
+      marginBottom: 12,
+    },
+    label: {
+      marginBottom: 8,
+    },
+    dueDay: {
+      marginTop: 16,
+    },
+    cancel: {
+      marginTop: 12,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 12,
+    },
+    cardInactive: {
+      opacity: 0.55,
+    },
+    cardTop: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    cardName: {
+      flex: 1,
+    },
+    cardActions: {
+      flexDirection: 'row',
+      gap: 4,
+    },
+    cardPrice: {
+      fontFamily: fonts.bodyBold,
+      fontSize: 26,
+      color: colors.textPrimary,
+      fontVariant: ['tabular-nums'],
+      marginTop: 6,
+      marginBottom: 8,
+    },
+    cardMeta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    pillPeriod: {
+      borderWidth: 1,
+      borderColor: colors.primary,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+    },
+    pillPeriodText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      color: colors.primaryText,
+    },
+    pillOff: {
+      backgroundColor: 'rgba(255,255,255,0.06)',
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+    },
+    pillOffText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      color: colors.textSecondary,
+    },
+    cardDue: {
+      fontFamily: fonts.body,
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    action: {
+      minWidth: 40,
+      minHeight: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });
+}
