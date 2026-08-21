@@ -5,6 +5,17 @@ import type {
 } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
+import type { ClassType } from '@/services/classes.service';
+
+/** Dados de uma aula trafegados entre a lista, o detalhe e a edição. */
+export interface ClassNavParams {
+  classId: string;
+  title: string;
+  type: ClassType;
+  dateTimeIso: string;
+  groupId: string | null;
+}
+
 /** Stack interna da aba "Dados" (perfil + cadastro/gestão de alunos pelo admin). */
 export type DadosStackParamList = {
   Perfil: undefined;
@@ -15,10 +26,13 @@ export type DadosStackParamList = {
   GerenciarAlunos: undefined;
 };
 
-/** Stack interna da aba "Aulas" (lista + criação + frequência). */
+/** Stack interna da aba "Aulas" (lista + detalhe + criação/edição + frequência). */
 export type AulasStackParamList = {
   AulasHome: undefined;
-  CriarAula: undefined;
+  /** Sem params: nova aula. Com params: edição da aula existente. */
+  CriarAula: ClassNavParams | undefined;
+  /** Detalhe da aula (admin): abre edição ou chamada de presença. */
+  DetalheAula: ClassNavParams & { groupLabel: string };
   Frequencia: { classId: string; title: string; groupId: string | null };
 };
 

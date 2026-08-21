@@ -114,6 +114,22 @@ export async function createClass(input: NewClassInput): Promise<void> {
   }
 }
 
+/** Atualiza uma aula existente (edição pelo admin). */
+export async function updateClass(id: string, input: NewClassInput): Promise<void> {
+  const { error } = await supabase
+    .from('classes')
+    .update({
+      title: input.title.trim(),
+      type: input.type,
+      date_time: input.dateTimeIso,
+      group_id: input.groupId,
+    })
+    .eq('id', id);
+  if (error !== null) {
+    throw error;
+  }
+}
+
 /**
  * Alunos elegíveis a uma aula: os da turma informada; para eventos globais
  * (`groupId` nulo), todos os alunos.

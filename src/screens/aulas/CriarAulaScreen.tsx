@@ -11,10 +11,20 @@ import {
   type SegmentOption,
 } from '@/components/SegmentedControl';
 import type { AulasStackScreenProps } from '@/navigation/types';
-import { createClass, type ClassType } from '@/services/classes.service';
+import { createClass, updateClass, type ClassType } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { combineDateTimeToIso } from '@/utils/datetime';
 import { maskDate, maskTime } from '@/utils/masks';
+
+/** Quebra um ISO nas entradas do formulário (DD/MM/AAAA e HH:MM), em hora local. */
+function isoToInputs(iso: string): { date: string; time: string } {
+  const parsed = new Date(iso);
+  const pad = (value: number): string => String(value).padStart(2, '0');
+  return {
+    date: `${pad(parsed.getDate())}/${pad(parsed.getMonth() + 1)}/${parsed.getFullYear()}`,
+    time: `${pad(parsed.getHours())}:${pad(parsed.getMinutes())}`,
+  };
+}
 
 type CriarErrors = Partial<
   Record<'title' | 'dateTime' | 'group' | 'form', string>
@@ -34,13 +44,20 @@ const SCREEN_EDGES = ['bottom'] as const;
  */
 export function CriarAulaScreen({
   navigation,
+  route,
 }: AulasStackScreenProps<'CriarAula'>): React.JSX.Element {
   const { colors, spacing } = useTheme();
-  const [type, setType] = useState<ClassType>('routine');
-  const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [groupId, setGroupId] = useState<string | null>(null);
+  const params = route.params;
+  const editingId = params?.classId;
+  const isEditing = editingId !== undefined;
+  const initialDateTime =
+    params !== undefined ? isoToInputs(params.dateTimeIso) : null;
+
+  const [type, setType] = useState<ClassType>(params?.type ?? 'routine');
+  const [title, setTitle] = useState(params?.title ?? '');
+  const [date, setDate] = useState(initialDateTime?.date ?? '');
+  const [time, setTime] = useState(initialDateTime?.time ?? '');
+  const [groupId, setGroupId] = useState<string | null>(params?.groupId ?? null);
   const [errors, setErrors] = useState<CriarErrors>({});
   const [saving, setSaving] = useState(false);
 
@@ -68,19 +85,28 @@ export function CriarAulaScreen({
 
     setSaving(true);
     try {
-      await createClass({
+      const input = {
         title,
         type,
         dateTimeIso,
         groupId: isRoutine ? groupId : null,
-      });
+      };
+      if (editingId !== undefined) {
+        await updateClass(editingId, input);
+      } else {
+        await createClass(input);
+      }
       navigation.goBack();
     } catch {
-      setErrors({ form: 'Não foi possível criar a aula. Tente novamente.' });
+      setErrors({
+        form: isEditing
+          ? 'Não foi possível salvar a aula. Tente novamente.'
+          : 'Não foi possível criar a aula. Tente novamente.',
+      });
     } finally {
       setSaving(false);
     }
-  }, [title, date, time, isRoutine, groupId, type, navigation]);
+  }, [title, date, time, isRoutine, groupId, type, navigation, editingId, isEditing]);
 
   const styles = useMemo(() => makeStyles(spacing.xxl), [spacing.xxl]);
 
@@ -143,7 +169,7 @@ export function CriarAulaScreen({
         ) : null}
 
         <Button
-          title="Criar aula"
+          title={isEditing ? 'Salvar alterações' : 'Criar aula'}
           onPress={handleSubmit}
           loading={saving}
           style={styles.submit}

@@ -2,26 +2,27 @@ import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Pressable,
   StyleSheet,
+  Text,
   View,
   type ListRenderItem,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 
-import {
-  ADMIN_CARD_TOTAL,
-  AdminClassCard,
-} from '@/components/AdminClassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { TypeBadge } from '@/components/TypeBadge';
 import { WeekStrip } from '@/components/WeekStrip';
 import { useAdminClassesForDay } from '@/hooks/useAdminClassesForDay';
+import { useGroups } from '@/hooks/useGroups';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import type { ClassRow } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { buildDayStrip, type DayItem } from '@/utils/datetime';
+import { buildDayStrip, formatTime, type DayItem } from '@/utils/datetime';
 
 const SCREEN_EDGES = ['bottom'] as const;
 const STRIP_DAYS = 21;
@@ -30,17 +31,32 @@ interface AdminAulasListProps {
   navigation: AulasStackScreenProps<'AulasHome'>['navigation'];
 }
 
-/** Gestão de aulas (admin): calendário horizontal, lista do dia e criação. */
+/**
+ * Gestão de aulas (admin) — Painel, agenda em timeline (mesmo desenho da visão
+ * do aluno). Calendário horizontal, aulas do dia com trilho de horário, e FAB
+ * para criar. Tocar numa aula abre o detalhe, de onde se edita ou faz a chamada.
+ */
 export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.Element {
-  const { colors } = useTheme();
+  const { colors, fonts } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const days = useMemo(() => buildDayStrip(new Date(), STRIP_DAYS), []);
   const firstDay = days[0];
   const [selectedKey, setSelectedKey] = useState(firstDay?.key ?? '');
   const [selectedDate, setSelectedDate] = useState<Date>(firstDay?.date ?? new Date());
 
   const { items, loading, error, reload } = useAdminClassesForDay(selectedDate);
+  const { groups } = useGroups();
 
-  // Recarrega ao voltar o foco (ex.: após criar uma aula).
+  // Mapa id→nome da turma, para exibir o nome real em vez do UUID.
+  const groupNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const group of groups) {
+      map.set(group.id, group.name);
+    }
+    return map;
+  }, [groups]);
+
+  // Recarrega ao voltar o foco (ex.: após criar ou editar uma aula).
   useFocusEffect(
     useCallback(() => {
       void reload();
@@ -52,12 +68,15 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
     setSelectedDate(day.date);
   }, []);
 
-  const openFrequencia = useCallback(
-    (item: ClassRow) => {
-      navigation.navigate('Frequencia', {
+  const openDetalhe = useCallback(
+    (item: ClassRow, groupLabel: string) => {
+      navigation.navigate('DetalheAula', {
         classId: item.id,
         title: item.title,
+        type: item.type,
+        dateTimeIso: item.date_time,
         groupId: item.group_id,
+        groupLabel,
       });
     },
     [navigation],
@@ -68,8 +87,39 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   }, [navigation]);
 
   const renderItem = useCallback<ListRenderItem<ClassRow>>(
-    ({ item }) => <AdminClassCard item={item} onPress={openFrequencia} />,
-    [openFrequencia],
+    ({ item }) => {
+      const groupLabel =
+        item.group_id === null
+          ? 'Global'
+          : groupNameById.get(item.group_id) ?? 'Turma';
+      return (
+        <Pressable
+          onPress={() => openDetalhe(item, groupLabel)}
+          style={styles.row}
+          accessibilityRole="button"
+          accessibilityLabel={`Aula ${item.title} às ${formatTime(item.date_time)}`}
+          accessibilityHint="Abre o detalhe para editar ou fazer a chamada"
+        >
+          <View style={styles.timeCol}>
+            <Text style={styles.time}>{formatTime(item.date_time)}</Text>
+          </View>
+          <View style={styles.rail} />
+          <View style={styles.info}>
+            <Text style={styles.title} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <View style={styles.meta}>
+              <TypeBadge type={item.type} />
+              <Text style={styles.group} numberOfLines={1}>
+                {groupLabel}
+              </Text>
+            </View>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        </Pressable>
+      );
+    },
+    [styles, colors.textSecondary, groupNameById, openDetalhe],
   );
 
   return (
@@ -89,7 +139,6 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
           data={items}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
-          getItemLayout={getItemLayout}
           removeClippedSubviews
           initialNumToRender={10}
           maxToRenderPerBatch={10}
@@ -116,28 +165,68 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
 
 const keyExtractor = (item: ClassRow): string => item.id;
 
-const getItemLayout = (
-  _data: ArrayLike<ClassRow> | null | undefined,
-  index: number,
-): { length: number; offset: number; index: number } => ({
-  length: ADMIN_CARD_TOTAL,
-  offset: ADMIN_CARD_TOTAL * index,
-  index,
-});
-
-const styles = StyleSheet.create({
-  strip: {
-    paddingHorizontal: 16,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 96,
-    flexGrow: 1,
-  },
-});
+function makeStyles(
+  colors: ReturnType<typeof useTheme>['colors'],
+  fonts: ReturnType<typeof useTheme>['fonts'],
+) {
+  return StyleSheet.create({
+    strip: {
+      paddingHorizontal: 16,
+    },
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: {
+      paddingHorizontal: 16,
+      paddingTop: 8,
+      paddingBottom: 96,
+      flexGrow: 1,
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    timeCol: {
+      width: 48,
+      alignItems: 'flex-end',
+    },
+    time: {
+      fontFamily: fonts.bodyBold,
+      fontSize: 15,
+      color: colors.textPrimary,
+      fontVariant: ['tabular-nums'],
+    },
+    rail: {
+      width: 2,
+      alignSelf: 'stretch',
+      borderRadius: 2,
+      backgroundColor: colors.border,
+    },
+    info: {
+      flex: 1,
+      gap: 4,
+    },
+    title: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    meta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    group: {
+      fontFamily: fonts.body,
+      fontSize: 12,
+      color: colors.textSecondary,
+      flexShrink: 1,
+    },
+  });
+}
