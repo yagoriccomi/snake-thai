@@ -16,6 +16,10 @@ import {
   authenticateBiometric,
   isBiometricAvailable,
 } from '@/services/biometrics.service';
+import {
+  getBiometricChoice,
+  setBiometricChoice,
+} from '@/services/biometricPreference.service';
 import { fetchProfile } from '@/services/profile.service';
 import type { Profile } from '@/types/models';
 
@@ -28,8 +32,19 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
-  /** True quando o admin precisa confirmar biometria para navegar. */
+  /** True quando o usuário precisa confirmar biometria para navegar. */
   adminLocked: boolean;
+  /**
+   * True quando o aparelho tem biometria, o usuário ainda não escolheu se quer
+   * usá-la e, por isso, deve ver a tela de convite antes de entrar no app.
+   */
+  biometricSetupPending: boolean;
+  /** Registra a escolha do usuário sobre o desbloqueio biométrico. */
+  chooseBiometric: (enabled: boolean) => Promise<void>;
+  /** True quando o desbloqueio biométrico está ativo para este usuário. */
+  biometricEnabled: boolean;
+  /** True quando o aparelho tem hardware biométrico COM biometria cadastrada. */
+  biometricAvailable: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -58,6 +73,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [adminLocked, setAdminLocked] = useState(false);
+  const [biometricSetupPending, setBiometricSetupPending] = useState(false);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
 
@@ -101,16 +119,26 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         return;
       }
       setProfile(loaded);
-      if (loaded.role === 'admin') {
-        setAdminLocked(true);
-        const available = await isBiometricAvailable();
-        if (!available) {
-          // Sem biometria no aparelho não há como travar — libera o acesso.
-          setAdminLocked(false);
-        }
-      } else {
+
+      // O bloqueio biométrico é OPT-IN: só trava quem escolheu ativá-lo.
+      const available = await isBiometricAvailable();
+      setBiometricAvailable(available);
+      if (!available) {
+        setBiometricEnabled(false);
+        setBiometricSetupPending(false);
         setAdminLocked(false);
+        return;
       }
+      const choice = await getBiometricChoice(userId);
+      setBiometricEnabled(choice === 'enabled');
+      // Não interrompe o onboarding: a pergunta vem depois de o cadastro estar
+      // completo, para não empilhar duas telas bloqueantes no primeiro acesso.
+      setBiometricSetupPending(choice === 'unset' && !loaded.is_first_login);
+      setAdminLocked(choice === 'enabled');
+    } catch {
+      // Falha transitória (rede/servidor) NÃO pode derrubar a sessão: manter o
+      // usuário logado e deixar que a próxima tentativa recarregue o perfil.
+      setBiometricSetupPending(false);
     } finally {
       setLoadingProfile(false);
     }
@@ -137,17 +165,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
           nextState === 'active';
         appState.current = nextState;
 
-        if (cameToForeground && profile?.role === 'admin') {
-          void isBiometricAvailable().then((available) => {
-            if (available) {
-              setAdminLocked(true);
-            }
-          });
+        if (cameToForeground && biometricEnabled) {
+          setAdminLocked(true);
         }
       },
     );
     return () => subscription.remove();
-  }, [profile]);
+  }, [biometricEnabled]);
 
   const signIn = useCallback(async (email: string, password: string): Promise<void> => {
     // A atualização de sessão/perfil é disparada por onAuthStateChange.
@@ -169,6 +193,28 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     setProfile(loaded);
   }, [session]);
 
+  const chooseBiometric = useCallback(
+    async (enabled: boolean): Promise<void> => {
+      const userId = session?.user.id;
+      if (userId === undefined) {
+        return;
+      }
+      // Ativar exige uma confirmação biométrica na hora: comprova que o dono do
+      // aparelho consegue de fato desbloquear, evitando trancar o usuário fora.
+      if (enabled) {
+        const confirmed = await authenticateBiometric();
+        if (!confirmed) {
+          return;
+        }
+      }
+      await setBiometricChoice(userId, enabled ? 'enabled' : 'disabled');
+      setBiometricEnabled(enabled);
+      setBiometricSetupPending(false);
+      setAdminLocked(false);
+    },
+    [session],
+  );
+
   const unlockAdmin = useCallback(async (): Promise<boolean> => {
     const authenticated = await authenticateBiometric();
     if (authenticated) {
@@ -185,6 +231,10 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       profile,
       isAdmin,
       adminLocked,
+      biometricSetupPending,
+      biometricEnabled,
+      biometricAvailable,
+      chooseBiometric,
       signIn,
       signOut,
       refreshProfile,
@@ -197,6 +247,10 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       profile,
       isAdmin,
       adminLocked,
+      biometricSetupPending,
+      biometricEnabled,
+      biometricAvailable,
+      chooseBiometric,
       signIn,
       signOut,
       refreshProfile,

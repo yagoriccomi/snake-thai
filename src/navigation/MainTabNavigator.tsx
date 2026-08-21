@@ -9,8 +9,8 @@ import type { RouteProp } from '@react-navigation/native';
 import type { Fonts } from '@/constants/theme';
 import { AulasStackNavigator } from '@/navigation/AulasStackNavigator';
 import { DadosStackNavigator } from '@/navigation/DadosStackNavigator';
+import { FinanceiroStackNavigator } from '@/navigation/FinanceiroStackNavigator';
 import type { MainTabParamList } from '@/navigation/types';
-import { FinanceiroScreen } from '@/screens/financeiro/FinanceiroScreen';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -67,7 +67,11 @@ export function MainTabNavigator(): React.JSX.Element {
         component={AulasStackNavigator}
         options={NESTED_STACK_TAB_OPTIONS}
       />
-      <Tab.Screen name="Financeiro" component={FinanceiroScreen} />
+      <Tab.Screen
+        name="Financeiro"
+        component={FinanceiroStackNavigator}
+        options={NESTED_STACK_TAB_OPTIONS}
+      />
       <Tab.Screen
         name="Dados"
         component={DadosStackNavigator}

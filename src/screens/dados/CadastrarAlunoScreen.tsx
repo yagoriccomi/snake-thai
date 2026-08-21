@@ -3,9 +3,10 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { GroupPicker } from '@/components/GroupPicker';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { DEFAULT_STUDENT_PASSWORD } from '@/constants/auth';
+import { useAcademySettings } from '@/hooks/useAcademySettings';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { createStudent } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -20,7 +21,13 @@ export function CadastrarAlunoScreen({
   navigation,
 }: DadosStackScreenProps<'CadastrarAluno'>): React.JSX.Element {
   const { colors } = useTheme();
+  const { settings } = useAcademySettings();
+
+  // Senha inicial definida pelo admin nas configuracoes da academia.
+  const defaultPassword = settings?.default_student_password ?? 'Snake@123';
+
   const [email, setEmail] = useState('');
+  const [groupId, setGroupId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -33,7 +40,7 @@ export function CadastrarAlunoScreen({
     }
     setSubmitting(true);
     try {
-      await createStudent(email);
+      await createStudent(email, groupId);
       setSuccess(true);
     } catch (submitError) {
       const message =
@@ -45,10 +52,11 @@ export function CadastrarAlunoScreen({
     } finally {
       setSubmitting(false);
     }
-  }, [email]);
+  }, [email, groupId]);
 
   const handleReset = useCallback(() => {
     setEmail('');
+    setGroupId(null);
     setSuccess(false);
     setError(null);
   }, []);
@@ -59,13 +67,13 @@ export function CadastrarAlunoScreen({
 
   if (success) {
     return (
-      <ScreenWrapper>
+      <ScreenWrapper avoidKeyboard>
         <View style={styles.center}>
           <AppText variant="heading">Aluno cadastrado! ✅</AppText>
           <AppText variant="caption" style={styles.message}>
             A conta foi criada com a senha padrão{' '}
-            <AppText variant="caption" color={colors.primary}>
-              {DEFAULT_STUDENT_PASSWORD}
+            <AppText variant="caption" color={colors.primaryText}>
+              {defaultPassword}
             </AppText>
             . O aluno deverá trocá-la no primeiro acesso.
           </AppText>
@@ -82,12 +90,12 @@ export function CadastrarAlunoScreen({
   }
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper avoidKeyboard>
       <View style={styles.form}>
         <AppText variant="caption" style={styles.message}>
           Informe o e-mail do aluno. A conta será criada com a senha padrão{' '}
-          <AppText variant="caption" color={colors.primary}>
-            {DEFAULT_STUDENT_PASSWORD}
+          <AppText variant="caption" color={colors.primaryText}>
+            {defaultPassword}
           </AppText>
           , exigindo troca no primeiro acesso.
         </AppText>
@@ -102,6 +110,8 @@ export function CadastrarAlunoScreen({
           onChangeText={setEmail}
           error={error ?? undefined}
         />
+
+        <GroupPicker label="Turma (opcional)" value={groupId} onChange={setGroupId} />
 
         <Button
           title="Cadastrar aluno"

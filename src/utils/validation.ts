@@ -90,3 +90,67 @@ export function isValidBirthDate(value: string): boolean {
   oldest.setFullYear(oldest.getFullYear() - 120);
   return date.getTime() >= oldest.getTime();
 }
+
+/** Tamanho mínimo exigido para uma senha. */
+export const PASSWORD_MIN_LENGTH = 8;
+
+/** Identificador estável de cada exigência da política de senha. */
+export type PasswordRuleId =
+  | 'length'
+  | 'lowercase'
+  | 'uppercase'
+  | 'digit'
+  | 'special';
+
+/** Uma exigência da política, com o texto exibido ao usuário e se foi cumprida. */
+export interface PasswordRequirement {
+  id: PasswordRuleId;
+  /** Texto curto mostrado na lista de requisitos. */
+  label: string;
+  /** True quando a senha atual satisfaz esta regra. */
+  met: boolean;
+}
+
+/**
+ * Avalia a senha regra a regra, para que a interface possa dizer ao usuário
+ * exatamente o que falta — em vez de recusar com uma mensagem genérica.
+ *
+ * As regras são as mesmas de {@link isStrongPassword}; esta função apenas as
+ * decompõe para fins de feedback visual.
+ *
+ * @param password Senha digitada (não é sanitizada nem armazenada).
+ * @returns A lista de requisitos na ordem em que devem ser exibidos.
+ */
+export function checkPasswordRequirements(
+  password: string,
+): readonly PasswordRequirement[] {
+  return [
+    {
+      id: 'length',
+      label: `Pelo menos ${PASSWORD_MIN_LENGTH} caracteres`,
+      met: password.length >= PASSWORD_MIN_LENGTH,
+    },
+    { id: 'uppercase', label: 'Uma letra maiúscula (A-Z)', met: /[A-Z]/.test(password) },
+    { id: 'lowercase', label: 'Uma letra minúscula (a-z)', met: /[a-z]/.test(password) },
+    { id: 'digit', label: 'Um número (0-9)', met: /\d/.test(password) },
+    {
+      id: 'special',
+      label: 'Um caractere especial (!@#$...)',
+      met: /[^A-Za-z0-9]/.test(password),
+    },
+  ];
+}
+
+/**
+ * Resume o que falta na senha em uma frase única, para mensagens de erro.
+ *
+ * @param password Senha digitada.
+ * @returns `null` quando a senha já é forte; caso contrário, o texto do erro.
+ */
+export function describeMissingPasswordRules(password: string): string | null {
+  const missing = checkPasswordRequirements(password).filter((rule) => !rule.met);
+  if (missing.length === 0) {
+    return null;
+  }
+  return `A senha precisa de: ${missing.map((rule) => rule.label.toLowerCase()).join('; ')}.`;
+}

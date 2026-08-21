@@ -1,0 +1,45 @@
+Snake Thai
+Copyright (c) 2026 Snake Thai. Todos os direitos reservados.
+
+Este produto é software proprietário e inclui componentes de terceiros
+distribuídos sob licenças de código aberto permissivas. Os avisos abaixo
+cumprem as obrigações de atribuição dessas licenças.
+
+================================================================================
+FONTES (SIL Open Font License 1.1)
+================================================================================
+
+Inter — Copyright (c) The Inter Project Authors (https://github.com/rsms/inter)
+Syne  — Copyright (c) The Syne Project Authors
+
+Ambas licenciadas sob a SIL Open Font License, Versão 1.1.
+Texto da licença: https://openfontlicense.org
+
+A OFL permite usar, embarcar e redistribuir as fontes, inclusive em produto
+comercial, desde que este aviso de copyright seja preservado. As fontes não são
+vendidas isoladamente — acompanham o aplicativo.
+
+================================================================================
+BIBLIOTECAS (MIT, ISC, BSD, Apache-2.0 e equivalentes)
+================================================================================
+
+Este aplicativo é construído sobre software livre licenciado sob termos
+permissivos, entre os quais:
+
+  React, React Native ............ MIT — Copyright (c) Meta Platforms, Inc.
+  Expo e módulos expo-* .......... MIT — Copyright (c) 650 Industries, Inc.
+  @supabase/supabase-js .......... MIT — Copyright (c) Supabase, Inc.
+  @react-navigation/* ............ MIT — Copyright (c) React Navigation contributors
+  aes-js ......................... MIT — Copyright (c) Richard Moore
+  react-native-url-polyfill ...... MIT
+  base64-arraybuffer ............. MIT
+
+A lista completa das dependências e suas licenças pode ser gerada com:
+
+  npx license-checker --production --summary
+
+As licenças MIT, ISC, BSD e Apache-2.0 permitem uso comercial e redistribuição,
+exigindo apenas a preservação do respectivo aviso de copyright e da licença. A
+Apache-2.0 concede ainda direitos explícitos de patente sobre o código coberto.
+
+================================================================================

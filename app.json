@@ -21,7 +21,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "allowBackup": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,6 +35,12 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Permita que o Snake Thai use o FaceID para proteger o acesso do administrador."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "O Snake Thai acessa suas fotos para você anexar o comprovante de pagamento."
         }
       ]
     ]

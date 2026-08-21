@@ -5,6 +5,7 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Checkbox } from '@/components/Checkbox';
 import { Input } from '@/components/Input';
+import { PasswordRequirements } from '@/components/PasswordRequirements';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
 import { updatePassword } from '@/services/auth.service';
@@ -12,7 +13,7 @@ import { completeProfileOnboarding } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { dateBrToIso, maskCpf, maskDate, maskPhone, onlyDigits } from '@/utils/masks';
 import {
-  isStrongPassword,
+  describeMissingPasswordRules,
   isValidBirthDate,
   isValidCpf,
   isValidName,
@@ -69,9 +70,9 @@ export function OnboardingScreen(): React.JSX.Element {
     if (!isValidBirthDate(dob)) {
       next.dob = 'Data de nascimento inválida.';
     }
-    if (!isStrongPassword(password)) {
-      next.password =
-        'Mínimo 8 caracteres, com maiúscula, minúscula, número e caractere especial.';
+    const missingPasswordRules = describeMissingPasswordRules(password);
+    if (missingPasswordRules !== null) {
+      next.password = missingPasswordRules;
     }
     if (password !== confirmPassword) {
       next.confirmPassword = 'As senhas não coincidem.';
@@ -120,7 +121,7 @@ export function OnboardingScreen(): React.JSX.Element {
   }, [session, validate, dob, password, name, cpf, phone, refreshProfile]);
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper avoidKeyboard>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl }]}
         keyboardShouldPersistTaps="handled"
@@ -176,14 +177,19 @@ export function OnboardingScreen(): React.JSX.Element {
           label="Nova senha"
           placeholder="••••••••"
           secureTextEntry
+          autoCapitalize="none"
+          autoComplete="new-password"
           value={password}
           onChangeText={setPassword}
           error={errors.password}
         />
+        <PasswordRequirements password={password} />
         <Input
           label="Confirmar nova senha"
           placeholder="••••••••"
           secureTextEntry
+          autoCapitalize="none"
+          autoComplete="new-password"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           error={errors.confirmPassword}

@@ -13,6 +13,7 @@ import {
   AdminClassCard,
 } from '@/components/AdminClassCard';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { WeekStrip } from '@/components/WeekStrip';
@@ -37,7 +38,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   const [selectedKey, setSelectedKey] = useState(firstDay?.key ?? '');
   const [selectedDate, setSelectedDate] = useState<Date>(firstDay?.date ?? new Date());
 
-  const { items, loading, reload } = useAdminClassesForDay(selectedDate);
+  const { items, loading, error, reload } = useAdminClassesForDay(selectedDate);
 
   // Recarrega ao voltar o foco (ex.: após criar uma aula).
   useFocusEffect(
@@ -77,7 +78,9 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
         <WeekStrip days={days} selectedKey={selectedKey} onSelect={handleSelectDay} />
       </View>
 
-      {loading && items.length === 0 ? (
+      {error !== null && items.length === 0 ? (
+        <ErrorState message={error} onRetry={() => void reload()} />
+      ) : loading && items.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

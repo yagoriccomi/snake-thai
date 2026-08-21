@@ -79,9 +79,13 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   // Validação do corpo.
   let email = '';
+  let groupId: string | null = null;
   try {
-    const body = (await req.json()) as { email?: unknown };
+    const body = (await req.json()) as { email?: unknown; groupId?: unknown };
     email = String(body.email ?? '').trim().toLowerCase();
+    if (typeof body.groupId === 'string' && body.groupId.trim() !== '') {
+      groupId = body.groupId.trim();
+    }
   } catch {
     return json({ error: 'Corpo inválido' }, 400);
   }
@@ -99,11 +103,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: createError?.message ?? 'Falha ao criar usuário' }, 400);
   }
 
-  // Inicializa o perfil pendente de onboarding.
+  // Inicializa o perfil pendente de onboarding (com a turma, se informada).
   const { error: insertError } = await adminClient.from('profiles').insert({
     id: created.user.id,
     role: 'user',
     is_first_login: true,
+    group_id: groupId,
   });
   if (insertError !== null) {
     // Rollback: remove o usuário de auth para não deixar conta órfã.

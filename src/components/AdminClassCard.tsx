@@ -78,7 +78,7 @@ function makeStyles(colors: ColorScheme, radius: Radius, fonts: Fonts) {
     time: {
       fontFamily: fonts.bodyBold,
       fontSize: 16,
-      color: colors.primary,
+      color: colors.primaryText,
     },
     info: {
       flex: 1,

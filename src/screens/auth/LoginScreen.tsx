@@ -1,5 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -20,6 +20,12 @@ export function LoginScreen(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const passwordRef = useRef<TextInput>(null);
+
+  /** "Próximo" no teclado do e-mail leva direto ao campo de senha. */
+  const focusPassword = useCallback(() => {
+    passwordRef.current?.focus();
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
@@ -42,8 +48,12 @@ export function LoginScreen(): React.JSX.Element {
   }, [email, password, signIn]);
 
   return (
-    <ScreenWrapper>
-      <View style={styles.content}>
+    <ScreenWrapper avoidKeyboard>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <AppText variant="title" style={styles.brand}>
           Snake Thai
         </AppText>
@@ -59,13 +69,21 @@ export function LoginScreen(): React.JSX.Element {
           keyboardType="email-address"
           value={email}
           onChangeText={setEmail}
+          returnKeyType="next"
+          onSubmitEditing={focusPassword}
+          submitBehavior="submit"
         />
         <Input
+          ref={passwordRef}
           label="Senha"
           placeholder="••••••••"
           secureTextEntry
+          autoCapitalize="none"
+          autoComplete="current-password"
           value={password}
           onChangeText={setPassword}
+          returnKeyType="go"
+          onSubmitEditing={handleSubmit}
         />
 
         {error !== null ? (
@@ -81,15 +99,16 @@ export function LoginScreen(): React.JSX.Element {
           accessibilityHint="Autentica e acessa o aplicativo"
           style={styles.submit}
         />
-      </View>
+      </ScrollView>
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
+    paddingVertical: 24,
   },
   brand: {
     marginBottom: 4,

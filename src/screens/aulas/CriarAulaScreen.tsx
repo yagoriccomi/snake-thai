@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { GroupPicker } from '@/components/GroupPicker';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
@@ -39,7 +40,7 @@ export function CriarAulaScreen({
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
-  const [groupId, setGroupId] = useState('');
+  const [groupId, setGroupId] = useState<string | null>(null);
   const [errors, setErrors] = useState<CriarErrors>({});
   const [saving, setSaving] = useState(false);
 
@@ -57,8 +58,8 @@ export function CriarAulaScreen({
     if (dateTimeIso === null) {
       next.dateTime = 'Data/hora inválida (use DD/MM/AAAA e HH:MM).';
     }
-    if (isRoutine && groupId.trim().length === 0) {
-      next.group = 'Informe a turma (group_id) da rotina.';
+    if (isRoutine && groupId === null) {
+      next.group = 'Selecione a turma da rotina.';
     }
     setErrors(next);
     if (Object.keys(next).length > 0 || dateTimeIso === null) {
@@ -71,7 +72,7 @@ export function CriarAulaScreen({
         title,
         type,
         dateTimeIso,
-        groupId: isRoutine ? groupId.trim() : null,
+        groupId: isRoutine ? groupId : null,
       });
       navigation.goBack();
     } catch {
@@ -84,7 +85,7 @@ export function CriarAulaScreen({
   const styles = useMemo(() => makeStyles(spacing.xxl), [spacing.xxl]);
 
   return (
-    <ScreenWrapper edges={SCREEN_EDGES}>
+    <ScreenWrapper edges={SCREEN_EDGES} avoidKeyboard>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -121,14 +122,14 @@ export function CriarAulaScreen({
         />
 
         {isRoutine ? (
-          <Input
-            label="Turma (group_id)"
-            placeholder="Ex.: turma-a"
-            autoCapitalize="none"
-            value={groupId}
-            onChangeText={setGroupId}
-            error={errors.group}
-          />
+          <>
+            <GroupPicker label="Turma" value={groupId} onChange={setGroupId} />
+            {errors.group !== undefined ? (
+              <AppText variant="caption" color={colors.error}>
+                {errors.group}
+              </AppText>
+            ) : null}
+          </>
         ) : (
           <AppText variant="caption" style={styles.hint}>
             Eventos são globais: ficam visíveis para todas as turmas.

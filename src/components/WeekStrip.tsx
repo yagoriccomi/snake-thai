@@ -139,7 +139,7 @@ function makeStyles(colors: ColorScheme, radius: Radius, fonts: Fonts) {
       color: colors.onPrimary,
     },
     todayDot: {
-      color: colors.primary,
+      color: colors.primaryText,
       fontSize: 12,
       lineHeight: 12,
     },
