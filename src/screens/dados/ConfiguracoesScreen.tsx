@@ -1,5 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -29,17 +36,22 @@ const MIN_PASSWORD_LENGTH = 8;
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
 /**
- * Configurações da academia (somente administrador).
+ * Configurações da academia (somente administrador) — Painel, lista agrupada.
  *
  * É a tela que transforma o app em produto: nome, cor da marca, chave PIX,
  * senha padrão do aluno e dia de vencimento saíram do código-fonte e passaram a
  * ser editáveis aqui. Antes, mudar qualquer um deles exigia desenvolvedor,
  * build e nova instalação.
+ *
+ * Em leitura, os valores aparecem em grupos (igual ao Perfil); "Editar" abre os
+ * campos e revela Salvar/Cancelar, preservando a mesma validação e persistência.
  */
 export function ConfiguracoesScreen(): React.JSX.Element {
-  const { colors, spacing } = useTheme();
+  const { colors, fonts } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { settings, loading, error: loadError, reload, save } = useAcademySettings();
 
+  const [editing, setEditing] = useState(false);
   const [academyName, setAcademyName] = useState('');
   const [primaryColor, setPrimaryColor] = useState('');
   const [pixKey, setPixKey] = useState('');
@@ -54,8 +66,8 @@ export function ConfiguracoesScreen(): React.JSX.Element {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  // Espelha a configuração carregada nos campos, uma única vez por carga.
-  useEffect(() => {
+  /** Copia a configuração carregada para os campos editáveis. */
+  const syncFromSettings = useCallback(() => {
     if (settings === null) {
       return;
     }
@@ -72,10 +84,28 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     setStudentPassword(settings.default_student_password);
   }, [settings]);
 
+  // Espelha a configuração carregada nos campos, uma única vez por carga.
+  useEffect(() => {
+    syncFromSettings();
+  }, [syncFromSettings]);
+
   const handlePhoneChange = useCallback((value: string) => {
     setSaved(false);
     setContactPhone(maskPhone(value));
   }, []);
+
+  const startEditing = useCallback(() => {
+    setSaved(false);
+    setErrors({});
+    setEditing(true);
+  }, []);
+
+  /** Descarta as edições e volta aos valores atuais. */
+  const cancelEditing = useCallback(() => {
+    syncFromSettings();
+    setErrors({});
+    setEditing(false);
+  }, [syncFromSettings]);
 
   const handleSave = useCallback(async () => {
     const validation: SettingsErrors = {};
@@ -119,6 +149,7 @@ export function ConfiguracoesScreen(): React.JSX.Element {
         default_student_password: studentPassword,
       });
       setSaved(true);
+      setEditing(false);
     } catch {
       setErrors({ form: 'Não foi possível salvar. Tente novamente.' });
     } finally {
@@ -157,110 +188,202 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     );
   }
 
+  const hexValid = HEX_COLOR_PATTERN.test(primaryColor.trim());
+  const dash = (value: string): string => (value.trim() === '' ? '—' : value.trim());
+
   return (
     <ScreenWrapper edges={SCREEN_EDGES} avoidKeyboard>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: spacing.xxl }]}
+        contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <AppText variant="subtitle" style={styles.section}>
-          Identidade
-        </AppText>
-        <Input
-          label="Nome da academia"
-          value={academyName}
-          onChangeText={setAcademyName}
-          error={errors.name}
-        />
-        <Input
-          label="Cor principal (hexadecimal)"
-          placeholder="#39FF14"
-          autoCapitalize="none"
-          value={primaryColor}
-          onChangeText={setPrimaryColor}
-          error={errors.color}
-        />
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle}>Configurações</Text>
+          {editing ? null : (
+            <Pressable
+              onPress={startEditing}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Editar configurações"
+            >
+              <Text style={styles.editLink}>Editar</Text>
+            </Pressable>
+          )}
+        </View>
 
-        <AppText variant="subtitle" style={styles.section}>
-          Recebimento
-        </AppText>
-        <Input
-          label="Chave PIX"
-          placeholder="CNPJ, e-mail ou telefone"
-          autoCapitalize="none"
-          value={pixKey}
-          onChangeText={setPixKey}
-        />
-        <Input
-          label="Nome do titular do PIX"
-          value={pixHolder}
-          onChangeText={setPixHolder}
-        />
-        <Input
-          label="Dia de vencimento padrão"
-          placeholder="10"
-          keyboardType="number-pad"
-          value={dueDay}
-          onChangeText={setDueDay}
-          error={errors.dueDay}
-        />
+        {editing ? (
+          <>
+            <Text style={styles.sectionLabel}>IDENTIDADE</Text>
+            <Input
+              label="Nome da academia"
+              value={academyName}
+              onChangeText={setAcademyName}
+              error={errors.name}
+            />
+            <Input
+              label="Cor principal (hexadecimal)"
+              placeholder="#39FF14"
+              autoCapitalize="none"
+              value={primaryColor}
+              onChangeText={setPrimaryColor}
+              error={errors.color}
+            />
 
-        <AppText variant="subtitle" style={styles.section}>
-          Contato
-        </AppText>
-        <Input
-          label="E-mail"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={contactEmail}
-          onChangeText={setContactEmail}
-          error={errors.email}
-        />
-        <Input
-          label="Telefone"
-          placeholder="(00) 00000-0000"
-          keyboardType="phone-pad"
-          value={contactPhone}
-          onChangeText={handlePhoneChange}
-        />
-        <Input label="Endereço" value={address} onChangeText={setAddress} />
+            <Text style={styles.sectionLabel}>RECEBIMENTO</Text>
+            <Input
+              label="Chave PIX"
+              placeholder="CNPJ, e-mail ou telefone"
+              autoCapitalize="none"
+              value={pixKey}
+              onChangeText={setPixKey}
+            />
+            <Input
+              label="Nome do titular do PIX"
+              value={pixHolder}
+              onChangeText={setPixHolder}
+            />
+            <Input
+              label="Dia de vencimento padrão"
+              placeholder="10"
+              keyboardType="number-pad"
+              value={dueDay}
+              onChangeText={setDueDay}
+              error={errors.dueDay}
+            />
 
-        <AppText variant="subtitle" style={styles.section}>
-          Operação
-        </AppText>
-        <Input
-          label="Senha padrão do aluno"
-          autoCapitalize="none"
-          value={studentPassword}
-          onChangeText={setStudentPassword}
-          error={errors.password}
-        />
-        <AppText variant="caption" style={styles.hint}>
-          É a senha usada ao cadastrar um aluno novo e ao redefinir o acesso de
-          quem esqueceu. O aluno é obrigado a trocá-la no primeiro acesso.
-        </AppText>
+            <Text style={styles.sectionLabel}>CONTATO</Text>
+            <Input
+              label="E-mail"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={contactEmail}
+              onChangeText={setContactEmail}
+              error={errors.email}
+            />
+            <Input
+              label="Telefone"
+              placeholder="(00) 00000-0000"
+              keyboardType="phone-pad"
+              value={contactPhone}
+              onChangeText={handlePhoneChange}
+            />
+            <Input label="Endereço" value={address} onChangeText={setAddress} />
 
-        {errors.form !== undefined ? (
-          <AppText variant="caption" color={colors.error}>
-            {errors.form}
-          </AppText>
-        ) : null}
-        {saved ? (
-          <AppText variant="caption" color={colors.success}>
-            Configurações salvas.
-          </AppText>
-        ) : null}
+            <Text style={styles.sectionLabel}>OPERAÇÃO</Text>
+            <Input
+              label="Senha padrão do aluno"
+              autoCapitalize="none"
+              value={studentPassword}
+              onChangeText={setStudentPassword}
+              error={errors.password}
+            />
+            <AppText variant="caption" style={styles.hint}>
+              É a senha usada ao cadastrar um aluno novo e ao redefinir o acesso
+              de quem esqueceu. O aluno é obrigado a trocá-la no primeiro acesso.
+            </AppText>
 
-        <Button
-          title="Salvar configurações"
-          onPress={handlePress}
-          loading={saving}
-          accessibilityHint="Grava as configurações da academia"
-          style={styles.save}
-        />
+            {errors.form !== undefined ? (
+              <AppText variant="caption" color={colors.error}>
+                {errors.form}
+              </AppText>
+            ) : null}
+
+            <View style={styles.editActions}>
+              <Button
+                title="Cancelar"
+                variant="secondary"
+                onPress={cancelEditing}
+                style={styles.flex1}
+              />
+              <Button
+                title="Salvar"
+                onPress={handlePress}
+                loading={saving}
+                accessibilityHint="Grava as configurações da academia"
+                style={styles.flex1}
+              />
+            </View>
+          </>
+        ) : (
+          <>
+            <Text style={styles.sectionLabel}>IDENTIDADE</Text>
+            <View style={styles.card}>
+              <ValueRow label="Nome" value={dash(academyName)} styles={styles} />
+              <View style={[styles.row, styles.rowLast]}>
+                <Text style={styles.rowLabel}>Cor da marca</Text>
+                <View style={styles.rowRight}>
+                  {hexValid ? (
+                    <View
+                      style={[styles.swatch, { backgroundColor: primaryColor.trim() }]}
+                    />
+                  ) : null}
+                  <Text style={styles.rowValue}>{dash(primaryColor)}</Text>
+                </View>
+              </View>
+            </View>
+
+            <Text style={styles.sectionLabel}>RECEBIMENTO</Text>
+            <View style={styles.card}>
+              <ValueRow label="Chave PIX" value={dash(pixKey)} styles={styles} />
+              <ValueRow label="Titular do PIX" value={dash(pixHolder)} styles={styles} />
+              <ValueRow
+                label="Vencimento padrão"
+                value={dueDay.trim() === '' ? '—' : `dia ${dueDay.trim()}`}
+                styles={styles}
+                last
+              />
+            </View>
+
+            <Text style={styles.sectionLabel}>CONTATO</Text>
+            <View style={styles.card}>
+              <ValueRow label="E-mail" value={dash(contactEmail)} styles={styles} />
+              <ValueRow label="Telefone" value={dash(contactPhone)} styles={styles} />
+              <ValueRow label="Endereço" value={dash(address)} styles={styles} last />
+            </View>
+
+            <Text style={styles.sectionLabel}>OPERAÇÃO</Text>
+            <View style={styles.card}>
+              <ValueRow
+                label="Senha padrão do aluno"
+                value={dash(studentPassword)}
+                styles={styles}
+                last
+              />
+            </View>
+            <AppText variant="caption" style={styles.hint}>
+              A senha padrão é usada ao cadastrar um aluno novo e ao redefinir o
+              acesso de quem esqueceu. O aluno troca-a no primeiro acesso.
+            </AppText>
+
+            {saved ? (
+              <AppText variant="caption" color={colors.success} style={styles.savedHint}>
+                Configurações salvas.
+              </AppText>
+            ) : null}
+          </>
+        )}
       </ScrollView>
     </ScreenWrapper>
+  );
+}
+
+interface ValueRowProps {
+  label: string;
+  value: string;
+  styles: ReturnType<typeof makeStyles>;
+  last?: boolean;
+}
+
+/** Linha somente-leitura: rótulo à esquerda, valor à direita. */
+function ValueRow({ label, value, styles, last }: ValueRowProps): React.JSX.Element {
+  return (
+    <View style={[styles.row, last ? styles.rowLast : null]}>
+      <Text style={styles.rowLabel}>{label}</Text>
+      <Text style={styles.rowValue} numberOfLines={1}>
+        {value}
+      </Text>
+    </View>
   );
 }
 
@@ -270,24 +393,107 @@ function emptyToNull(value: string): string | null {
   return trimmed === '' ? null : trimmed;
 }
 
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    paddingTop: 16,
-  },
-  section: {
-    marginTop: 8,
-    marginBottom: 8,
-  },
-  hint: {
-    marginTop: -8,
-    marginBottom: 8,
-  },
-  save: {
-    marginTop: 16,
-  },
-});
+function makeStyles(
+  colors: ReturnType<typeof useTheme>['colors'],
+  fonts: ReturnType<typeof useTheme>['fonts'],
+) {
+  return StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    content: {
+      paddingTop: 12,
+      paddingBottom: 40,
+    },
+    pageHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 18,
+    },
+    pageTitle: {
+      fontFamily: fonts.headingBold,
+      fontSize: 26,
+      color: colors.textPrimary,
+    },
+    editLink: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 14,
+      color: colors.primaryText,
+    },
+    sectionLabel: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      letterSpacing: 1,
+      color: colors.textSecondary,
+      marginTop: 18,
+      marginBottom: 8,
+      marginLeft: 4,
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      minHeight: 52,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    rowLast: {
+      borderBottomWidth: 0,
+    },
+    rowLabel: {
+      fontFamily: fonts.bodyMedium,
+      fontSize: 14,
+      color: colors.textPrimary,
+      flexShrink: 0,
+    },
+    rowRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flexShrink: 1,
+    },
+    rowValue: {
+      fontFamily: fonts.body,
+      fontSize: 14,
+      color: colors.textSecondary,
+      flexShrink: 1,
+      textAlign: 'right',
+    },
+    swatch: {
+      width: 18,
+      height: 18,
+      borderRadius: 5,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    hint: {
+      marginTop: 8,
+      marginLeft: 4,
+    },
+    savedHint: {
+      marginTop: 12,
+      marginLeft: 4,
+    },
+    editActions: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 20,
+    },
+    flex1: {
+      flex: 1,
+    },
+  });
+}
