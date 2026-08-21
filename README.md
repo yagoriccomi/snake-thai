@@ -109,8 +109,14 @@ apaga a propriedade do Gradle — o `menu.bat` a reaplica sozinho antes de cada 
 | --- | --- |
 | `EXPO_PUBLIC_SUPABASE_URL` | URL do projeto Supabase (ex.: `https://xxxx.supabase.co`). |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Chave pública `anon` do Supabase (segura no cliente; proteção real vem das políticas de RLS). |
+| `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME` | Nome da conta Cloudinary (público) — armazenamento dos comprovantes de pagamento. |
+| `EXPO_PUBLIC_CLOUDINARY_UPLOAD_PRESET` | Preset de upload **não assinado** (apenas no fluxo de upload direto do app). |
 
-> A chave `service_role` **nunca** deve ser colocada no app.
+> A chave `service_role` do Supabase e a **`api_secret` da Cloudinary** **nunca**
+> devem ir para o app nem para o `.env` público. A `api_secret` vive como segredo
+> da Edge Function (`supabase secrets set CLOUDINARY_API_SECRET=…`), porque a
+> assinatura do upload e a visualização autenticada do comprovante (dado
+> financeiro/PII) só podem acontecer no servidor.
 
 ## 🗄️ Banco de Dados (Supabase)
 
