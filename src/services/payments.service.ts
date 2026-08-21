@@ -132,3 +132,27 @@ export async function rejectPayment(
     throw error;
   }
 }
+
+/** Primeiro instante do mês corrente, em ISO (para filtrar "recebido no mês"). */
+function startOfCurrentMonthIso(): string {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+}
+
+/**
+ * Soma, em centavos, das mensalidades quitadas no mês corrente.
+ *
+ * Base do indicador "recebido" do painel do admin. Some no cliente em vez de um
+ * RPC de SUM: o volume mensal é pequeno e evita uma função extra no banco.
+ */
+export async function fetchReceivedThisMonthCents(): Promise<number> {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('amount_cents')
+    .eq('status', 'paid')
+    .gte('paid_at', startOfCurrentMonthIso());
+  if (error !== null) {
+    throw error;
+  }
+  return (data ?? []).reduce((sum, row) => sum + (row.amount_cents ?? 0), 0);
+}

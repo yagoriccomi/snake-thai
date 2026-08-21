@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   StyleSheet,
+  Text,
   View,
   type ListRenderItem,
 } from 'react-native';
@@ -12,7 +13,9 @@ import {
   ADMIN_PAYMENT_CARD_TOTAL,
   AdminPaymentCard,
 } from '@/components/AdminPaymentCard';
+import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
+import { FinanceSummary } from '@/components/FinanceSummary';
 import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
@@ -39,8 +42,15 @@ interface AdminFinanceViewProps {
  * Em Aberto e Vencidos. Tocar num "Aguardando" abre a validação do comprovante.
  */
 export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.JSX.Element {
-  const { colors } = useTheme();
-  const { pending, open, overdue, loading, error, reload } = useAdminPayments();
+  const { colors, fonts } = useTheme();
+  const { pending, open, overdue, totals, loading, error, reload } =
+    useAdminPayments();
+
+  // Mês corrente capitalizado ("Agosto") para o cabeçalho gerencial.
+  const monthLabel = useMemo(() => {
+    const raw = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }, []);
   const [category, setCategory] = useState<Category>('pending');
 
   useFocusEffect(
@@ -79,7 +89,23 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
 
   return (
     <ScreenWrapper edges={SCREEN_EDGES}>
-      <View style={styles.header}>
+      <View style={styles.headerBlock}>
+        <View>
+          <View style={styles.overlineRow}>
+            <Text style={[styles.overline, { color: colors.textSecondary, fontFamily: fonts.bodySemiBold }]}>
+              FINANCEIRO
+            </Text>
+            <View style={[styles.roleChip, { borderColor: colors.primary }]}>
+              <Text style={[styles.roleChipText, { color: colors.primaryText, fontFamily: fonts.bodyBold }]}>
+                ADMIN
+              </Text>
+            </View>
+          </View>
+          <AppText variant="heading">{monthLabel}</AppText>
+        </View>
+
+        <FinanceSummary totals={totals} />
+
         <SegmentedControl options={options} value={category} onChange={setCategory} />
       </View>
 
@@ -125,9 +151,30 @@ const getItemLayout = (
 });
 
 const styles = StyleSheet.create({
-  header: {
+  headerBlock: {
     paddingTop: 12,
-    paddingBottom: 4,
+    paddingBottom: 8,
+    gap: 16,
+  },
+  overlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 3,
+  },
+  overline: {
+    fontSize: 11,
+    letterSpacing: 1.5,
+  },
+  roleChip: {
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  roleChipText: {
+    fontSize: 10,
+    letterSpacing: 0.5,
   },
   center: {
     flex: 1,
