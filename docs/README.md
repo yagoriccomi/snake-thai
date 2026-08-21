@@ -14,7 +14,7 @@ Ponto de entrada da documentação técnica e operacional do projeto.
 - **[EDGE-FUNCTIONS.md](EDGE-FUNCTIONS.md)** — contrato de entrada/saída e
   autorização das funções server-side.
 - **[RUNBOOK.md](RUNBOOK.md)** — operações: migrations, tipos, Metro, APK, chaves.
-- **[SERVIDOR-COMPROVANTES.md](SERVIDOR-COMPROVANTES.md)** — spec do servidor Cloudinary/Render que assina upload e visualização dos comprovantes.
+- **[BACKEND.md](BACKEND.md)** — spec do backend próprio do app (Render): arquitetura híbrida com o Supabase, estrutura extensível por módulos, cold start e o módulo de comprovantes (Cloudinary).
 - **[../README.md](../README.md)** — instalar, configurar `.env` e rodar.
 
 ## Auditorias e conformidade
