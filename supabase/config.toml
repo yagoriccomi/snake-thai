@@ -1,0 +1,36 @@
+# Configuração do projeto Supabase (ambiente local via CLI).
+# Se a sua versão da CLI reclamar de chaves, rode `supabase init` para
+# regenerar este arquivo alinhado à sua versão e mantenha a pasta migrations/.
+project_id = "snake-thai"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+# Em produção, restrinja as URLs de redirecionamento.
+additional_redirect_urls = ["snakethai://"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_confirmations = false
+
+[storage]
+enabled = true
+# Limite de tamanho de upload (comprovantes são imagens/pdf pequenos) [#65].
+file_size_limit = "10MiB"
