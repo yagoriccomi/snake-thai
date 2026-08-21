@@ -127,6 +127,7 @@ export type Database = {
           cpf: string | null
           created_at: string
           dob: string | null
+          group_id: string | null
           id: string
           is_first_login: boolean
           name: string | null
@@ -138,6 +139,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           dob?: string | null
+          group_id?: string | null
           id: string
           is_first_login?: boolean
           name?: string | null
@@ -149,6 +151,7 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           dob?: string | null
+          group_id?: string | null
           id?: string
           is_first_login?: boolean
           name?: string | null

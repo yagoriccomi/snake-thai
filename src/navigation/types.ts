@@ -11,9 +11,16 @@ export type DadosStackParamList = {
   CadastrarAluno: undefined;
 };
 
+/** Stack interna da aba "Aulas" (lista + criação + frequência). */
+export type AulasStackParamList = {
+  AulasHome: undefined;
+  CriarAula: undefined;
+  Frequencia: { classId: string; title: string; groupId: string | null };
+};
+
 /** Abas do painel principal (usuário autenticado e onboarded). */
 export type MainTabParamList = {
-  Aulas: undefined;
+  Aulas: NavigatorScreenParams<AulasStackParamList>;
   Financeiro: undefined;
   Dados: NavigatorScreenParams<DadosStackParamList>;
 };
@@ -45,6 +52,13 @@ export type MainTabScreenProps<T extends keyof MainTabParamList> =
 export type DadosStackScreenProps<T extends keyof DadosStackParamList> =
   CompositeScreenProps<
     NativeStackScreenProps<DadosStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+/** Props tipadas para telas da stack de "Aulas". */
+export type AulasStackScreenProps<T extends keyof AulasStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<AulasStackParamList, T>,
     MainTabScreenProps<keyof MainTabParamList>
   >;
 

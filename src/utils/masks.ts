@@ -40,6 +40,13 @@ export function maskDate(value: string): string {
     .replace(/(\d{2})(\d)/, '$1/$2');
 }
 
+/** Aplica a máscara de hora: `HH:MM`. */
+export function maskTime(value: string): string {
+  return onlyDigits(value)
+    .slice(0, 4)
+    .replace(/(\d{2})(\d)/, '$1:$2');
+}
+
 /**
  * Converte uma data `DD/MM/AAAA` para o formato ISO `AAAA-MM-DD` (aceito pelo
  * tipo `date` do Postgres). Retorna `null` se a entrada não for uma data completa.
