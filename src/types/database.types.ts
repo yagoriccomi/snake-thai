@@ -124,34 +124,34 @@ export type Database = {
       }
       profiles: {
         Row: {
-          cpf: string
+          cpf: string | null
           created_at: string
           dob: string | null
           id: string
           is_first_login: boolean
-          name: string
+          name: string | null
           phone: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
         }
         Insert: {
-          cpf: string
+          cpf?: string | null
           created_at?: string
           dob?: string | null
           id: string
           is_first_login?: boolean
-          name: string
+          name?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
         }
         Update: {
-          cpf?: string
+          cpf?: string | null
           created_at?: string
           dob?: string | null
           id?: string
           is_first_login?: boolean
-          name?: string
+          name?: string | null
           phone?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string

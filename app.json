@@ -29,7 +29,13 @@
     "plugins": [
       "expo-secure-store",
       "expo-font",
-      "expo-splash-screen"
+      "expo-splash-screen",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permita que o Snake Thai use o FaceID para proteger o acesso do administrador."
+        }
+      ]
     ]
   }
 }

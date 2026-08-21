@@ -103,4 +103,15 @@ snake-thai/
 | `npm start` | Inicia o Metro/Expo. |
 | `npm run android` / `ios` / `web` | Abre em uma plataforma específica. |
 | `npm run typecheck` | Checagem de tipos estrita (`tsc --noEmit`). |
+| `npm test` | Executa os testes (Jest + React Native Testing Library). |
 | `npm run supabase:types` | Gera os tipos do banco local. |
+
+## ⚡ Edge Functions
+
+O cadastro de aluno pelo admin usa a Edge Function `create-student` (Deno), que
+cria a conta com a senha padrão e inicializa o perfil usando a `service_role`
+(nunca exposta no app). Deploy:
+
+```bash
+supabase functions deploy create-student
+```

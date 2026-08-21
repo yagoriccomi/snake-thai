@@ -7,10 +7,10 @@ import {
 import type { RouteProp } from '@react-navigation/native';
 
 import type { Fonts } from '@/constants/theme';
-import { AulasScreen } from '@/screens/aulas/AulasScreen';
-import { DadosScreen } from '@/screens/dados/DadosScreen';
-import { FinanceiroScreen } from '@/screens/financeiro/FinanceiroScreen';
+import { DadosStackNavigator } from '@/navigation/DadosStackNavigator';
 import type { MainTabParamList } from '@/navigation/types';
+import { AulasScreen } from '@/screens/aulas/AulasScreen';
+import { FinanceiroScreen } from '@/screens/financeiro/FinanceiroScreen';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -25,10 +25,9 @@ const TAB_ICONS: Record<keyof MainTabParamList, IoniconName> = {
   Dados: 'person-outline',
 };
 
-/**
- * Constrói as opções das abas a partir do tema. Extraído para fora do JSX e
- * memoizado no componente, evitando recriar a função a cada renderização.
- */
+// A aba "Dados" tem sua própria stack com header — evita header duplicado.
+const DADOS_TAB_OPTIONS: BottomTabNavigationOptions = { headerShown: false };
+
 function makeScreenOptions(colors: ColorScheme, fonts: Fonts) {
   return ({
     route,
@@ -52,9 +51,7 @@ function makeScreenOptions(colors: ColorScheme, fonts: Fonts) {
   });
 }
 
-/**
- * Navegador de abas do painel logado: Aulas, Financeiro e Dados (provisórias).
- */
+/** Navegador de abas do painel logado: Aulas, Financeiro e Dados. */
 export function MainTabNavigator(): React.JSX.Element {
   const { colors, fonts } = useTheme();
 
@@ -67,7 +64,11 @@ export function MainTabNavigator(): React.JSX.Element {
     <Tab.Navigator screenOptions={screenOptions}>
       <Tab.Screen name="Aulas" component={AulasScreen} />
       <Tab.Screen name="Financeiro" component={FinanceiroScreen} />
-      <Tab.Screen name="Dados" component={DadosScreen} />
+      <Tab.Screen
+        name="Dados"
+        component={DadosStackNavigator}
+        options={DADOS_TAB_OPTIONS}
+      />
     </Tab.Navigator>
   );
 }
