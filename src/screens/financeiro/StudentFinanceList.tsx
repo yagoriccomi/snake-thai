@@ -60,11 +60,16 @@ export function StudentFinanceList({
   const active = useMyPayments('active');
   const history = useMyPayments('history');
 
+  // Depende das funções `reload` (estáveis), não dos objetos do hook (recriados
+  // a cada render) — senão o efeito de foco re-dispararia sem parar, num loop
+  // de recarga que fazia a tela "piscar" e travava a JS thread.
+  const reloadActive = active.reload;
+  const reloadHistory = history.reload;
   useFocusEffect(
     useCallback(() => {
-      void active.reload();
-      void history.reload();
-    }, [active, history]),
+      void reloadActive();
+      void reloadHistory();
+    }, [reloadActive, reloadHistory]),
   );
 
   // A mensalidade em destaque é a de vencimento mais próximo entre as abertas.
