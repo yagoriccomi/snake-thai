@@ -10,6 +10,7 @@ import { useAuth } from '@/context/AuthProvider';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { updateProfile } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import { describeError } from '@/utils/errors';
 import {
   dateBrToIso,
   dateIsoToBr,
@@ -138,8 +139,8 @@ export function DadosScreen({
       await refreshProfile();
       setSavedAt(true);
       setEditing(false);
-    } catch {
-      setErrors({ form: 'Não foi possível salvar. Tente novamente.' });
+    } catch (saveError) {
+      setErrors({ form: describeError(saveError) });
     } finally {
       setSaving(false);
     }

@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthProvider';
 import { updatePassword } from '@/services/auth.service';
 import { completeProfileOnboarding } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import { describeError } from '@/utils/errors';
 import { dateBrToIso, maskCpf, maskDate, maskPhone, onlyDigits } from '@/utils/masks';
 import {
   describeMissingPasswordRules,
@@ -142,11 +143,7 @@ export function OnboardingScreen(): React.JSX.Element {
       await updatePassword(password);
       await refreshProfile();
     } catch (submitError) {
-      const message =
-        submitError instanceof Error && /duplicate|unique/i.test(submitError.message)
-          ? 'Este CPF já está cadastrado.'
-          : 'Não foi possível concluir o cadastro. Tente novamente.';
-      setErrors({ form: message });
+      setErrors({ form: describeError(submitError) });
     } finally {
       setSubmitting(false);
     }

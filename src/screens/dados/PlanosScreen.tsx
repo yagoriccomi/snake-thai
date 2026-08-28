@@ -32,6 +32,7 @@ import {
 } from '@/services/plans.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { centsToInput, formatCents, parseCurrencyToCents } from '@/utils/currency';
+import { describeError } from '@/utils/errors';
 import { onlyDigits } from '@/utils/masks';
 
 /** Campos com mensagem de erro no formulário de plano. */
@@ -144,8 +145,8 @@ export function PlanosScreen(): React.JSX.Element {
         await edit(editingId, input);
       }
       resetForm();
-    } catch {
-      setErrors({ form: 'Não foi possível salvar o plano. Tente novamente.' });
+    } catch (saveError) {
+      setErrors({ form: describeError(saveError) });
     } finally {
       setSubmitting(false);
     }

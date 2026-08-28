@@ -15,6 +15,7 @@ import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
 import { useTheme } from '@/theme/ThemeProvider';
+import { describeError } from '@/utils/errors';
 import { maskPhone, onlyDigits } from '@/utils/masks';
 import { isValidEmail } from '@/utils/validation';
 
@@ -150,8 +151,8 @@ export function ConfiguracoesScreen(): React.JSX.Element {
       });
       setSaved(true);
       setEditing(false);
-    } catch {
-      setErrors({ form: 'Não foi possível salvar. Tente novamente.' });
+    } catch (saveError) {
+      setErrors({ form: describeError(saveError) });
     } finally {
       setSaving(false);
     }
