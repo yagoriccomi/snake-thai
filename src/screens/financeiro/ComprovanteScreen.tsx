@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   Linking,
@@ -10,7 +9,11 @@ import {
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { WaitingState } from '@/components/WaitingState';
+import { preAquecer } from '@/lib/api';
+import { createLogger } from '@/lib/logger';
 import type { FinanceiroStackScreenProps } from '@/navigation/types';
 import {
   approvePayment,
@@ -20,6 +23,16 @@ import {
 import { useTheme } from '@/theme/ThemeProvider';
 
 const SCREEN_EDGES = ['bottom'] as const;
+
+const log = createLogger('ComprovanteScreen');
+
+const ABRINDO = 'Abrindo o comprovante…';
+const ABERTURA_DEMORADA =
+  'O servidor está sendo iniciado. A primeira consulta depois de um tempo ' +
+  'parado pode levar até um minuto.';
+const FALHA_AO_ABRIR =
+  'Não conseguimos carregar o comprovante agora. O arquivo continua salvo — ' +
+  'isso é uma falha de conexão com o servidor, não um envio faltando.';
 
 /**
  * Validação do comprovante (admin): exibe o arquivo (imagem inline ou PDF via
@@ -35,6 +48,15 @@ export function ComprovanteScreen({
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(true);
   const [working, setWorking] = useState(false);
+  /**
+   * Separado de `signedUrl === null` DE PROPÓSITO. Antes, falha de rede e
+   * "o aluno não enviou nada" produziam a MESMA tela — e o admin lia a falha
+   * do servidor como ausência de comprovante. Informação errada apresentada
+   * com confiança é pior do que erro visível. [#93]
+   */
+  const [falhouAoCarregar, setFalhouAoCarregar] = useState(false);
+  /** Muda para forçar a recarga quando o admin toca em "tentar de novo". */
+  const [tentativa, setTentativa] = useState(0);
 
   /**
    * O identificador do arquivo muda conforme o provedor: path no Storage
@@ -47,22 +69,36 @@ export function ComprovanteScreen({
   const temComprovante = referenciaDoArquivo !== null;
   const isPdf = referenciaDoArquivo?.toLowerCase().endsWith('.pdf') ?? false;
 
+  /** Acorda o servidor assim que a tela abre — `docs/BACKEND.md` §5. */
+  useEffect(() => {
+    preAquecer();
+  }, []);
+
   useEffect(() => {
     let active = true;
     if (!temComprovante) {
       setLoadingUrl(false);
       return;
     }
+    setLoadingUrl(true);
+    setFalhouAoCarregar(false);
     createSignedProofUrl(comprovante)
       .then((url) => {
         if (active) {
           setSignedUrl(url);
         }
       })
-      .catch(() => {
-        if (active) {
-          setSignedUrl(null);
+      .catch((erro: unknown) => {
+        if (!active) {
+          return;
         }
+        log.error('Falha ao gerar URL do comprovante', {
+          paymentId,
+          provedor: comprovante.proof_provider,
+          motivo: erro instanceof Error ? erro.message : 'desconhecido',
+        });
+        setSignedUrl(null);
+        setFalhouAoCarregar(true);
       })
       .finally(() => {
         if (active) {
@@ -72,7 +108,11 @@ export function ComprovanteScreen({
     return () => {
       active = false;
     };
-  }, [comprovante, temComprovante]);
+  }, [comprovante, temComprovante, paymentId, tentativa]);
+
+  const handleRetryUrl = useCallback(() => {
+    setTentativa((anterior) => anterior + 1);
+  }, []);
 
   const handleApprove = useCallback(async () => {
     setWorking(true);
@@ -122,10 +162,16 @@ export function ComprovanteScreen({
 
         <View style={styles.preview}>
           {loadingUrl ? (
-            <ActivityIndicator size="large" color={colors.primary} />
+            <WaitingState message={ABRINDO} longWaitMessage={ABERTURA_DEMORADA} />
+          ) : falhouAoCarregar ? (
+            <ErrorState
+              message={FALHA_AO_ABRIR}
+              onRetry={handleRetryUrl}
+              retryLabel="Tentar de novo"
+            />
           ) : signedUrl === null ? (
             <AppText variant="caption" color={colors.textSecondary}>
-              Comprovante indisponível.
+              Este pagamento ainda não tem comprovante enviado.
             </AppText>
           ) : isPdf ? (
             <Button title="Abrir comprovante (PDF)" onPress={openPdf} />
