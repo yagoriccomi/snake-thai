@@ -170,17 +170,28 @@ export function ComprovanteScreen({
               retryLabel="Tentar de novo"
             />
           ) : signedUrl === null ? (
-            <AppText variant="caption" color={colors.textSecondary}>
+            <AppText
+              variant="caption"
+              color={colors.textSecondary}
+              // Sem isto o resultado da consulta e MUDO: o leitor de tela
+              // termina o carregamento e nao anuncia nada. WCAG 4.1.3.
+              accessibilityRole="text"
+              accessibilityLiveRegion="polite"
+            >
               Este pagamento ainda não tem comprovante enviado.
             </AppText>
           ) : isPdf ? (
-            <Button title="Abrir comprovante (PDF)" onPress={openPdf} />
+            <Button
+              title="Abrir comprovante (PDF)"
+              onPress={openPdf}
+              accessibilityHint={`Abre o comprovante de ${studentName} no leitor de PDF`}
+            />
           ) : (
             <Image
               source={{ uri: signedUrl }}
               style={styles.image}
               resizeMode="contain"
-              accessibilityLabel="Comprovante de pagamento"
+              accessibilityLabel={`Comprovante de pagamento de ${studentName}`}
             />
           )}
         </View>

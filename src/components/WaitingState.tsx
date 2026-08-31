@@ -1,5 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  ActivityIndicator,
+  Platform,
+  StyleSheet,
+  View,
+} from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -50,6 +56,21 @@ function WaitingStateComponent({
     }
     const cronometro = setTimeout(() => {
       setDemorando(true);
+
+      /*
+       * `accessibilityLiveRegion` é ANDROID-ONLY. Sem este anúncio explícito,
+       * o VoiceOver simplesmente não fala a explicação da demora — e a pessoa
+       * cega no iPhone fica com 60 segundos de silêncio absoluto, exatamente
+       * o cenário que este componente existe para evitar.
+       *
+       * Só no iOS: no Android a região viva já anuncia, e disparar os dois
+       * faria o TalkBack repetir a mesma frase duas vezes.
+       *
+       * WCAG 2.1 — 4.1.3 (Status Messages).
+       */
+      if (Platform.OS === 'ios') {
+        AccessibilityInfo.announceForAccessibility(longWaitMessage);
+      }
     }, patienceMs);
 
     return () => {
