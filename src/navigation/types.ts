@@ -63,7 +63,6 @@ export type RootStackParamList = {
   Login: undefined;
   Onboarding: undefined;
   BiometricLock: undefined;
-  BiometricSetup: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
 };
 

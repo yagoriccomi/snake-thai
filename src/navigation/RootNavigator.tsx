@@ -12,7 +12,6 @@ import { MainTabNavigator } from '@/navigation/MainTabNavigator';
 import type { RootStackParamList } from '@/navigation/types';
 import { LoadingScreen } from '@/screens/LoadingScreen';
 import { BiometricLockScreen } from '@/screens/auth/BiometricLockScreen';
-import { BiometricSetupScreen } from '@/screens/auth/BiometricSetupScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
 import { OnboardingScreen } from '@/screens/onboarding/OnboardingScreen';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -29,8 +28,10 @@ interface RootNavigatorProps {
  *   sem sessão               → Login
  *   primeiro login           → Onboarding (bloqueante)
  *   lock biométrico ativo    → BiometricLock
- *   biometria ainda não decidida → BiometricSetup (pergunta única)
  *   caso contrário           → Main (abas)
+ *
+ * A biometria é 100% opt-in: nunca é sugerida proativamente. O usuário a ativa,
+ * se quiser, pela aba Perfil (switch "Desbloqueio por digital").
  *
  * Não há navegação manual entre esses estados: mudanças em `useAuth` remontam
  * a rota apropriada automaticamente.
@@ -43,7 +44,6 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
     session,
     profile,
     adminLocked,
-    biometricSetupPending,
   } = useAuth();
 
   const navigationTheme = useMemo<NavigationTheme>(() => {
@@ -77,11 +77,6 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
     }
     if (adminLocked) {
       return <Stack.Screen name="BiometricLock" component={BiometricLockScreen} />;
-    }
-    if (biometricSetupPending) {
-      return (
-        <Stack.Screen name="BiometricSetup" component={BiometricSetupScreen} />
-      );
     }
     return <Stack.Screen name="Main" component={MainTabNavigator} />;
   };
