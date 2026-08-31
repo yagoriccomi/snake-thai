@@ -1,2 +1,19 @@
-echo "🔎 Rodando checagem de tipos (tsc --noEmit)..."
-npm run typecheck
+#!/usr/bin/env sh
+# ============================================================
+#  Gate de qualidade LOCAL — a mesma barreira que o CI repete.
+#  Barrar aqui custa segundos; barrar no CI custa um ciclo inteiro.
+#
+#  Este hook rodava apenas o typecheck, enquanto o do snake-server já
+#  rodava a suíte inteira. Na prática, dava para commitar um teste
+#  quebrado no app sem nenhum aviso — e descobrir só no runner. Dois
+#  repositórios do mesmo produto com gates diferentes é assimetria que
+#  cobra o preço no repositório mais fraco. [#49][#81]
+# ============================================================
+
+echo "-> verificando tipos..."
+npm run typecheck || exit 1
+
+# Sem --passWithNoTests: a suíte existe, e "nenhum teste encontrado"
+# passa a ser sintoma de suíte sumida, não estado aceitável.
+echo "-> rodando testes..."
+npx --no-install jest --ci || exit 1

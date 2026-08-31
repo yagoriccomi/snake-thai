@@ -45,8 +45,9 @@ jobs:
       - name: Checagem de tipos
         run: npm run typecheck
 
-      # Os 125 testes: dinheiro em centavos, trava do último admin, senha com
-      # reautenticação, falha de rede que não vira lista vazia [#49].
+      # A suíte inteira: dinheiro em centavos, trava do último admin, senha com
+      # reautenticação, falha de rede que não vira lista vazia, e a escolha de
+      # provedor do comprovante durante a migração [#49].
       - name: Testes (Jest)
         run: npm test -- --ci
 
@@ -54,6 +55,57 @@ jobs:
       # transitiva — impede a regressão do que a auditoria confirmou limpo.
       - name: Gate de licenças
         run: npm run check:licenses
+
+  banco:
+    name: Regressão de segurança no banco (RLS e triggers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      # Por que este job existe:
+      #
+      # As regras que impedem um aluno de alterar o valor da própria
+      # mensalidade, ou de ler o comprovante de outro, NÃO estão no TypeScript
+      # — estão em triggers e policies de RLS, dentro do Postgres. Nenhum teste
+      # de Jest chega perto delas: para exercitá-las é preciso um banco de
+      # verdade, com as migrations aplicadas na ordem e um papel `authenticated`
+      # de verdade.
+      #
+      # O achado C-3 do REVIEW.md nasceu exatamente desse ponto cego: uma coluna
+      # entrou no schema e o trigger que deveria protegê-la nunca foi atualizado.
+      # A suíte inteira continuou verde por semanas. [#42][#49]
+      - name: Instala a CLI do Supabase
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Sobe o Postgres com todas as migrations aplicadas
+        run: supabase db start
+
+      - name: Executa os testes de regressão SQL
+        run: |
+          set -euo pipefail
+          encontrou=0
+          for arquivo in supabase/tests/*.sql; do
+            [ -e "$arquivo" ] || continue
+            encontrou=1
+            echo "── $arquivo"
+            # ON_ERROR_STOP: qualquer `raise exception` do teste derruba o job.
+            # Os testes rodam em transação e terminam em ROLLBACK, então a
+            # ordem entre eles não importa e o banco não acumula estado. [#48]
+            psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres"               -v ON_ERROR_STOP=1 -f "$arquivo"
+          done
+          if [ "$encontrou" -eq 0 ]; then
+            echo "::error::Nenhum teste SQL encontrado em supabase/tests/."
+            echo "::error::A suíte sumiu — isso é sintoma, não estado aceitável."
+            exit 1
+          fi
+
+      - name: Encerra o banco
+        if: always()
+        run: supabase stop --no-backup
 
   seguranca:
     name: Auditoria de CVE (produção)
