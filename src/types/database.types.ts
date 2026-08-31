@@ -279,6 +279,9 @@ export type Database = {
           id: string
           paid_at: string | null
           plan_id: string | null
+          proof_provider: Database["public"]["Enums"]["media_provider"] | null
+          proof_public_id: string | null
+          proof_storage_path: string | null
           proof_url: string | null
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
@@ -291,6 +294,9 @@ export type Database = {
           id?: string
           paid_at?: string | null
           plan_id?: string | null
+          proof_provider?: Database["public"]["Enums"]["media_provider"] | null
+          proof_public_id?: string | null
+          proof_storage_path?: string | null
           proof_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
@@ -303,6 +309,9 @@ export type Database = {
           id?: string
           paid_at?: string | null
           plan_id?: string | null
+          proof_provider?: Database["public"]["Enums"]["media_provider"] | null
+          proof_public_id?: string | null
+          proof_storage_path?: string | null
           proof_url?: string | null
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
@@ -438,6 +447,12 @@ export type Database = {
       billing_period: "monthly" | "quarterly" | "semiannual" | "annual"
       class_type: "routine" | "event"
       legal_document_kind: "terms_of_use" | "privacy_policy"
+      media_deletion_reason:
+        | "conta_excluida"
+        | "comprovante_recusado"
+        | "retencao_expirada"
+        | "migrado_de_provedor"
+      media_provider: "supabase_storage" | "cloudinary"
       payment_status: "pending_approval" | "open" | "overdue" | "paid"
       profile_status: "active" | "inactive"
       user_role: "user" | "admin"
@@ -1025,6 +1040,13 @@ export const Constants = {
       billing_period: ["monthly", "quarterly", "semiannual", "annual"],
       class_type: ["routine", "event"],
       legal_document_kind: ["terms_of_use", "privacy_policy"],
+      media_deletion_reason: [
+        "conta_excluida",
+        "comprovante_recusado",
+        "retencao_expirada",
+        "migrado_de_provedor",
+      ],
+      media_provider: ["supabase_storage", "cloudinary"],
       payment_status: ["pending_approval", "open", "overdue", "paid"],
       profile_status: ["active", "inactive"],
       user_role: ["user", "admin"],

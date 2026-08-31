@@ -30,21 +30,30 @@ export function ComprovanteScreen({
   navigation,
 }: FinanceiroStackScreenProps<'Comprovante'>): React.JSX.Element {
   const { colors } = useTheme();
-  const { paymentId, proofPath, studentName } = route.params;
+  const { paymentId, comprovante, studentName } = route.params;
 
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const [loadingUrl, setLoadingUrl] = useState(true);
   const [working, setWorking] = useState(false);
 
-  const isPdf = proofPath !== null && proofPath.toLowerCase().endsWith('.pdf');
+  /**
+   * O identificador do arquivo muda conforme o provedor: path no Storage
+   * (com extensao) ou public_id na Cloudinary (sem extensao). Para o legado a
+   * extensao ainda diz se e PDF; na Cloudinary ela nao existe, e o visualizador
+   * recebe a URL assinada, que a Cloudinary entrega com o tipo correto.
+   */
+  const referenciaDoArquivo =
+    comprovante.proof_storage_path ?? comprovante.proof_url ?? comprovante.proof_public_id;
+  const temComprovante = referenciaDoArquivo !== null;
+  const isPdf = referenciaDoArquivo?.toLowerCase().endsWith('.pdf') ?? false;
 
   useEffect(() => {
     let active = true;
-    if (proofPath === null) {
+    if (!temComprovante) {
       setLoadingUrl(false);
       return;
     }
-    createSignedProofUrl(proofPath)
+    createSignedProofUrl(comprovante)
       .then((url) => {
         if (active) {
           setSignedUrl(url);
@@ -63,7 +72,7 @@ export function ComprovanteScreen({
     return () => {
       active = false;
     };
-  }, [proofPath]);
+  }, [comprovante, temComprovante]);
 
   const handleApprove = useCallback(async () => {
     setWorking(true);
@@ -80,14 +89,14 @@ export function ComprovanteScreen({
   const confirmReject = useCallback(async () => {
     setWorking(true);
     try {
-      await rejectPayment({ id: paymentId, proof_url: proofPath });
+      await rejectPayment(comprovante);
       navigation.goBack();
     } catch {
       Alert.alert('Erro', 'Não foi possível recusar o comprovante.');
     } finally {
       setWorking(false);
     }
-  }, [paymentId, proofPath, navigation]);
+  }, [comprovante, navigation]);
 
   const handleReject = useCallback(() => {
     Alert.alert(

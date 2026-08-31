@@ -1,3 +1,5 @@
+import type { ReferenciaDeComprovante } from '@/services/proofs.service';
+
 import type { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import type {
   CompositeScreenProps,
@@ -42,7 +44,12 @@ export type FinanceiroStackParamList = {
   Pagamento: { paymentId: string; dueDate: string };
   Comprovante: {
     paymentId: string;
-    proofPath: string | null;
+    /**
+     * Referencia completa do arquivo — provedor + identificador. Antes era so
+     * um `proofPath`, o que forcava a tela a adivinhar onde o arquivo estava.
+     * Com dois provedores em convivencia, adivinhar produz link quebrado.
+     */
+    comprovante: ReferenciaDeComprovante;
     studentName: string;
   };
 };

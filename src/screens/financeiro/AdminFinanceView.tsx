@@ -75,7 +75,7 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
     (item: PaymentWithName) => {
       navigation.navigate('Comprovante', {
         paymentId: item.id,
-        proofPath: item.proof_url,
+        comprovante: item,
         studentName: item.studentName,
       });
     },

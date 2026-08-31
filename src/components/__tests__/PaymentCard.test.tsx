@@ -15,6 +15,9 @@ function makePayment(overrides: Partial<PaymentRow> = {}): PaymentRow {
     // Valor em centavos: 12990 = R$ 129,90.
     amount_cents: 12990,
     paid_at: null,
+    proof_provider: null,
+    proof_public_id: null,
+    proof_storage_path: null,
     proof_url: null,
     created_at: '2030-01-01T00:00:00.000Z',
     updated_at: '2030-01-01T00:00:00.000Z',
