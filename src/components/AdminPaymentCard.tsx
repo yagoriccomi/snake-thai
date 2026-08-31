@@ -79,7 +79,9 @@ function AdminPaymentCardComponent({
       </View>
 
       <View style={styles.right}>
-        <Text style={styles.amount}>{formatCents(item.amount_cents)}</Text>
+        <Text style={styles.amount} numberOfLines={1}>
+          {formatCents(item.amount_cents)}
+        </Text>
         {reviewable ? (
           <View style={styles.reviewChip}>
             <Text style={styles.reviewText}>Revisar</Text>

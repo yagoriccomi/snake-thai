@@ -24,25 +24,23 @@ function FinanceSummaryComponent({ totals }: FinanceSummaryProps): React.JSX.Ele
 
   return (
     <View style={styles.card}>
-      <View style={styles.cell}>
-        <Text style={[styles.value, { color: colors.primaryText }]}>
+      <View style={styles.row}>
+        <Text style={styles.label}>Recebido</Text>
+        <Text style={[styles.value, { color: colors.primaryText }]} numberOfLines={1}>
           {formatCents(totals.receivedCents)}
         </Text>
-        <Text style={styles.label}>recebido</Text>
       </View>
-      <View style={styles.divider} />
-      <View style={styles.cell}>
-        <Text style={[styles.value, { color: colors.textPrimary }]}>
+      <View style={[styles.row, styles.rowDivider]}>
+        <Text style={styles.label}>{totals.openCount} em aberto</Text>
+        <Text style={[styles.value, { color: colors.textPrimary }]} numberOfLines={1}>
           {formatCents(totals.openCents)}
         </Text>
-        <Text style={styles.label}>{totals.openCount} em aberto</Text>
       </View>
-      <View style={styles.divider} />
-      <View style={styles.cell}>
-        <Text style={[styles.value, { color: colors.error }]}>
+      <View style={[styles.row, styles.rowDivider]}>
+        <Text style={styles.label}>{totals.overdueCount} vencidas</Text>
+        <Text style={[styles.value, { color: colors.error }]} numberOfLines={1}>
           {formatCents(totals.overdueCents)}
         </Text>
-        <Text style={styles.label}>{totals.overdueCount} vencidas</Text>
       </View>
     </View>
   );
@@ -51,34 +49,36 @@ function FinanceSummaryComponent({ totals }: FinanceSummaryProps): React.JSX.Ele
 function makeStyles(colors: ColorScheme, radius: Radius, fonts: Fonts) {
   return StyleSheet.create({
     card: {
-      flexDirection: 'row',
-      alignItems: 'stretch',
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: radius.lg + 6,
-      paddingVertical: 18,
+      paddingHorizontal: 18,
+      paddingVertical: 4,
     },
-    cell: {
-      flex: 1,
+    row: {
+      flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 4,
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingVertical: 15,
     },
-    value: {
-      fontFamily: fonts.bodyBold,
-      fontSize: 20,
-      fontVariant: ['tabular-nums'],
-      letterSpacing: -0.3,
+    rowDivider: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
     },
     label: {
       fontFamily: fonts.body,
-      fontSize: 11,
+      fontSize: 14,
       color: colors.textSecondary,
-      marginTop: 5,
+      flexShrink: 1,
     },
-    divider: {
-      width: StyleSheet.hairlineWidth,
-      backgroundColor: colors.border,
+    value: {
+      fontFamily: fonts.bodyBold,
+      fontSize: 19,
+      fontVariant: ['tabular-nums'],
+      letterSpacing: -0.3,
+      textAlign: 'right',
     },
   });
 }
