@@ -46,6 +46,9 @@ export function ComprovanteScreen({
   const { paymentId, comprovante, studentName } = route.params;
 
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  /** Total de páginas do documento e qual está sendo exibida. */
+  const [totalDePaginas, setTotalDePaginas] = useState(1);
+  const [paginaAtual, setPaginaAtual] = useState(1);
   const [loadingUrl, setLoadingUrl] = useState(true);
   const [working, setWorking] = useState(false);
   /**
@@ -58,16 +61,20 @@ export function ComprovanteScreen({
   /** Muda para forçar a recarga quando o admin toca em "tentar de novo". */
   const [tentativa, setTentativa] = useState(0);
 
-  /**
-   * O identificador do arquivo muda conforme o provedor: path no Storage
-   * (com extensao) ou public_id na Cloudinary (sem extensao). Para o legado a
-   * extensao ainda diz se e PDF; na Cloudinary ela nao existe, e o visualizador
-   * recebe a URL assinada, que a Cloudinary entrega com o tipo correto.
-   */
   const referenciaDoArquivo =
     comprovante.proof_storage_path ?? comprovante.proof_url ?? comprovante.proof_public_id;
   const temComprovante = referenciaDoArquivo !== null;
-  const isPdf = referenciaDoArquivo?.toLowerCase().endsWith('.pdf') ?? false;
+
+  /*
+   * Só o comprovante LEGADO pode chegar como PDF. O caminho novo entrega tudo
+   * — PDF, HEIC, PNG — convertido em imagem pelo servidor, então o admin vê o
+   * documento na própria tela em vez de ser jogado para fora do app.
+   */
+  const ehPdfLegado =
+    comprovante.proof_provider !== 'cloudinary' &&
+    (referenciaDoArquivo?.toLowerCase().endsWith('.pdf') ?? false);
+
+  const temMaisPaginas = totalDePaginas > 1;
 
   /** Acorda o servidor assim que a tela abre — `docs/BACKEND.md` §5. */
   useEffect(() => {
@@ -82,10 +89,11 @@ export function ComprovanteScreen({
     }
     setLoadingUrl(true);
     setFalhouAoCarregar(false);
-    createSignedProofUrl(comprovante)
-      .then((url) => {
+    createSignedProofUrl(comprovante, paginaAtual)
+      .then((visualizavel) => {
         if (active) {
-          setSignedUrl(url);
+          setSignedUrl(visualizavel.url);
+          setTotalDePaginas(visualizavel.paginas);
         }
       })
       .catch((erro: unknown) => {
@@ -108,7 +116,7 @@ export function ComprovanteScreen({
     return () => {
       active = false;
     };
-  }, [comprovante, temComprovante, paymentId, tentativa]);
+  }, [comprovante, temComprovante, paymentId, tentativa, paginaAtual]);
 
   const handleRetryUrl = useCallback(() => {
     setTentativa((anterior) => anterior + 1);
@@ -149,6 +157,12 @@ export function ComprovanteScreen({
     );
   }, [studentName, confirmReject]);
 
+  const verProximaPagina = useCallback(() => {
+    // Circular: na última, volta para a primeira. Evita um botão que fica
+    // desabilitado no fim e obriga o admin a sair da tela para recomeçar.
+    setPaginaAtual((atual) => (atual < totalDePaginas ? atual + 1 : 1));
+  }, [totalDePaginas]);
+
   const openPdf = useCallback(() => {
     if (signedUrl !== null) {
       void Linking.openURL(signedUrl);
@@ -180,7 +194,7 @@ export function ComprovanteScreen({
             >
               Este pagamento ainda não tem comprovante enviado.
             </AppText>
-          ) : isPdf ? (
+          ) : ehPdfLegado ? (
             <Button
               title="Abrir comprovante (PDF)"
               onPress={openPdf}
@@ -191,10 +205,45 @@ export function ComprovanteScreen({
               source={{ uri: signedUrl }}
               style={styles.image}
               resizeMode="contain"
-              accessibilityLabel={`Comprovante de pagamento de ${studentName}`}
+              accessibilityLabel={
+                temMaisPaginas
+                  ? `Comprovante de ${studentName}, página ${paginaAtual} de ${totalDePaginas}`
+                  : `Comprovante de pagamento de ${studentName}`
+              }
             />
           )}
         </View>
+
+        {temMaisPaginas ? (
+          /*
+           * O aviso existe porque a alternativa é pior do que parece: um
+           * extrato com o comprovante na página 2 mostraria a folha de rosto e
+           * nada mais. O admin veria uma página em branco e concluiria que o
+           * aluno não enviou o comprovante — e recusaria um pagamento legítimo.
+           */
+          <View
+            style={[styles.aviso, { borderColor: colors.border }]}
+            accessible
+            accessibilityRole="text"
+            accessibilityLiveRegion="polite"
+          >
+            <AppText variant="caption" color={colors.textSecondary}>
+              Este documento tem {totalDePaginas} páginas. Você está vendo a{' '}
+              {paginaAtual}.
+            </AppText>
+            <Button
+              title={
+                paginaAtual < totalDePaginas
+                  ? `Ver página ${paginaAtual + 1}`
+                  : 'Voltar à página 1'
+              }
+              variant="secondary"
+              onPress={verProximaPagina}
+              accessibilityHint="Carrega outra página do comprovante"
+              style={styles.botaoPagina}
+            />
+          </View>
+        ) : null}
 
         <Button
           title="Aprovar Pagamento"
@@ -225,6 +274,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 240,
+  },
+  aviso: {
+    marginTop: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderRadius: 12,
+    gap: 8,
+  },
+  botaoPagina: {
+    alignSelf: 'stretch',
   },
   image: {
     width: '100%',

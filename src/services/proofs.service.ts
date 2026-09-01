@@ -46,8 +46,12 @@ interface UploadAssinado {
 }
 
 /** Resposta de `POST /v1/proofs/view-url`. */
-interface UrlDeVisualizacao {
+export interface ComprovanteVisualizavel {
   url: string;
+  /** Total de páginas do documento. `1` para imagem comum. */
+  paginas: number;
+  /** Qual página a `url` mostra. */
+  pagina: number;
 }
 
 /** Remove caracteres perigosos do nome do arquivo antes de compor o caminho. */
@@ -166,12 +170,13 @@ export async function submitProof(upload: ProofUpload): Promise<void> {
  */
 export async function createSignedProofUrl(
   pagamento: ReferenciaDeComprovante,
-): Promise<string> {
+  pagina = 1,
+): Promise<ComprovanteVisualizavel> {
   if (pagamento.proof_provider === 'cloudinary') {
-    const { url } = await chamarApi<UrlDeVisualizacao>('/v1/proofs/view-url', {
+    return chamarApi<ComprovanteVisualizavel>('/v1/proofs/view-url', {
       paymentId: pagamento.id,
+      pagina,
     });
-    return url;
   }
 
   const caminho = pagamento.proof_storage_path ?? pagamento.proof_url;
@@ -185,7 +190,14 @@ export async function createSignedProofUrl(
   if (error !== null) {
     throw error;
   }
-  return data.signedUrl;
+
+  /*
+   * O comprovante legado é entregue como está: o Storage não converte nem
+   * pagina documentos. Declarar 1 página aqui não é um palpite — é o que a
+   * tela pode oferecer para um arquivo que o app nunca soube dividir. O
+   * caminho antigo continua exatamente como sempre foi. [#15]
+   */
+  return { url: data.signedUrl, paginas: 1, pagina: 1 };
 }
 
 /**

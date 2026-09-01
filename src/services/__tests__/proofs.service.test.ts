@@ -216,13 +216,18 @@ describe('proofs.service', () => {
 
   describe('createSignedProofUrl', () => {
     it('devePedirAUrlAoBackendQuandoOComprovanteJaEstaNaCloudinary', async () => {
-      mockChamarApi.mockResolvedValue({ url: 'https://res.cloudinary.com/assinada' });
+      mockChamarApi.mockResolvedValue({
+        url: 'https://res.cloudinary.com/assinada',
+        paginas: 1,
+        pagina: 1,
+      });
 
-      const url = await createSignedProofUrl(NA_CLOUDINARY);
+      const visualizavel = await createSignedProofUrl(NA_CLOUDINARY);
 
-      expect(url).toBe('https://res.cloudinary.com/assinada');
+      expect(visualizavel.url).toBe('https://res.cloudinary.com/assinada');
       expect(mockChamarApi).toHaveBeenCalledWith('/v1/proofs/view-url', {
         paymentId: PAGAMENTO,
+        pagina: 1,
       });
     });
 
@@ -234,9 +239,9 @@ describe('proofs.service', () => {
       );
       mockStorageFrom.mockReturnValue({ createSignedUrl });
 
-      const url = await createSignedProofUrl(NO_STORAGE);
+      const visualizavel = await createSignedProofUrl(NO_STORAGE);
 
-      expect(url).toBe('https://supabase/assinada');
+      expect(visualizavel.url).toBe('https://supabase/assinada');
       expect(mockChamarApi).not.toHaveBeenCalled();
     });
 
@@ -262,11 +267,55 @@ describe('proofs.service', () => {
       );
       mockStorageFrom.mockReturnValue({ createSignedUrl });
 
-      const url = await createSignedProofUrl(ANTES_DA_MIGRATION);
+      const visualizavel = await createSignedProofUrl(ANTES_DA_MIGRATION);
 
-      expect(url).toBe('https://supabase/antiga');
+      expect(visualizavel.url).toBe('https://supabase/antiga');
       const [caminho] = createSignedUrl.mock.calls[0] as unknown as [string];
       expect(caminho).toBe(ANTES_DA_MIGRATION.proof_url);
+    });
+
+    it('deveRepassarOTotalDePaginasParaATelaPoderAvisarOAdmin', async () => {
+      // Sem este número, um extrato com o comprovante na página 2 mostraria a
+      // folha de rosto e mais nada — e o admin recusaria um pagamento legítimo
+      // achando que o aluno não enviou.
+      mockChamarApi.mockResolvedValue({
+        url: 'https://res.cloudinary.com/pag1',
+        paginas: 3,
+        pagina: 1,
+      });
+
+      const visualizavel = await createSignedProofUrl(NA_CLOUDINARY);
+
+      expect(visualizavel.paginas).toBe(3);
+    });
+
+    it('devePedirAPaginaEscolhidaQuandoOAdminNavegaNoDocumento', async () => {
+      mockChamarApi.mockResolvedValue({
+        url: 'https://res.cloudinary.com/pag2',
+        paginas: 3,
+        pagina: 2,
+      });
+
+      await createSignedProofUrl(NA_CLOUDINARY, 2);
+
+      expect(mockChamarApi).toHaveBeenCalledWith('/v1/proofs/view-url', {
+        paymentId: PAGAMENTO,
+        pagina: 2,
+      });
+    });
+
+    it('deveDeclararUmaPaginaParaOComprovanteLegadoQueOAppNuncaSoubeDividir', async () => {
+      // O Storage não pagina documento. Declarar 1 mantém a tela coerente sem
+      // prometer uma navegação que não existe para o arquivo antigo. [#15]
+      const createSignedUrl = jest.fn(() =>
+        Promise.resolve({ data: { signedUrl: 'https://supabase/x' }, error: null }),
+      );
+      mockStorageFrom.mockReturnValue({ createSignedUrl });
+
+      const visualizavel = await createSignedProofUrl(NO_STORAGE);
+
+      expect(visualizavel.paginas).toBe(1);
+      expect(visualizavel.pagina).toBe(1);
     });
 
     it('deveFalharComMensagemClaraQuandoNaoHaComprovanteNenhum', async () => {
