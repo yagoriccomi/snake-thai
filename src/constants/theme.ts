@@ -1,32 +1,10 @@
 /**
- * Design tokens da marca Snake Thai — Dark Mode first.
+ * Design tokens da marca Snake Thai independentes de modo (claro/escuro).
  *
- * Centraliza cores, espaçamentos, raios e tipografia num único ponto para
- * eliminar "magic strings" de cor espalhadas pela UI e garantir consistência
- * visual. Fonte de verdade: `Identidade-Visual.md`.
+ * Espaçamento, raios, tipografia e alvo de toque ficam centralizados aqui para
+ * eliminar "magic numbers" e garantir consistência. As CORES (que mudam entre
+ * claro/escuro) vivem em `@/theme/colors`. Fonte: `Identidade-Visual.md`.
  */
-
-/** Paleta oficial (extraída da identidade visual da marca). */
-export const colors = {
-  /** Fundo dominante da interface (dark). */
-  bgPrimary: '#0D0D0D',
-  /** Superfícies elevadas: cards, formulários, modais. */
-  bgSurface: '#1E1E1E',
-  /** Verde neon — ações principais (CTA), status ativos, foco. */
-  accentNeon: '#39FF14',
-  /** Variação de verde com melhor contraste para textos/ícones. */
-  accentNeonSoft: '#22C55E',
-  /** Texto e contornos sobre fundo escuro. */
-  textPrimary: '#FFFFFF',
-  /** Texto secundário, labels e bordas sutis. */
-  textSecondary: '#A1A1AA',
-  /** Bordas finas translúcidas. */
-  border: 'rgba(255, 255, 255, 0.15)',
-  /** Acentos complementares (tags, alertas, badges de status). */
-  accentBlue: '#1E3A8A',
-  accentRed: '#EF4444',
-  accentYellow: '#F59E0B',
-} as const;
 
 /** Escala de espaçamento (dp). Base 4 para ritmo vertical consistente. */
 export const spacing = {
@@ -41,17 +19,23 @@ export const spacing = {
 /** Raios de borda. Cantos levemente arredondados (8–12) por padrão. */
 export const radius = {
   sm: 8,
-  md: 12,
+  md: 10,
+  lg: 12,
   pill: 9999,
 } as const;
 
 /**
- * Famílias tipográficas recomendadas. As fontes são carregadas na fase de
- * implementação (ex.: `expo-font`); aqui ficam apenas os nomes canônicos.
+ * Nomes das famílias tipográficas carregadas via `@expo-google-fonts`.
+ * Devem corresponder exatamente às chaves passadas ao `useFonts`
+ * (ver `@/hooks/useAppFonts`): Inter para corpo, Syne para títulos.
  */
-export const typography = {
-  heading: 'Syne',
-  body: 'Inter',
+export const fonts = {
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemiBold: 'Inter_600SemiBold',
+  bodyBold: 'Inter_700Bold',
+  heading: 'Syne_700Bold',
+  headingBold: 'Syne_800ExtraBold',
 } as const;
 
 /**
@@ -60,7 +44,57 @@ export const typography = {
  */
 export const MIN_HIT_SLOP = 44;
 
-/** Tema agregado, pronto para injeção em um ThemeProvider. */
-export const theme = { colors, spacing, radius, typography } as const;
+/**
+ * Escala tipográfica.
+ *
+ * Antes cada tela escolhia o próprio tamanho de fonte, o que achatava a
+ * hierarquia: título e legenda acabavam quase do mesmo tamanho e nada se
+ * destacava. A escala abaixo tem saltos deliberados para o olho distinguir
+ * nível de importância à distância [#3][#6].
+ */
+export const typography = {
+  display: { size: 32, lineHeight: 38 },
+  title: { size: 24, lineHeight: 30 },
+  subtitle: { size: 17, lineHeight: 24 },
+  body: { size: 15, lineHeight: 22 },
+  caption: { size: 13, lineHeight: 18 },
+  overline: { size: 11, lineHeight: 14 },
+} as const;
 
-export type AppTheme = typeof theme;
+/**
+ * Profundidade das superfícies.
+ *
+ * Usada apenas no tema claro: no escuro, a borda sutil já separa o cartão do
+ * fundo, e sombra forte vira mancha em vez de relevo.
+ */
+export const elevation = {
+  flat: {
+    shadowColor: '#000000',
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 0,
+  },
+  raised: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  floating: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+} as const;
+
+/** Níveis de profundidade disponíveis para superfícies. */
+export type ElevationLevel = keyof typeof elevation;
+
+export type Spacing = typeof spacing;
+export type Radius = typeof radius;
+export type Fonts = typeof fonts;
+export type Typography = typeof typography;

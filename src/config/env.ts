@@ -25,6 +25,22 @@ const requireEnv = (key: string, value: string | undefined): string => {
   return value;
 };
 
+/**
+ * Lê uma variável OPCIONAL, normalizando ausência e string vazia para `null`.
+ *
+ * Diferente de `requireEnv` de propósito: a URL do backend próprio só é
+ * necessária no fluxo de comprovantes. Derrubar o boot do app inteiro — login,
+ * aulas, perfil — porque uma integração ainda não foi configurada seria
+ * desproporcional. Quem depende dela falha na hora do uso, com mensagem
+ * própria. [#9]
+ */
+const optionalEnv = (value: string | undefined): string | null => {
+  if (value === undefined || value.trim() === '') {
+    return null;
+  }
+  return value.trim().replace(/\/+$/, '');
+};
+
 /** Configuração pública validada, consumida pelo restante do app. */
 export const env = {
   supabaseUrl: requireEnv(
@@ -35,4 +51,9 @@ export const env = {
     'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   ),
+  /**
+   * Backend próprio na Render (`docs/BACKEND.md`). `null` enquanto não houver
+   * deploy — o app segue funcionando pelo caminho Supabase.
+   */
+  apiUrl: optionalEnv(process.env.EXPO_PUBLIC_API_URL),
 } as const;

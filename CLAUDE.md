@@ -74,6 +74,16 @@ scripts/                # dev.bat / dev.sh — controle do ambiente local
 * **Comandos:**
   - Windows: `scripts\dev.bat start` | `stop` | `restart` | `status`
   - Linux/Mac: `./scripts/dev.sh start` | `stop` | `restart` | `status`
+  - Windows (dia a dia): `menu.bat` — Metro, ADB Wi-Fi, APK e instalação.
+* **Porta do Metro: 6969** (não 8081, que conflita com outros projetos RN). Vive em
+  três pontos que devem permanecer coerentes: `package.json` (`--port`),
+  `android/gradle.properties` (`reactNativeDevServerPort`, embutido no APK) e
+  `menu.bat` (`METRO_PORT`). Como `android/` não é versionada, o `menu.bat` reaplica
+  a propriedade após um `prebuild` e passa `-PreactNativeDevServerPort` nos builds.
+  **Trocar a porta exige recompilar o APK.**
+* **`adb reverse`:** aberto pelo ícone, o app procura o Metro em `localhost:<porta>`.
+  O `menu.bat` cria o encaminhamento automaticamente ao subir o servidor e após
+  instalar o APK — funciona por cabo e por Wi-Fi.
 
 ## 9. Protocolo de Atualização do README.md (CRÍTICO)
 
@@ -91,4 +101,5 @@ O `README.md` é a documentação pública. **Sempre que** ocorrer uma das mudan
 * **Convenção de branches:** `feat/…`, `fix/…`, `refactor/…` — curta duração, integradas com frequência. [#33][#36]
 * **Convenção de commits:** Conventional Commits obrigatório, validado pelo hook `commit-msg` (Husky). [#32]
 * **Proteção de borda (Husky):** `pre-commit` roda `tsc --noEmit` (typecheck) como gate antes de cada commit. [#5][#49]
-* **Remoto:** ainda não configurado. Ao adicionar (GitHub/Bitbucket), gerar chave SSH (ed25519) e cadastrar apenas a chave pública. [#37][#55]
+* **Migração para Cloudinary (em andamento):** branch `feat/comprovantes-cloudinary`, criada a partir de `feat/telas-admin` em 2026-08-31. Move os comprovantes do Supabase Storage para o backend `snake-server` (Render), conforme `docs/BACKEND.md`. Decisão do usuário registrada nesta data. [#33][#36]
+* **Remoto:** `git@github.com:yagoriccomi/snake-thai.git` (GitHub, via SSH). Apenas a chave **pública** é cadastrada no provedor; a privada nunca sai da máquina nem entra no Git. [#37][#55]

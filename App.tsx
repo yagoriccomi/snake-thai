@@ -1,50 +1,39 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useCallback } from 'react';
+import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { colors, spacing } from '@/constants/theme';
+import { AuthProvider } from '@/context/AuthProvider';
+import { useAppFonts } from '@/hooks/useAppFonts';
+import { RootNavigator } from '@/navigation/RootNavigator';
+import { ThemeProvider } from '@/theme/ThemeProvider';
+
+// Mantém a splash screen visível até as fontes carregarem.
+void SplashScreen.preventAutoHideAsync();
 
 /**
  * Componente raiz do aplicativo Snake Thai.
  *
- * Base mínima em Dark Mode (identidade visual da marca). Providers globais
- * (auth, tema, query client) e a navegação (React Navigation / Expo Router)
- * entram na fase de implementação — mantido simples aqui de propósito.
- *
- * @returns A árvore de UI raiz do app.
+ * Composição: área segura → tema → autenticação → navegação. As fontes da marca
+ * carregam antes da UI (a splash só some quando a navegação está pronta).
  */
-export default function App(): React.JSX.Element {
+export default function App(): React.JSX.Element | null {
+  const { fontsLoaded, fontError } = useAppFonts();
+
+  const handleNavigationReady = useCallback(() => {
+    void SplashScreen.hideAsync();
+  }, []);
+
+  if (!fontsLoaded && fontError === null) {
+    return null;
+  }
+
   return (
-    <View style={styles.container}>
-      <StatusBar style="light" />
-      <Text
-        style={styles.title}
-        accessibilityRole="header"
-        accessibilityLabel="Snake Thai"
-      >
-        Snake Thai
-      </Text>
-      <Text style={styles.subtitle}>Ambiente configurado. Bora treinar. 🐍</Text>
-    </View>
+    <SafeAreaProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <RootNavigator onReady={handleNavigationReady} />
+        </AuthProvider>
+      </ThemeProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bgPrimary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-  },
-  title: {
-    color: colors.accentNeon,
-    fontSize: 32,
-    fontWeight: '800',
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: 16,
-    textAlign: 'center',
-  },
-});
