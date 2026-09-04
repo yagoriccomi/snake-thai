@@ -3,8 +3,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { createLogger } from '@/lib/logger';
 
 import {
+  clearAttendance,
   fetchAttendanceForClass,
   fetchStudentsForGroup,
+  upsertAttendance,
+  type AttendanceStatus,
 } from '@/services/classes.service';
 import type { Profile } from '@/types/models';
 
@@ -22,6 +25,14 @@ interface UseClassAttendanceResult extends AttendanceBreakdown {
   /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
   error: string | null;
   reload: () => Promise<void>;
+  /**
+   * Define a presença de um aluno em nome dele — ação de quem GERENCIA a
+   * aula (admin, ou o professor dela; a RLS decide quem realmente pode).
+   * Recarrega a lista ao final para refletir o novo balde.
+   */
+  setStudentStatus: (userId: string, status: AttendanceStatus) => Promise<void>;
+  /** Limpa a resposta do aluno — ele volta a aparecer como Pendente. */
+  clearStudentStatus: (userId: string) => Promise<void>;
 }
 
 const EMPTY: AttendanceBreakdown = { present: [], absent: [], pending: [] };
@@ -77,5 +88,21 @@ export function useClassAttendance(
     void load();
   }, [load]);
 
-  return { ...breakdown, loading, error, reload: load };
+  const setStudentStatus = useCallback(
+    async (userId: string, status: AttendanceStatus) => {
+      await upsertAttendance(classId, userId, status);
+      await load();
+    },
+    [classId, load],
+  );
+
+  const clearStudentStatus = useCallback(
+    async (userId: string) => {
+      await clearAttendance(classId, userId);
+      await load();
+    },
+    [classId, load],
+  );
+
+  return { ...breakdown, loading, error, reload: load, setStudentStatus, clearStudentStatus };
 }

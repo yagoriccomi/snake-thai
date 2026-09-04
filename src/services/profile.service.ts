@@ -108,6 +108,66 @@ export async function fetchAllStudents(): Promise<Profile[]> {
   return data;
 }
 
+/** Lista todos os professores (para o admin escolher em quais aulas colocar). */
+export async function fetchAllProfessors(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'professor')
+    .order('name', { ascending: true });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/** Cargo de um funcionário (professor ou administrador) — nunca aluno aqui. */
+export type StaffRole = Extract<Database['public']['Enums']['user_role'], 'professor' | 'admin'>;
+
+/** Dados para cadastrar professor ou admin (cadastro completo — sem onboarding). */
+export interface StaffInput {
+  email: string;
+  name: string;
+  /** Só dígitos. */
+  cpf: string;
+  role: StaffRole;
+  /** Obrigatório para `professor`; deve ficar `null` para `admin`. */
+  color: string | null;
+}
+
+/**
+ * Cadastra professor ou administrador. Diferente de `createStudent`: o
+ * cadastro nasce COMPLETO (nome e CPF já informados) — não há onboarding
+ * depois. Roda na Edge Function `create-staff` (service_role, nunca no
+ * cliente), que também valida o formato da cor e se o chamador é admin.
+ */
+export async function createStaff(input: StaffInput): Promise<void> {
+  const { error } = await supabase.functions.invoke('create-staff', {
+    body: {
+      email: input.email.trim().toLowerCase(),
+      name: input.name.trim(),
+      cpf: input.cpf,
+      role: input.role,
+      color: input.color,
+    },
+  });
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Atualiza a cor do PRÓPRIO professor. A RLS permite a autoedição deste
+ * campo (e só deste, para quem não é admin); a constraint do banco garante
+ * que só quem é professor pode ter uma cor.
+ */
+export async function updateOwnColor(userId: string, color: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ color }).eq('id', userId);
+  if (error !== null) {
+    throw error;
+  }
+}
+
 /** Atribui/altera a turma de um aluno (apenas admin — enforced por RLS). */
 export async function updateStudentGroup(
   studentId: string,

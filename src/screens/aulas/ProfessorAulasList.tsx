@@ -21,31 +21,34 @@ import { TypeBadge } from '@/components/TypeBadge';
 import { WeekStrip } from '@/components/WeekStrip';
 import { useAdminClassesForDay } from '@/hooks/useAdminClassesForDay';
 import { useGroups } from '@/hooks/useGroups';
+import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import {
   fetchTeachersForClasses,
   type ClassRow,
   type ClassTeacherRef,
 } from '@/services/classes.service';
-import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme/ThemeProvider';
 import { buildDayStrip, formatTime, type DayItem } from '@/utils/datetime';
 
-const log = createLogger('AdminAulasList');
-
+const log = createLogger('ProfessorAulasList');
 const SCREEN_EDGES = ['bottom'] as const;
 const STRIP_DAYS = 21;
 
-interface AdminAulasListProps {
+interface ProfessorAulasListProps {
   navigation: AulasStackScreenProps<'AulasHome'>['navigation'];
 }
 
 /**
- * Gestão de aulas (admin) — Painel, agenda em timeline (mesmo desenho da visão
- * do aluno). Calendário horizontal, aulas do dia com trilho de horário, e FAB
- * para criar. Tocar numa aula abre o detalhe, de onde se edita ou faz a chamada.
+ * Aulas (visão do professor): mesma agenda diária que o admin vê — "professor
+ * vê todas as aulas da academia" — mas o toque leva ao detalhe onde o
+ * `DetalheAulaScreen` decide, pela lista de professores da aula, se mostra
+ * "Fazer chamada" (já é professor dela) ou "Entrar nesta aula". O FAB cria uma
+ * aula em nome do próprio professor. [#55]
  */
-export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.Element {
+export function ProfessorAulasList({
+  navigation,
+}: ProfessorAulasListProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const days = useMemo(() => buildDayStrip(new Date(), STRIP_DAYS), []);
@@ -57,8 +60,20 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   const { groups } = useGroups();
   const [teachersByClass, setTeachersByClass] = useState<Record<string, ClassTeacherRef[]>>({});
 
-  // Professores das aulas do dia, para pintar trilho e bolinhas — uma
-  // consulta só para todas as aulas visíveis, não uma por card. [#70]
+  const groupNameById = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const group of groups) {
+      map.set(group.id, group.name);
+    }
+    return map;
+  }, [groups]);
+
+  useFocusEffect(
+    useCallback(() => {
+      void reload();
+    }, [reload]),
+  );
+
   useEffect(() => {
     let ativo = true;
     const classIds = items.map((item) => item.id);
@@ -75,22 +90,6 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
       ativo = false;
     };
   }, [items]);
-
-  // Mapa id→nome da turma, para exibir o nome real em vez do UUID.
-  const groupNameById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const group of groups) {
-      map.set(group.id, group.name);
-    }
-    return map;
-  }, [groups]);
-
-  // Recarrega ao voltar o foco (ex.: após criar ou editar uma aula).
-  useFocusEffect(
-    useCallback(() => {
-      void reload();
-    }, [reload]),
-  );
 
   const handleSelectDay = useCallback((day: DayItem) => {
     setSelectedKey(day.key);
@@ -128,7 +127,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
           style={styles.row}
           accessibilityRole="button"
           accessibilityLabel={`Aula ${item.title} às ${formatTime(item.date_time)}`}
-          accessibilityHint="Abre o detalhe para editar ou fazer a chamada"
+          accessibilityHint="Abre o detalhe da aula"
         >
           <View style={styles.timeCol}>
             <Text style={styles.time}>{formatTime(item.date_time)}</Text>
@@ -179,7 +178,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
           ListEmptyComponent={
             <EmptyState
               title="Sem aulas neste dia"
-              message="Toque em “Criar Aula” para adicionar uma rotina ou evento."
+              message="Toque em “Criar Aula” para adicionar a sua."
             />
           }
         />
@@ -232,12 +231,6 @@ function makeStyles(
       fontSize: 15,
       color: colors.textPrimary,
       fontVariant: ['tabular-nums'],
-    },
-    rail: {
-      width: 2,
-      alignSelf: 'stretch',
-      borderRadius: 2,
-      backgroundColor: colors.border,
     },
     info: {
       flex: 1,

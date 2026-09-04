@@ -8,7 +8,7 @@ import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
 import type { DadosStackScreenProps } from '@/navigation/types';
-import { updateProfile } from '@/services/profile.service';
+import { updateOwnColor, updateProfile } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { describeError } from '@/utils/errors';
 import {
@@ -22,6 +22,8 @@ import {
 import { isValidBirthDate, isValidName, isValidPhone } from '@/utils/validation';
 
 type ProfileErrors = Partial<Record<'name' | 'phone' | 'dob' | 'form', string>>;
+
+const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
 /** Iniciais para o avatar: primeira + última palavra do nome (ou do e-mail). */
 function initialsFrom(name: string, email: string): string {
@@ -52,6 +54,7 @@ export function DadosScreen({
     profile,
     session,
     isAdmin,
+    isProfessor,
     signOut,
     refreshProfile,
     biometricEnabled,
@@ -60,6 +63,33 @@ export function DadosScreen({
   } = useAuth();
   const [biometricBusy, setBiometricBusy] = useState(false);
   const [biometricError, setBiometricError] = useState<string | null>(null);
+
+  const [color, setColor] = useState(profile?.color ?? '');
+  const [colorSaving, setColorSaving] = useState(false);
+  const [colorError, setColorError] = useState<string | null>(null);
+  const [colorSaved, setColorSaved] = useState(false);
+
+  const handleSaveColor = useCallback(async () => {
+    const userId = session?.user.id;
+    if (userId === undefined) {
+      return;
+    }
+    if (!HEX_COLOR_REGEX.test(color)) {
+      setColorError('Cor inválida — use o formato #RRGGBB.');
+      return;
+    }
+    setColorError(null);
+    setColorSaving(true);
+    try {
+      await updateOwnColor(userId, color);
+      await refreshProfile();
+      setColorSaved(true);
+    } catch (saveError) {
+      setColorError(describeError(saveError));
+    } finally {
+      setColorSaving(false);
+    }
+  }, [session, color, refreshProfile]);
 
   const email = session?.user.email ?? '';
   const cpfDisplay =
@@ -150,6 +180,10 @@ export function DadosScreen({
     () => navigation.navigate('CadastrarAluno'),
     [navigation],
   );
+  const goToCreateStaff = useCallback(
+    () => navigation.navigate('CadastrarEquipe'),
+    [navigation],
+  );
   const goToManageStudents = useCallback(
     () => navigation.navigate('GerenciarAlunos'),
     [navigation],
@@ -179,7 +213,7 @@ export function DadosScreen({
   );
 
   const initials = initialsFrom(name !== '' ? name : profile?.name ?? '', email);
-  const roleLabel = isAdmin ? 'Administrador' : 'Aluno';
+  const roleLabel = isAdmin ? 'Administrador' : isProfessor ? 'Professor' : 'Aluno';
   const phoneDisplay = phone.trim() !== '' ? phone : '—';
   const dobDisplay = dob.trim() !== '' ? dob : '—';
 
@@ -214,6 +248,13 @@ export function DadosScreen({
                 icon="person-add-outline"
                 label="Cadastrar novo aluno"
                 onPress={goToCreateStudent}
+                styles={styles}
+                colors={colors}
+              />
+              <NavRow
+                icon="ribbon-outline"
+                label="Cadastrar professor ou admin"
+                onPress={goToCreateStaff}
                 styles={styles}
                 colors={colors}
               />
@@ -320,6 +361,50 @@ export function DadosScreen({
             </AppText>
           ) : null}
         </View>
+
+        {/* Minha cor (somente professor) */}
+        {isProfessor ? (
+          <View style={styles.group}>
+            <Text style={styles.sectionLabel}>MINHA COR</Text>
+            <View style={styles.card}>
+              <View style={styles.colorRow}>
+                <View
+                  style={[
+                    styles.colorPreview,
+                    HEX_COLOR_REGEX.test(color) ? { backgroundColor: color } : null,
+                  ]}
+                />
+                <Input
+                  label="Cor hexadecimal"
+                  placeholder="#39FF14"
+                  autoCapitalize="characters"
+                  value={color}
+                  onChangeText={(value) => {
+                    setColorSaved(false);
+                    setColor(value);
+                  }}
+                  error={colorError ?? undefined}
+                  containerStyle={styles.colorInput}
+                />
+              </View>
+              <AppText variant="caption" color={colors.textSecondary} style={styles.colorHint}>
+                Aparece ao lado do seu nome nas aulas; a borda da aula também usa esta
+                cor.
+              </AppText>
+              <Button
+                title="Salvar cor"
+                onPress={() => void handleSaveColor()}
+                loading={colorSaving}
+                style={styles.colorSave}
+              />
+              {colorSaved ? (
+                <AppText variant="caption" color={colors.success} style={styles.savedHint}>
+                  Cor atualizada com sucesso.
+                </AppText>
+              ) : null}
+            </View>
+          </View>
+        ) : null}
 
         {/* Segurança */}
         <View style={styles.group}>
@@ -583,6 +668,31 @@ function makeStyles(
     savedHint: {
       marginTop: 8,
       marginLeft: 4,
+    },
+    colorRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 10,
+      padding: 14,
+      paddingBottom: 0,
+    },
+    colorPreview: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 8,
+    },
+    colorInput: {
+      flex: 1,
+    },
+    colorHint: {
+      paddingHorizontal: 14,
+      marginTop: 6,
+    },
+    colorSave: {
+      margin: 14,
     },
   });
 }

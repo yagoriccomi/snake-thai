@@ -197,6 +197,39 @@ export type Database = {
           },
         ]
       }
+      class_teachers: {
+        Row: {
+          class_id: string
+          created_at: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teachers_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_teachers_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       consents: {
         Row: {
           accepted_at: string
@@ -372,6 +405,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          color: string | null
           cpf: string | null
           created_at: string
           deactivated_at: string | null
@@ -387,6 +421,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          color?: string | null
           cpf?: string | null
           created_at?: string
           deactivated_at?: string | null
@@ -402,6 +437,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          color?: string | null
           cpf?: string | null
           created_at?: string
           deactivated_at?: string | null
@@ -455,7 +491,7 @@ export type Database = {
       media_provider: "supabase_storage" | "cloudinary"
       payment_status: "pending_approval" | "open" | "overdue" | "paid"
       profile_status: "active" | "inactive"
-      user_role: "user" | "admin"
+      user_role: "user" | "admin" | "professor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1049,7 +1085,7 @@ export const Constants = {
       media_provider: ["supabase_storage", "cloudinary"],
       payment_status: ["pending_approval", "open", "overdue", "paid"],
       profile_status: ["active", "inactive"],
-      user_role: ["user", "admin"],
+      user_role: ["user", "admin", "professor"],
     },
   },
   storage: {

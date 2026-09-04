@@ -7,6 +7,7 @@ import {
 import type { RouteProp } from '@react-navigation/native';
 
 import type { Fonts } from '@/constants/theme';
+import { useAuth } from '@/context/AuthProvider';
 import { AulasStackNavigator } from '@/navigation/AulasStackNavigator';
 import { DadosStackNavigator } from '@/navigation/DadosStackNavigator';
 import { FinanceiroStackNavigator } from '@/navigation/FinanceiroStackNavigator';
@@ -54,6 +55,7 @@ function makeScreenOptions(colors: ColorScheme, fonts: Fonts) {
 /** Navegador de abas do painel logado: Aulas, Financeiro e Dados. */
 export function MainTabNavigator(): React.JSX.Element {
   const { colors, fonts } = useTheme();
+  const { isProfessor } = useAuth();
 
   const screenOptions = useMemo(
     () => makeScreenOptions(colors, fonts),
@@ -67,11 +69,19 @@ export function MainTabNavigator(): React.JSX.Element {
         component={AulasStackNavigator}
         options={NESTED_STACK_TAB_OPTIONS}
       />
-      <Tab.Screen
-        name="Financeiro"
-        component={FinanceiroStackNavigator}
-        options={NESTED_STACK_TAB_OPTIONS}
-      />
+      {/*
+        Professor não vê o bloco financeiro. A aba nem é registrada — não é
+        só uma questão de esconder o conteúdo: sem o Tab.Screen, a rota
+        "Financeiro" não existe na navegação do professor, então nenhuma tela
+        dela é alcançável por link profundo ou navegação programática. [#55]
+      */}
+      {!isProfessor && (
+        <Tab.Screen
+          name="Financeiro"
+          component={FinanceiroStackNavigator}
+          options={NESTED_STACK_TAB_OPTIONS}
+        />
+      )}
       <Tab.Screen
         name="Dados"
         component={DadosStackNavigator}
