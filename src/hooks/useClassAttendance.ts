@@ -8,14 +8,14 @@ import {
   fetchStudentsForGroup,
   upsertAttendance,
   type AttendanceStatus,
+  type StudentRef,
 } from '@/services/classes.service';
-import type { Profile } from '@/types/models';
 
 /** Alunos agrupados pela resposta de presença. */
 export interface AttendanceBreakdown {
-  present: Profile[];
-  absent: Profile[];
-  pending: Profile[];
+  present: StudentRef[];
+  absent: StudentRef[];
+  pending: StudentRef[];
 }
 
 const log = createLogger('useClassAttendance');
@@ -59,9 +59,9 @@ export function useClassAttendance(
         fetchAttendanceForClass(classId),
       ]);
       const statusByUser = new Map(attendance.map((row) => [row.user_id, row.status]));
-      const present: Profile[] = [];
-      const absent: Profile[] = [];
-      const pending: Profile[] = [];
+      const present: StudentRef[] = [];
+      const absent: StudentRef[] = [];
+      const pending: StudentRef[] = [];
       for (const student of students) {
         const status = statusByUser.get(student.id) ?? null;
         if (status === 'present') {

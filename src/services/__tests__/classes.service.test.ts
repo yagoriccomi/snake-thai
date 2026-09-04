@@ -52,21 +52,26 @@ describe('fetchTeachersForClasses', () => {
   });
 
   it('deveAgruparOsProfessoresPorAula', async () => {
-    mockQuery({
+    // Duas consultas: os vínculos e, à parte, nome/cor no DIRETÓRIO. O join
+    // embutido em `profiles` devolvia null para aluno e professor por causa
+    // da RLS, apagando a cor justamente de quem precisa vê-la.
+    const vinculos = createQueryChain({
       data: [
-        {
-          class_id: CLASS_ID,
-          created_at: '2030-01-01T00:00:00.000Z',
-          teacher: { id: TEACHER_ID, name: 'Prof. Ana', color: '#FF0000' },
-        },
-        {
-          class_id: CLASS_ID,
-          created_at: '2030-01-02T00:00:00.000Z',
-          teacher: { id: 'teacher-2', name: 'Prof. Bruno', color: '#00FF00' },
-        },
+        { class_id: CLASS_ID, teacher_id: TEACHER_ID, created_at: '2030-01-01T00:00:00.000Z' },
+        { class_id: CLASS_ID, teacher_id: 'teacher-2', created_at: '2030-01-02T00:00:00.000Z' },
       ],
       error: null,
     });
+    const diretorio = createQueryChain({
+      data: [
+        { id: TEACHER_ID, name: 'Prof. Ana', color: '#FF0000' },
+        { id: 'teacher-2', name: 'Prof. Bruno', color: '#00FF00' },
+      ],
+      error: null,
+    });
+    mockFrom.mockImplementation((tabela: string) =>
+      tabela === 'class_teachers' ? vinculos : diretorio,
+    );
 
     const resultado = await fetchTeachersForClasses([CLASS_ID]);
 

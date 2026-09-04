@@ -15,9 +15,8 @@ import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useClassAttendance } from '@/hooks/useClassAttendance';
 import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
-import type { AttendanceStatus } from '@/services/classes.service';
+import type { AttendanceStatus, StudentRef } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { Profile } from '@/types/models';
 
 const SCREEN_EDGES = ['bottom'] as const;
 const TAMANHO_ICONE_ACAO = 22;
@@ -28,7 +27,7 @@ interface AttendanceSection {
   key: string;
   title: string;
   accent: string;
-  data: Profile[];
+  data: StudentRef[];
 }
 
 /**
@@ -95,7 +94,7 @@ export function FrequenciaScreen({
   );
 
   const renderSectionHeader = useCallback(
-    ({ section }: { section: SectionListData<Profile, AttendanceSection> }) => (
+    ({ section }: { section: SectionListData<StudentRef, AttendanceSection> }) => (
       <View style={[styles.sectionHeader, { backgroundColor: colors.background }]}>
         <View style={[styles.dot, { backgroundColor: section.accent }]} />
         <AppText variant="subtitle">
@@ -106,7 +105,7 @@ export function FrequenciaScreen({
     [colors.background],
   );
 
-  const renderItem = useCallback<SectionListRenderItem<Profile, AttendanceSection>>(
+  const renderItem = useCallback<SectionListRenderItem<StudentRef, AttendanceSection>>(
     ({ item, section }) => {
       const emAlteracao = alterandoId === item.id;
       return (
@@ -199,7 +198,7 @@ export function FrequenciaScreen({
   );
 }
 
-const keyExtractor = (item: Profile): string => item.id;
+const keyExtractor = (item: StudentRef): string => item.id;
 
 const styles = StyleSheet.create({
   center: {

@@ -12,6 +12,7 @@ function makePayment(overrides: Partial<PaymentRow> = {}): PaymentRow {
     plan_id: null,
     status: 'open',
     due_date: '2030-12-10',
+    reference_month: '2030-12-01',
     // Valor em centavos: 12990 = R$ 129,90.
     amount_cents: 12990,
     paid_at: null,

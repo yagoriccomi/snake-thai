@@ -20,11 +20,13 @@ jest.mock('@/lib/supabase', () => ({
 
 import {
   createStaff,
+  createStudent,
   fetchAllProfessors,
   finishStaffOnboarding,
   resetStudentPassword,
   setStudentActive,
   updateOwnColor,
+  updateStudentPlan,
   updateUserRole,
   type StaffInput,
 } from '@/services/profile.service';
@@ -192,6 +194,51 @@ describe('createStaff', () => {
     });
     await expect(createStaff(ENTRADA)).rejects.toEqual({
       message: 'Acesso restrito a administradores',
+    });
+  });
+});
+
+describe('updateStudentPlan', () => {
+  it('deveVincularOPlanoApenasAoAlunoIndicado', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await updateStudentPlan(ALUNO_ID, 'plan-1');
+    // Sem o filtro por id, um UPDATE colocaria a base inteira no mesmo plano
+    // — e a recorrência mensal passaria a cobrar todo mundo por ele.
+    expect(chain.update).toHaveBeenCalledWith({ plan_id: 'plan-1' });
+    expect(chain.eq).toHaveBeenCalledWith('id', ALUNO_ID);
+  });
+
+  it('deveAceitarNuloParaTirarOAlunoDoFaturamento', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await updateStudentPlan(ALUNO_ID, null);
+    expect(chain.update).toHaveBeenCalledWith({ plan_id: null });
+  });
+
+  it('devePropagarARecusaDaRlsQuandoQuemChamaNaoEhAdmin', async () => {
+    mockQuery(RLS_DENIED);
+    // Aluno não escolhe o próprio plano — isso é preço, não preferência.
+    await expect(updateStudentPlan(ALUNO_ID, 'plan-1')).rejects.toEqual(
+      RLS_DENIED.error,
+    );
+  });
+});
+
+describe('createStudent', () => {
+  it('deveEnviarOPlanoEscolhidoParaAEdgeFunction', async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    await createStudent('  Aluno@Snake.com  ', 'turma-1', 'plan-1');
+    // O plano é o que liga o aluno ao faturamento: se não trafegar aqui, o
+    // aluno nasce sem cobrança e ninguém percebe até o fim do mês.
+    expect(mockInvoke).toHaveBeenCalledWith('create-student', {
+      body: { email: 'aluno@snake.com', groupId: 'turma-1', planId: 'plan-1' },
+    });
+  });
+
+  it('deveMandarPlanoNuloQuandoNaoInformado', async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    await createStudent('aluno@snake.com', null);
+    expect(mockInvoke).toHaveBeenCalledWith('create-student', {
+      body: { email: 'aluno@snake.com', groupId: null, planId: null },
     });
   });
 });

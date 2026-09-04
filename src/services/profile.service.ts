@@ -105,9 +105,10 @@ export async function updateProfile(
 export async function createStudent(
   email: string,
   groupId: string | null,
+  planId: string | null = null,
 ): Promise<void> {
   const { error } = await supabase.functions.invoke('create-student', {
-    body: { email: email.trim().toLowerCase(), groupId },
+    body: { email: email.trim().toLowerCase(), groupId, planId },
   });
   if (error !== null) {
     throw error;
@@ -182,6 +183,26 @@ export async function createStaff(input: StaffInput): Promise<void> {
  */
 export async function updateOwnColor(userId: string, color: string): Promise<void> {
   const { error } = await supabase.from('profiles').update({ color }).eq('id', userId);
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Atribui/altera o plano de um aluno (apenas admin — enforced por RLS).
+ *
+ * É este vínculo que faz o aluno ser faturado: a recorrência mensal no banco
+ * (`gerar_mensalidades_do_mes`) só cobra quem tem `plan_id`. Aluno sem plano
+ * simplesmente não gera cobrança — de propósito, para não inventar dívida.
+ */
+export async function updateStudentPlan(
+  studentId: string,
+  planId: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ plan_id: planId })
+    .eq('id', studentId);
   if (error !== null) {
     throw error;
   }

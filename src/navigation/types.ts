@@ -53,6 +53,8 @@ export type AulasStackParamList = {
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */
 export type FinanceiroStackParamList = {
   FinanceiroHome: undefined;
+  /** Plano, benefício e mensalidade do próprio aluno — só leitura. [#55] */
+  MeuPlano: undefined;
   Pagamento: { paymentId: string; dueDate: string };
   Comprovante: {
     paymentId: string;

@@ -29,6 +29,7 @@ export type AcademySettingsInput = Pick<
   | 'pix_holder_name'
   | 'default_due_day'
   | 'default_student_password'
+  | 'default_plan_id'
 >;
 
 /** Identificador da linha única (a coluna `id` é sempre `true`). */

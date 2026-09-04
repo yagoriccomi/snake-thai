@@ -7,6 +7,7 @@ import {
 import type { FinanceiroStackParamList } from '@/navigation/types';
 import { ComprovanteScreen } from '@/screens/financeiro/ComprovanteScreen';
 import { FinanceiroHomeScreen } from '@/screens/financeiro/FinanceiroHomeScreen';
+import { MeuPlanoScreen } from '@/screens/financeiro/MeuPlanoScreen';
 import { PagamentoScreen } from '@/screens/financeiro/PagamentoScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -35,6 +36,11 @@ export function FinanceiroStackNavigator(): React.JSX.Element {
         options={HOME_OPTIONS}
       />
       <Stack.Screen
+        name="MeuPlano"
+        component={MeuPlanoScreen}
+        options={MEU_PLANO_OPTIONS}
+      />
+      <Stack.Screen
         name="Pagamento"
         component={PagamentoScreen}
         options={PAGAMENTO_OPTIONS}
@@ -49,5 +55,6 @@ export function FinanceiroStackNavigator(): React.JSX.Element {
 }
 
 const HOME_OPTIONS: NativeStackNavigationOptions = { title: 'Financeiro' };
+const MEU_PLANO_OPTIONS: NativeStackNavigationOptions = { title: 'Meu Plano' };
 const PAGAMENTO_OPTIONS: NativeStackNavigationOptions = { title: 'Pagamento' };
 const COMPROVANTE_OPTIONS: NativeStackNavigationOptions = { title: 'Comprovante' };

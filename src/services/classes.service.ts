@@ -131,19 +131,32 @@ export async function updateClass(id: string, input: NewClassInput): Promise<voi
 }
 
 /**
+ * Aluno na lista de chamada — o mínimo para identificá-lo em tela. Não é o
+ * `Profile` inteiro de propósito: quem faz a chamada não precisa (nem deve
+ * receber) CPF, telefone e data de nascimento.
+ */
+export interface StudentRef {
+  id: string;
+  name: string | null;
+}
+
+/**
  * Alunos elegíveis a uma aula: os da turma informada; para eventos globais
  * (`groupId` nulo), todos os alunos.
  */
 export async function fetchStudentsForGroup(
   groupId: string | null,
-): Promise<Profile[]> {
-  const base = supabase.from('profiles').select('*').eq('role', 'user');
+): Promise<StudentRef[]> {
+  // Do DIRETÓRIO, não de `profiles`: o professor precisa listar os alunos
+  // para fazer a chamada, e a RLS de profiles não o deixa vê-los (nem deve —
+  // ali há CPF, telefone e nascimento). A chamada só precisa de id e nome. [#54]
+  const base = supabase.from('diretorio_perfis').select('id, name').eq('role', 'user');
   const query = groupId !== null ? base.eq('group_id', groupId) : base;
   const { data, error } = await query.order('name', { ascending: true });
   if (error !== null) {
     throw error;
   }
-  return data;
+  return data.filter((linha): linha is StudentRef => linha.id !== null);
 }
 
 /**
@@ -201,29 +214,46 @@ export async function fetchTeachersForClasses(
   if (classIds.length === 0) {
     return {};
   }
-  const { data, error } = await supabase
+  const { data: vinculos, error } = await supabase
     .from('class_teachers')
-    .select('class_id, created_at, teacher:profiles!class_teachers_teacher_id_fkey(id, name, color)')
+    .select('class_id, teacher_id, created_at')
     .in('class_id', classIds)
     .order('created_at', { ascending: true });
   if (error !== null) {
     throw error;
   }
+  if (vinculos.length === 0) {
+    return {};
+  }
 
+  // Nome e cor vêm do DIRETÓRIO, não de `profiles`: a RLS de profiles é
+  // "só o próprio ou admin", então um join embutido devolvia `null` para
+  // aluno e professor, e a bolinha colorida sumia justamente para quem ela
+  // foi feita. O diretório expõe só id/nome/cor, sem dado pessoal. [#54]
+  const idsDosProfessores = [...new Set(vinculos.map((v) => v.teacher_id))];
+  const { data: professores, error: erroProfessores } = await supabase
+    .from('diretorio_perfis')
+    .select('id, name, color')
+    .in('id', idsDosProfessores);
+  if (erroProfessores !== null) {
+    throw erroProfessores;
+  }
+
+  const porId = new Map(professores.map((p) => [p.id, p]));
   const porAula: Record<string, ClassTeacherRef[]> = {};
-  for (const linha of data) {
-    const professor = linha.teacher;
-    if (professor === null) {
+  for (const vinculo of vinculos) {
+    const professor = porId.get(vinculo.teacher_id);
+    if (professor === undefined) {
       continue;
     }
-    const lista = porAula[linha.class_id] ?? [];
+    const lista = porAula[vinculo.class_id] ?? [];
     lista.push({
-      id: professor.id,
+      id: vinculo.teacher_id,
       name: professor.name,
       color: professor.color,
-      joinedAt: linha.created_at,
+      joinedAt: vinculo.created_at,
     });
-    porAula[linha.class_id] = lista;
+    porAula[vinculo.class_id] = lista;
   }
   return porAula;
 }

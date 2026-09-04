@@ -88,6 +88,10 @@ export function StudentFinanceList({
     [plans],
   );
 
+  const openMeuPlano = useCallback(() => {
+    navigation.navigate('MeuPlano');
+  }, [navigation]);
+
   const openPayment = useCallback(() => {
     if (nextPayment === null) {
       return;
@@ -132,6 +136,19 @@ export function StudentFinanceList({
             <AppText variant="heading">{greeting}</AppText>
           </View>
         </View>
+
+        {/* Atalho para o plano contratado e seus benefícios */}
+        <Pressable
+          style={styles.planoLink}
+          onPress={openMeuPlano}
+          accessibilityRole="button"
+          accessibilityLabel="Ver meu plano"
+          accessibilityHint="Mostra o plano contratado, os benefícios e a mensalidade"
+        >
+          <Ionicons name="pricetags-outline" size={20} color={colors.primaryText} />
+          <Text style={styles.planoLinkTexto}>Meu plano e benefícios</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+        </Pressable>
 
         {/* Hero: a próxima mensalidade */}
         {nextPayment !== null ? (
@@ -248,6 +265,24 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], fonts: Return
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
+    },
+    planoLink: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      marginTop: 14,
+      paddingHorizontal: 14,
+      minHeight: 52,
+      borderRadius: 14,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    planoLinkTexto: {
+      flex: 1,
+      fontFamily: fonts.bodyMedium,
+      fontSize: 14,
+      color: colors.textPrimary,
     },
     overline: {
       fontFamily: fonts.bodySemiBold,
