@@ -21,6 +21,7 @@ jest.mock('@/lib/supabase', () => ({
 import {
   createStaff,
   fetchAllProfessors,
+  finishStaffOnboarding,
   resetStudentPassword,
   setStudentActive,
   updateOwnColor,
@@ -192,6 +193,26 @@ describe('createStaff', () => {
     await expect(createStaff(ENTRADA)).rejects.toEqual({
       message: 'Acesso restrito a administradores',
     });
+  });
+});
+
+describe('finishStaffOnboarding', () => {
+  it('deveApenasBaixarAFlagSemRegravarCadastro', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await finishStaffOnboarding(PROFESSOR_ID);
+    // Nome/CPF vieram do admin e não podem ser sobrescritos aqui; e o papel
+    // JAMAIS pode viajar neste update — seria uma autopromoção disfarçada de
+    // "concluir cadastro".
+    expect(chain.update).toHaveBeenCalledWith({ is_first_login: false });
+    expect(chain.eq).toHaveBeenCalledWith('id', PROFESSOR_ID);
+  });
+
+  it('devePropagarOErroEmVezDeLiberarOAppComOnboardingPendente', async () => {
+    mockQuery(NETWORK_FAILURE);
+    // Engolir o erro deixaria a conta na senha padrão achando que concluiu.
+    await expect(finishStaffOnboarding(PROFESSOR_ID)).rejects.toEqual(
+      NETWORK_FAILURE.error,
+    );
   });
 });
 

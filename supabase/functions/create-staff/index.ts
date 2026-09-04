@@ -149,14 +149,20 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: createError?.message ?? 'Falha ao criar usuário' }, 400);
   }
 
-  // Cadastro COMPLETO na hora — sem onboarding depois, diferente do aluno.
+  // Nome e CPF já entram preenchidos (o admin os informou) — o funcionário
+  // não redigita cadastro. Mas `is_first_login` continua TRUE de propósito:
+  // é o único gatilho do onboarding, e o onboarding é o que força trocar a
+  // senha padrão (pública, literal neste arquivo) e registrar o aceite LGPD.
+  // Marcá-lo false aqui deixaria um admin permanentemente acessível por
+  // `Snake@123` e sem termo aceito. Com os dados já preenchidos, o app pula
+  // a etapa de Dados e pede só senha + termos. [#54][#55]
   const { error: insertError } = await adminClient.from('profiles').insert({
     id: created.user.id,
     role,
     name,
     cpf,
     color,
-    is_first_login: false,
+    is_first_login: true,
   });
   if (insertError !== null) {
     // Rollback: remove o usuário de auth para não deixar conta órfã.

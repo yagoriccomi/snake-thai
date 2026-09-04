@@ -179,17 +179,21 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"a0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
+-- O vinculo escolhido tem de ser um que AINDA NAO EXISTE: por na aula 1 o
+-- prof2 nao provaria nada, porque o T2 ja o incluiu ali — a contagem passaria
+-- mesmo com a policy do admin quebrada. Entao o admin poe o prof1 na aula 2,
+-- que e do prof2 e que o admin nao criou.
 insert into public.class_teachers (class_id, teacher_id)
-values ('c0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000002')
-on conflict do nothing;
+values ('c0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000001');
 
 do $$
 declare v_total integer;
 begin
   select count(*) into v_total from public.class_teachers
-   where class_id = 'c0000000-0000-4000-8000-000000000001';
-  if v_total < 2 then
-    raise exception 'FALHOU T9: admin nao conseguiu por professor extra na aula';
+   where class_id = 'c0000000-0000-4000-8000-000000000002'
+     and teacher_id = 'a0000000-0000-4000-8000-000000000001';
+  if v_total <> 1 then
+    raise exception 'FALHOU T9: admin nao conseguiu por professor extra numa aula alheia';
   end if;
   raise notice 'OK T9: admin gerencia professores de qualquer aula livremente';
 end $$;

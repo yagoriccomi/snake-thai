@@ -51,6 +51,25 @@ export async function completeProfileOnboarding(
   }
 }
 
+/**
+ * Conclui o onboarding de quem JÁ nasce com cadastro completo (professor e
+ * admin, criados pela Edge Function `create-staff`): só levanta a flag, sem
+ * regravar nome/CPF que o admin já informou.
+ *
+ * A constraint `profiles_complete_when_onboarded` exige apenas nome e CPF
+ * para sair do primeiro login — telefone e nascimento seguem opcionais, e é
+ * o que permite este atalho existir sem furar a integridade.
+ */
+export async function finishStaffOnboarding(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_first_login: false })
+    .eq('id', userId);
+  if (error !== null) {
+    throw error;
+  }
+}
+
 /** Campos editáveis do perfil (variam conforme o papel — validado na UI). */
 export interface EditableProfileData {
   /** Editável apenas por admin (aluno não altera o próprio nome nesta fase). */
