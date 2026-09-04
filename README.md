@@ -11,7 +11,12 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
 - Desbloqueio por **impressão digital opcional**: o app pergunta uma vez, respeita a escolha e deixa um interruptor no perfil.
 - Troca de senha pelo próprio usuário (exigindo a senha atual) e **redefinição pelo admin** para a senha padrão.
 - Política de senha forte com **checklist ao vivo** do que falta (maiúscula, minúscula, número e especial).
-- Cadastro de perfis com segregação rígida de acesso por papel (aluno × admin).
+- Cadastro de perfis com segregação rígida de acesso por papel (aluno × professor × admin).
+- **Professores** com cor característica: bolinha ao lado do nome e borda da aula
+  na cor deles (dividida em faixas quando a aula tem mais de um professor). O
+  professor vê a agenda inteira da academia, cria aulas para si, entra em aulas
+  de outros professores e gerencia a presença apenas das suas — o bloco
+  financeiro não aparece para ele.
 - Agenda de aulas (rotina e eventos) por turma.
 - Registro de presença explícito por aula.
 - Gestão de pagamentos com envio e aprovação de comprovantes.
@@ -180,15 +185,17 @@ A documentação completa vive em [`docs/`](docs/README.md):
 ## ⚡ Edge Functions
 
 Operações que exigem a `service_role` (nunca exposta no app) vivem em Edge
-Functions Deno, e ambas verificam pelo JWT que quem chama é **administrador**:
+Functions Deno, e todas verificam pelo JWT que quem chama é **administrador**:
 
 | Função | O que faz |
 | --- | --- |
 | `create-student` | Cria a conta do aluno com a senha padrão e inicializa o perfil. |
+| `create-staff` | Cria a conta de **professor ou admin** já com nome e CPF preenchidos (e a cor, no caso do professor). Mantém `is_first_login`, então a pessoa ainda troca a senha padrão e aceita os termos — só não redigita o cadastro. |
 | `reset-student-password` | Devolve a conta à senha padrão e remarca `is_first_login`, forçando nova senha no próximo acesso. |
 
 ```bash
 supabase functions deploy create-student
+supabase functions deploy create-staff
 supabase functions deploy reset-student-password
 ```
 
