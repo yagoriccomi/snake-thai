@@ -20,6 +20,13 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
 - Agenda de aulas (rotina e eventos) por turma.
 - Registro de presença explícito por aula.
 - Gestão de pagamentos com envio e aprovação de comprovantes.
+- **Mensalidades geradas automaticamente**: no dia 1 de cada mês para todo aluno
+  ativo com plano, sem depender de o mês anterior estar quitado. Quem é
+  cadastrado até o dia 10 já recebe a fatura proporcional aos dias restantes,
+  vencendo no último dia do mês; depois do dia 10, entra na recorrência do mês
+  seguinte. A unicidade `(aluno, competência)` impede cobrança duplicada.
+- Página **"Meu plano"** para o aluno: plano contratado, benefícios e a
+  mensalidade do mês — só leitura (criar e editar é exclusivo do admin).
 
 ## 🛠️ Tecnologias
 
@@ -202,3 +209,22 @@ supabase functions deploy reset-student-password
 > A `service_role` ignora a RLS, mas **não** os GRANTs do Postgres: a migration
 > `20260819120000_service_role_grants.sql` concede a ela `select/insert/update`
 > em `profiles` — sem isso as funções falham com `42501`.
+
+## 🌱 Dados de demonstração
+
+Para apresentar o sistema com a base populada (50 alunos, 5 professores,
+turmas, mensalidades em vários estados e professores coloridos nas aulas):
+
+```bash
+psql "$DATABASE_URL" -f supabase/seed/demo_seed.sql
+```
+
+O script é **idempotente** — rodar de novo apenas completa o que faltar, sem
+duplicar ninguém. Todas as contas criadas usam a senha `Snake@123` e ficam no
+domínio `@demo.snakethai.com`, justamente para serem localizáveis depois.
+
+> **Antes de operar de verdade**, remova os dados fictícios:
+> `psql "$DATABASE_URL" -f supabase/seed/demo_seed_limpar.sql`. Ele apaga
+> somente o domínio de demonstração — contas reais não são tocadas. Dado
+> fictício convivendo com dado real é pior do que base vazia, porque em poucas
+> semanas ninguém distingue mais um do outro.
