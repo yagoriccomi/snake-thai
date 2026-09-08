@@ -270,7 +270,40 @@ update public.payments pay
  where pay.id = a.id;
 
 -- ----------------------------------------------------------------------------
--- 8. Professores nas aulas — é o que faz a cor aparecer na agenda
+-- 8. Agenda FUTURA
+--
+--    A tela do aluno lista apenas aulas a partir de agora. Uma base cujas
+--    aulas ficaram todas no passado mostra "Nenhuma aula por aqui" para ele —
+--    o que aconteceu de fato, com aulas paradas em setembro. Aqui as próximas
+--    4 semanas são preenchidas, em dias alternados, no horário de cada turma.
+-- ----------------------------------------------------------------------------
+insert into public.classes (title, type, date_time, group_id)
+select
+  'Muay Thai — ' || g.name,
+  'routine',
+  -- O horário é LOCAL: sem o AT TIME ZONE, uma aula "das 19h" viraria 19h UTC,
+  -- ou seja, 16h em São Paulo.
+  ((dia::date + (case
+      when g.name ilike '%manh%' then time '07:00'
+      when g.name ilike '%tarde%' then time '15:00'
+      else time '19:00'
+    end)) at time zone 'America/Sao_Paulo'),
+  g.id
+from public.groups g
+cross join generate_series(current_date + 1, current_date + 28, interval '1 day') as dia
+where extract(dow from dia) in (1, 3, 5)   -- segunda, quarta e sexta
+  and not exists (
+    select 1 from public.classes c
+    where c.group_id = g.id
+      and c.date_time = ((dia::date + (case
+            when g.name ilike '%manh%' then time '07:00'
+            when g.name ilike '%tarde%' then time '15:00'
+            else time '19:00'
+          end)) at time zone 'America/Sao_Paulo')
+  );
+
+-- ----------------------------------------------------------------------------
+-- 9. Professores nas aulas — é o que faz a cor aparecer na agenda
 --
 --    Uma parte das aulas recebe DOIS professores de propósito: é o caso que
 --    exercita a borda dividida em faixas.
