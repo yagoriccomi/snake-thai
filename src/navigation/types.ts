@@ -22,6 +22,8 @@ export interface ClassNavParams {
 export type DadosStackParamList = {
   Perfil: undefined;
   CadastrarAluno: undefined;
+  /** Cadastro de professor/admin (admin) — cadastro completo, sem onboarding. [#55] */
+  CadastrarEquipe: undefined;
   AlterarSenha: undefined;
   Planos: undefined;
   Configuracoes: undefined;
@@ -35,12 +37,24 @@ export type AulasStackParamList = {
   CriarAula: ClassNavParams | undefined;
   /** Detalhe da aula (admin): abre edição ou chamada de presença. */
   DetalheAula: ClassNavParams & { groupLabel: string };
-  Frequencia: { classId: string; title: string; groupId: string | null };
+  Frequencia: {
+    classId: string;
+    title: string;
+    groupId: string | null;
+    /**
+     * Admin: sempre `true`. Professor: só `true` para as aulas onde ele é um
+     * dos professores (a RLS barra a escrita mesmo que a tela minta, mas o
+     * botão de ação nem aparece fora daí — sem convite a um 403). [#55]
+     */
+    canManage: boolean;
+  };
 };
 
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */
 export type FinanceiroStackParamList = {
   FinanceiroHome: undefined;
+  /** Plano, benefício e mensalidade do próprio aluno — só leitura. [#55] */
+  MeuPlano: undefined;
   Pagamento: { paymentId: string; dueDate: string };
   Comprovante: {
     paymentId: string;

@@ -3,15 +3,18 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthProvider';
 import {
   fetchOwnAttendance,
+  fetchTeachersForClasses,
   fetchUpcomingClassesForStudent,
   upsertAttendance,
   type AttendanceStatus,
   type ClassRow,
+  type ClassTeacherRef,
 } from '@/services/classes.service';
 
-/** Aula com a resposta de presença do próprio aluno anexada. */
+/** Aula com a resposta de presença do próprio aluno e seus professores anexados. */
 export interface StudentClassItem extends ClassRow {
   myStatus: AttendanceStatus | null;
+  teachers: ClassTeacherRef[];
 }
 
 interface UseStudentClassesResult {
@@ -44,11 +47,13 @@ export function useStudentClasses(): UseStudentClassesResult {
         fetchUpcomingClassesForStudent(profile?.group_id ?? null),
         fetchOwnAttendance(userId),
       ]);
+      const teachersByClass = await fetchTeachersForClasses(classes.map((item) => item.id));
       const statusByClass = new Map(attendance.map((row) => [row.class_id, row.status]));
       setItems(
         classes.map((item) => ({
           ...item,
           myStatus: statusByClass.get(item.id) ?? null,
+          teachers: teachersByClass[item.id] ?? [],
         })),
       );
     } catch {

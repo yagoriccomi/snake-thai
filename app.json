@@ -2,7 +2,7 @@
   "expo": {
     "name": "Snake Thai",
     "slug": "snake-thai",
-    "version": "1.0.0",
+    "version": "1.2.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "snakethai",
@@ -31,6 +31,7 @@
       "expo-secure-store",
       "expo-font",
       "expo-splash-screen",
+      "./plugins/withReleaseSigning.js",
       [
         "expo-local-authentication",
         {

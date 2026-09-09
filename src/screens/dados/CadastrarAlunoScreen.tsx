@@ -1,10 +1,11 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { GroupPicker } from '@/components/GroupPicker';
 import { Input } from '@/components/Input';
+import { PlanPicker } from '@/components/PlanPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
 import type { DadosStackScreenProps } from '@/navigation/types';
@@ -28,6 +29,23 @@ export function CadastrarAlunoScreen({
 
   const [email, setEmail] = useState('');
   const [groupId, setGroupId] = useState<string | null>(null);
+  // Nasce no plano padrão da academia; o admin troca aqui se for o caso.
+  const [planId, setPlanId] = useState<string | null>(null);
+  // As configurações chegam depois da primeira renderização, então o padrão só
+  // pode ser aplicado quando elas carregam — e apenas enquanto o admin ainda
+  // não escolheu nada, para não desfazer a escolha dele.
+  const [planoTocado, setPlanoTocado] = useState(false);
+  const defaultPlanId = settings?.default_plan_id ?? null;
+  useEffect(() => {
+    if (!planoTocado) {
+      setPlanId(defaultPlanId);
+    }
+  }, [defaultPlanId, planoTocado]);
+
+  const handlePlanChange = useCallback((value: string | null) => {
+    setPlanoTocado(true);
+    setPlanId(value);
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -40,7 +58,7 @@ export function CadastrarAlunoScreen({
     }
     setSubmitting(true);
     try {
-      await createStudent(email, groupId);
+      await createStudent(email, groupId, planId);
       setSuccess(true);
     } catch (submitError) {
       const message =
@@ -52,14 +70,16 @@ export function CadastrarAlunoScreen({
     } finally {
       setSubmitting(false);
     }
-  }, [email, groupId]);
+  }, [email, groupId, planId]);
 
   const handleReset = useCallback(() => {
     setEmail('');
     setGroupId(null);
+    setPlanId(defaultPlanId);
+    setPlanoTocado(false);
     setSuccess(false);
     setError(null);
-  }, []);
+  }, [defaultPlanId]);
 
   const handleBack = useCallback(() => {
     navigation.goBack();
@@ -112,6 +132,8 @@ export function CadastrarAlunoScreen({
         />
 
         <GroupPicker label="Turma (opcional)" value={groupId} onChange={setGroupId} />
+
+        <PlanPicker label="Plano" value={planId} onChange={handlePlanChange} />
 
         <Button
           title="Cadastrar aluno"

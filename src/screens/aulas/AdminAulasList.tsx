@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -15,14 +15,23 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { TeacherDot } from '@/components/TeacherDot';
+import { TeacherRail } from '@/components/TeacherRail';
 import { TypeBadge } from '@/components/TypeBadge';
 import { WeekStrip } from '@/components/WeekStrip';
 import { useAdminClassesForDay } from '@/hooks/useAdminClassesForDay';
 import { useGroups } from '@/hooks/useGroups';
 import type { AulasStackScreenProps } from '@/navigation/types';
-import type { ClassRow } from '@/services/classes.service';
+import {
+  fetchTeachersForClasses,
+  type ClassRow,
+  type ClassTeacherRef,
+} from '@/services/classes.service';
+import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme/ThemeProvider';
 import { buildDayStrip, formatTime, type DayItem } from '@/utils/datetime';
+
+const log = createLogger('AdminAulasList');
 
 const SCREEN_EDGES = ['bottom'] as const;
 const STRIP_DAYS = 21;
@@ -46,6 +55,26 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
 
   const { items, loading, error, reload } = useAdminClassesForDay(selectedDate);
   const { groups } = useGroups();
+  const [teachersByClass, setTeachersByClass] = useState<Record<string, ClassTeacherRef[]>>({});
+
+  // Professores das aulas do dia, para pintar trilho e bolinhas — uma
+  // consulta só para todas as aulas visíveis, não uma por card. [#70]
+  useEffect(() => {
+    let ativo = true;
+    const classIds = items.map((item) => item.id);
+    fetchTeachersForClasses(classIds)
+      .then((porAula) => {
+        if (ativo) {
+          setTeachersByClass(porAula);
+        }
+      })
+      .catch((erro: unknown) => {
+        log.error('Falha ao carregar professores das aulas', erro);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [items]);
 
   // Mapa id→nome da turma, para exibir o nome real em vez do UUID.
   const groupNameById = useMemo(() => {
@@ -92,6 +121,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
         item.group_id === null
           ? 'Global'
           : groupNameById.get(item.group_id) ?? 'Turma';
+      const teachers = teachersByClass[item.id] ?? [];
       return (
         <Pressable
           onPress={() => openDetalhe(item, groupLabel)}
@@ -103,7 +133,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
           <View style={styles.timeCol}>
             <Text style={styles.time}>{formatTime(item.date_time)}</Text>
           </View>
-          <View style={styles.rail} />
+          <TeacherRail teachers={teachers} />
           <View style={styles.info}>
             <Text style={styles.title} numberOfLines={1}>
               {item.title}
@@ -114,12 +144,13 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
                 {groupLabel}
               </Text>
             </View>
+            <TeacherDot teachers={teachers} />
           </View>
           <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
         </Pressable>
       );
     },
-    [styles, colors.textSecondary, groupNameById, openDetalhe],
+    [styles, colors.textSecondary, groupNameById, openDetalhe, teachersByClass],
   );
 
   return (

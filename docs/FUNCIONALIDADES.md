@@ -40,6 +40,8 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [x] Criar turma · OK
 - [x] Criar aula avulsa · OK
 - [x] Lançar presença pelo admin · OK
+- [ ] **P0** Controle de frequência (contador, percentual, histórico mensal e
+  justificativa de falta) — regras e plano em [`FREQUENCIA.md`](FREQUENCIA.md) · PLANEJADO
 - [ ] **P0** Renomear / excluir turma — hoje só existe criação · PARCIAL
 - [ ] **P0** Aulas recorrentes (grade semanal fixa em vez de aula a aula) · FALTA
 - [ ] **P1** Capacidade máxima e professor responsável por turma · FALTA
@@ -73,7 +75,7 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 ## F. Painel e relatórios
 
 - [ ] **P0** Dashboard do admin (alunos ativos, receita do mês, inadimplência, frequência) · FALTA
-- [ ] **P1** Relatório de frequência e evasão · FALTA
+- [ ] **P1** Relatório de frequência e evasão — depende de [`FREQUENCIA.md`](FREQUENCIA.md) · FALTA
 
 ## G. Governança, LGPD e continuidade
 

@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.5"
   }
   graphql_public: {
     Tables: {
@@ -47,6 +47,7 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           default_due_day: number
+          default_plan_id: string | null
           default_student_password: string
           id: boolean
           logo_url: string | null
@@ -62,6 +63,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           default_due_day?: number
+          default_plan_id?: string | null
           default_student_password?: string
           id?: boolean
           logo_url?: string | null
@@ -77,6 +79,7 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           default_due_day?: number
+          default_plan_id?: string | null
           default_student_password?: string
           id?: boolean
           logo_url?: string | null
@@ -85,7 +88,15 @@ export type Database = {
           primary_color?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "academy_settings_default_plan_id_fkey"
+            columns: ["default_plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       attendance: {
         Row: {
@@ -118,6 +129,13 @@ export type Database = {
             columns: ["class_id"]
             isOneToOne: false
             referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
             referencedColumns: ["id"]
           },
           {
@@ -158,6 +176,46 @@ export type Database = {
           id?: never
         }
         Relationships: []
+      }
+      class_teachers: {
+        Row: {
+          class_id: string
+          created_at: string
+          teacher_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          teacher_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_teachers_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_teachers_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_teachers_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       classes: {
         Row: {
@@ -271,6 +329,50 @@ export type Database = {
         }
         Relationships: []
       }
+      media_deletion_queue: {
+        Row: {
+          asset_ref: string
+          enfileirado_em: string
+          id: string
+          motivo: Database["public"]["Enums"]["media_deletion_reason"]
+          payment_id: string | null
+          processado_em: string | null
+          provider: Database["public"]["Enums"]["media_provider"]
+          tentativas: number
+          ultimo_erro: string | null
+        }
+        Insert: {
+          asset_ref: string
+          enfileirado_em?: string
+          id?: string
+          motivo: Database["public"]["Enums"]["media_deletion_reason"]
+          payment_id?: string | null
+          processado_em?: string | null
+          provider: Database["public"]["Enums"]["media_provider"]
+          tentativas?: number
+          ultimo_erro?: string | null
+        }
+        Update: {
+          asset_ref?: string
+          enfileirado_em?: string
+          id?: string
+          motivo?: Database["public"]["Enums"]["media_deletion_reason"]
+          payment_id?: string | null
+          processado_em?: string | null
+          provider?: Database["public"]["Enums"]["media_provider"]
+          tentativas?: number
+          ultimo_erro?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_deletion_queue_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_cents: number
@@ -283,6 +385,7 @@ export type Database = {
           proof_public_id: string | null
           proof_storage_path: string | null
           proof_url: string | null
+          reference_month: string
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
           user_id: string
@@ -298,6 +401,7 @@ export type Database = {
           proof_public_id?: string | null
           proof_storage_path?: string | null
           proof_url?: string | null
+          reference_month: string
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
           user_id: string
@@ -313,6 +417,7 @@ export type Database = {
           proof_public_id?: string | null
           proof_storage_path?: string | null
           proof_url?: string | null
+          reference_month?: string
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
           user_id?: string
@@ -323,6 +428,13 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
             referencedColumns: ["id"]
           },
           {
@@ -372,6 +484,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          anonymized_at: string | null
+          color: string | null
           cpf: string | null
           created_at: string
           deactivated_at: string | null
@@ -387,6 +501,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anonymized_at?: string | null
+          color?: string | null
           cpf?: string | null
           created_at?: string
           deactivated_at?: string | null
@@ -402,6 +518,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anonymized_at?: string | null
+          color?: string | null
           cpf?: string | null
           created_at?: string
           deactivated_at?: string | null
@@ -435,12 +553,63 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      diretorio_perfis: {
+        Row: {
+          color: string | null
+          group_id: string | null
+          id: string | null
+          name: string | null
+          role: Database["public"]["Enums"]["user_role"] | null
+          status: Database["public"]["Enums"]["profile_status"] | null
+        }
+        Insert: {
+          color?: string | null
+          group_id?: string | null
+          id?: string | null
+          name?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          status?: Database["public"]["Enums"]["profile_status"] | null
+        }
+        Update: {
+          color?: string | null
+          group_id?: string | null
+          id?: string | null
+          name?: string | null
+          role?: Database["public"]["Enums"]["user_role"] | null
+          status?: Database["public"]["Enums"]["profile_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
+      eliminar_comprovantes_do_titular: {
+        Args: { p_user_id: string }
+        Returns: number
+      }
       export_my_data: { Args: never; Returns: Json }
+      gerar_mensalidades_do_mes: {
+        Args: { p_referencia?: string }
+        Returns: number
+      }
       is_admin: { Args: never; Returns: boolean }
+      is_professor: { Args: never; Returns: boolean }
       mark_overdue_payments: { Args: never; Returns: undefined }
+      registrar_fatura_de_entrada: {
+        Args: { p_data: string; p_user_id: string }
+        Returns: boolean
+      }
+      valor_proporcional: {
+        Args: { dia_entrada: number; dias_no_mes: number; preco_cents: number }
+        Returns: number
+      }
     }
     Enums: {
       attendance_status: "present" | "absent"
@@ -455,7 +624,7 @@ export type Database = {
       media_provider: "supabase_storage" | "cloudinary"
       payment_status: "pending_approval" | "open" | "overdue" | "paid"
       profile_status: "active" | "inactive"
-      user_role: "user" | "admin"
+      user_role: "user" | "admin" | "professor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -476,6 +645,7 @@ export type Database = {
           public: boolean | null
           type: Database["storage"]["Enums"]["buckettype"]
           updated_at: string | null
+          versioning_status: string
         }
         Insert: {
           allowed_mime_types?: string[] | null
@@ -489,6 +659,7 @@ export type Database = {
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
+          versioning_status?: string
         }
         Update: {
           allowed_mime_types?: string[] | null
@@ -502,6 +673,7 @@ export type Database = {
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
+          versioning_status?: string
         }
         Relationships: []
       }
@@ -579,9 +751,12 @@ export type Database = {
       }
       objects: {
         Row: {
+          archived_at: string | null
           bucket_id: string | null
           created_at: string | null
           id: string
+          is_delete_marker: boolean
+          is_versioned: boolean
           last_accessed_at: string | null
           metadata: Json | null
           name: string | null
@@ -593,9 +768,12 @@ export type Database = {
           version: string | null
         }
         Insert: {
+          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -607,9 +785,12 @@ export type Database = {
           version?: string | null
         }
         Update: {
+          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
+          is_delete_marker?: boolean
+          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -921,12 +1102,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -950,11 +1131,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -975,11 +1156,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1000,11 +1181,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1017,11 +1198,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1049,7 +1230,7 @@ export const Constants = {
       media_provider: ["supabase_storage", "cloudinary"],
       payment_status: ["pending_approval", "open", "overdue", "paid"],
       profile_status: ["active", "inactive"],
-      user_role: ["user", "admin"],
+      user_role: ["user", "admin", "professor"],
     },
   },
   storage: {

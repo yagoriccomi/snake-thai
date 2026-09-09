@@ -86,12 +86,16 @@ async function enviarParaCloudinary(upload: ProofUpload): Promise<string> {
     paymentId: upload.paymentId,
   });
 
+  // O arquivo vai como Blob de verdade, e não como o `{ uri, name, type }`
+  // que o React Native aceitava: o `fetch` do Expo SDK 57 rejeita aquele
+  // formato com "Unsupported FormDataPart implementation" — e a falha
+  // acontece ao MONTAR o corpo, antes de qualquer byte sair do aparelho.
+  // Era por isso que o servidor e a Cloudinary pareciam saudáveis enquanto
+  // nenhum comprovante era enviado: a requisição nunca chegava neles. [#9]
+  const arquivo = await fetch(upload.fileUri).then(async (r) => r.blob());
+
   const formulario = new FormData();
-  formulario.append('file', {
-    uri: upload.fileUri,
-    name: sanitizeFileName(upload.fileName),
-    type: upload.contentType,
-  } as unknown as Blob);
+  formulario.append('file', arquivo, sanitizeFileName(upload.fileName));
   formulario.append('api_key', assinatura.apiKey);
   formulario.append('timestamp', String(assinatura.timestamp));
   formulario.append('signature', assinatura.signature);
@@ -104,7 +108,15 @@ async function enviarParaCloudinary(upload: ProofUpload): Promise<string> {
     body: formulario,
   });
   if (!resposta.ok) {
-    throw new Error('Falha ao enviar o comprovante.');
+    // A Cloudinary explica a recusa no corpo (`{"error":{"message":"..."}}`).
+    // Descartar isso — como esta função fazia — transforma qualquer problema
+    // de upload num "Falha ao enviar" sem causa, impossível de depurar a
+    // partir do log. O texto vai para o LOG; a tela continua com a mensagem
+    // amigável de sempre. [#93]
+    const detalhe = await resposta.text().catch(() => '');
+    throw new Error(
+      `Cloudinary recusou o upload (HTTP ${resposta.status}): ${detalhe.slice(0, 300)}`,
+    );
   }
 
   const enviado = (await resposta.json()) as { public_id?: string };

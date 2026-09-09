@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
 import { GroupPicker } from '@/components/GroupPicker';
+import { PlanPicker } from '@/components/PlanPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
 import {
@@ -22,6 +23,7 @@ import {
   resetStudentPassword,
   setStudentActive,
   updateStudentGroup,
+  updateStudentPlan,
   updateUserRole,
 } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -109,6 +111,23 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
       );
       try {
         await updateStudentGroup(studentId, groupId);
+      } catch {
+        void load();
+      }
+    },
+    [load],
+  );
+
+  /** Troca o plano do aluno — é o que o inclui (ou tira) do faturamento. */
+  const handleChangePlan = useCallback(
+    async (studentId: string, planId: string | null) => {
+      setStudents((previous) =>
+        previous.map((student) =>
+          student.id === studentId ? { ...student, plan_id: planId } : student,
+        ),
+      );
+      try {
+        await updateStudentPlan(studentId, planId);
       } catch {
         void load();
       }
@@ -307,6 +326,10 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
               value={item.group_id}
               onChange={(groupId) => void handleChangeGroup(item.id, groupId)}
             />
+            <PlanPicker
+              value={item.plan_id}
+              onChange={(planId) => void handleChangePlan(item.id, planId)}
+            />
           </View>
         </View>
       );
@@ -318,6 +341,7 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
       colors.success,
       colors.warning,
       handleChangeGroup,
+      handleChangePlan,
       handleResetPassword,
       handleToggleActive,
       handleToggleRole,

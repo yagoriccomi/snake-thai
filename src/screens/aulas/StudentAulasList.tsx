@@ -14,6 +14,8 @@ import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { TeacherDot } from '@/components/TeacherDot';
+import { TeacherRail } from '@/components/TeacherRail';
 import { useStudentClasses, type StudentClassItem } from '@/hooks/useStudentClasses';
 import type { AttendanceStatus } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -154,7 +156,7 @@ const ClassRow = React.memo(function ClassRow({
       <View style={styles.timeCol}>
         <Text style={styles.time}>{formatTime(item.date_time)}</Text>
       </View>
-      <View style={styles.rail} />
+      <TeacherRail teachers={item.teachers} />
       <View style={styles.info}>
         <Text style={styles.title} numberOfLines={1}>
           {item.title}
@@ -162,6 +164,7 @@ const ClassRow = React.memo(function ClassRow({
         <Text style={styles.subtitle} numberOfLines={1}>
           {isEvent ? 'Evento · aberto a todas as turmas' : 'Sua turma'}
         </Text>
+        <TeacherDot teachers={item.teachers} />
       </View>
 
       {isEvent ? (

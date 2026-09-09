@@ -3,16 +3,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { createLogger } from '@/lib/logger';
 
 import {
+  clearAttendance,
   fetchAttendanceForClass,
   fetchStudentsForGroup,
+  upsertAttendance,
+  type AttendanceStatus,
+  type StudentRef,
 } from '@/services/classes.service';
-import type { Profile } from '@/types/models';
 
 /** Alunos agrupados pela resposta de presença. */
 export interface AttendanceBreakdown {
-  present: Profile[];
-  absent: Profile[];
-  pending: Profile[];
+  present: StudentRef[];
+  absent: StudentRef[];
+  pending: StudentRef[];
 }
 
 const log = createLogger('useClassAttendance');
@@ -22,6 +25,14 @@ interface UseClassAttendanceResult extends AttendanceBreakdown {
   /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
   error: string | null;
   reload: () => Promise<void>;
+  /**
+   * Define a presença de um aluno em nome dele — ação de quem GERENCIA a
+   * aula (admin, ou o professor dela; a RLS decide quem realmente pode).
+   * Recarrega a lista ao final para refletir o novo balde.
+   */
+  setStudentStatus: (userId: string, status: AttendanceStatus) => Promise<void>;
+  /** Limpa a resposta do aluno — ele volta a aparecer como Pendente. */
+  clearStudentStatus: (userId: string) => Promise<void>;
 }
 
 const EMPTY: AttendanceBreakdown = { present: [], absent: [], pending: [] };
@@ -48,9 +59,9 @@ export function useClassAttendance(
         fetchAttendanceForClass(classId),
       ]);
       const statusByUser = new Map(attendance.map((row) => [row.user_id, row.status]));
-      const present: Profile[] = [];
-      const absent: Profile[] = [];
-      const pending: Profile[] = [];
+      const present: StudentRef[] = [];
+      const absent: StudentRef[] = [];
+      const pending: StudentRef[] = [];
       for (const student of students) {
         const status = statusByUser.get(student.id) ?? null;
         if (status === 'present') {
@@ -77,5 +88,21 @@ export function useClassAttendance(
     void load();
   }, [load]);
 
-  return { ...breakdown, loading, error, reload: load };
+  const setStudentStatus = useCallback(
+    async (userId: string, status: AttendanceStatus) => {
+      await upsertAttendance(classId, userId, status);
+      await load();
+    },
+    [classId, load],
+  );
+
+  const clearStudentStatus = useCallback(
+    async (userId: string) => {
+      await clearAttendance(classId, userId);
+      await load();
+    },
+    [classId, load],
+  );
+
+  return { ...breakdown, loading, error, reload: load, setStudentStatus, clearStudentStatus };
 }

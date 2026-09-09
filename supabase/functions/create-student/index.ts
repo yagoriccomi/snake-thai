@@ -80,11 +80,19 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // Validação do corpo.
   let email = '';
   let groupId: string | null = null;
+  let planId: string | null = null;
   try {
-    const body = (await req.json()) as { email?: unknown; groupId?: unknown };
+    const body = (await req.json()) as {
+      email?: unknown;
+      groupId?: unknown;
+      planId?: unknown;
+    };
     email = String(body.email ?? '').trim().toLowerCase();
     if (typeof body.groupId === 'string' && body.groupId.trim() !== '') {
       groupId = body.groupId.trim();
+    }
+    if (typeof body.planId === 'string' && body.planId.trim() !== '') {
+      planId = body.planId.trim();
     }
   } catch {
     return json({ error: 'Corpo inválido' }, 400);
@@ -103,12 +111,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: createError?.message ?? 'Falha ao criar usuário' }, 400);
   }
 
-  // Inicializa o perfil pendente de onboarding (com a turma, se informada).
+  // Inicializa o perfil pendente de onboarding (com turma e plano, se
+  // informados). O `plan_id` é o que liga o aluno ao faturamento: um trigger
+  // no banco cria a mensalidade proporcional de entrada quando o cadastro
+  // acontece até o dia 10, e a recorrência mensal só cobra quem tem plano.
   const { error: insertError } = await adminClient.from('profiles').insert({
     id: created.user.id,
     role: 'user',
     is_first_login: true,
     group_id: groupId,
+    plan_id: planId,
   });
   if (insertError !== null) {
     // Rollback: remove o usuário de auth para não deixar conta órfã.

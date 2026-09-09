@@ -11,10 +11,22 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
 - Desbloqueio por **impressão digital opcional**: o app pergunta uma vez, respeita a escolha e deixa um interruptor no perfil.
 - Troca de senha pelo próprio usuário (exigindo a senha atual) e **redefinição pelo admin** para a senha padrão.
 - Política de senha forte com **checklist ao vivo** do que falta (maiúscula, minúscula, número e especial).
-- Cadastro de perfis com segregação rígida de acesso por papel (aluno × admin).
+- Cadastro de perfis com segregação rígida de acesso por papel (aluno × professor × admin).
+- **Professores** com cor característica: bolinha ao lado do nome e borda da aula
+  na cor deles (dividida em faixas quando a aula tem mais de um professor). O
+  professor vê a agenda inteira da academia, cria aulas para si, entra em aulas
+  de outros professores e gerencia a presença apenas das suas — o bloco
+  financeiro não aparece para ele.
 - Agenda de aulas (rotina e eventos) por turma.
 - Registro de presença explícito por aula.
 - Gestão de pagamentos com envio e aprovação de comprovantes.
+- **Mensalidades geradas automaticamente**: no dia 1 de cada mês para todo aluno
+  ativo com plano, sem depender de o mês anterior estar quitado. Quem é
+  cadastrado até o dia 10 já recebe a fatura proporcional aos dias restantes,
+  vencendo no último dia do mês; depois do dia 10, entra na recorrência do mês
+  seguinte. A unicidade `(aluno, competência)` impede cobrança duplicada.
+- Página **"Meu plano"** para o aluno: plano contratado, benefícios e a
+  mensalidade do mês — só leitura (criar e editar é exclusivo do admin).
 
 ## 🛠️ Tecnologias
 
@@ -180,18 +192,39 @@ A documentação completa vive em [`docs/`](docs/README.md):
 ## ⚡ Edge Functions
 
 Operações que exigem a `service_role` (nunca exposta no app) vivem em Edge
-Functions Deno, e ambas verificam pelo JWT que quem chama é **administrador**:
+Functions Deno, e todas verificam pelo JWT que quem chama é **administrador**:
 
 | Função | O que faz |
 | --- | --- |
 | `create-student` | Cria a conta do aluno com a senha padrão e inicializa o perfil. |
+| `create-staff` | Cria a conta de **professor ou admin** já com nome e CPF preenchidos (e a cor, no caso do professor). Mantém `is_first_login`, então a pessoa ainda troca a senha padrão e aceita os termos — só não redigita o cadastro. |
 | `reset-student-password` | Devolve a conta à senha padrão e remarca `is_first_login`, forçando nova senha no próximo acesso. |
 
 ```bash
 supabase functions deploy create-student
+supabase functions deploy create-staff
 supabase functions deploy reset-student-password
 ```
 
 > A `service_role` ignora a RLS, mas **não** os GRANTs do Postgres: a migration
 > `20260819120000_service_role_grants.sql` concede a ela `select/insert/update`
 > em `profiles` — sem isso as funções falham com `42501`.
+
+## 🌱 Dados de demonstração
+
+Para apresentar o sistema com a base populada (50 alunos, 5 professores,
+turmas, mensalidades em vários estados e professores coloridos nas aulas):
+
+```bash
+psql "$DATABASE_URL" -f supabase/seed/demo_seed.sql
+```
+
+O script é **idempotente** — rodar de novo apenas completa o que faltar, sem
+duplicar ninguém. Todas as contas criadas usam a senha `Snake@123` e ficam no
+domínio `@demo.snakethai.com`, justamente para serem localizáveis depois.
+
+> **Antes de operar de verdade**, remova os dados fictícios:
+> `psql "$DATABASE_URL" -f supabase/seed/demo_seed_limpar.sql`. Ele apaga
+> somente o domínio de demonstração — contas reais não são tocadas. Dado
+> fictício convivendo com dado real é pior do que base vazia, porque em poucas
+> semanas ninguém distingue mais um do outro.
