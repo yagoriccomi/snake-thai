@@ -74,11 +74,41 @@ function sanitize(context: LogContext): LogContext {
 }
 
 /**
+ * Serializa um valor sem deixar uma referência circular derrubar o log — um
+ * log que lança exceção esconde justamente o erro que ia explicar a falha.
+ */
+function safeJson(value: unknown): string {
+  const vistos = new WeakSet<object>();
+  try {
+    return JSON.stringify(value, (_chave, valor: unknown) => {
+      if (typeof valor === 'object' && valor !== null) {
+        if (vistos.has(valor)) {
+          return '[circular]';
+        }
+        vistos.add(valor);
+      }
+      return valor;
+    }) ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+/**
  * Extrai da exceção o que é útil para depurar, sem confiar que seja um `Error`.
+ *
+ * O ramo dos objetos existe porque `String({...})` devolve `"[object Object]"`,
+ * e foi exatamente o que aconteceu na prática: uma falha real de envio de
+ * comprovante chegou ao log sem NENHUMA informação sobre a causa. Erro de
+ * PostgREST (`{ message, code, details }`) e objeto passado por engano no
+ * lugar do erro caem aqui — em ambos os casos é melhor ter o conteúdo.
  */
 function describeError(error: unknown): LogContext {
   if (error instanceof Error) {
     return { errorName: error.name, errorMessage: error.message, stack: error.stack };
+  }
+  if (typeof error === 'object' && error !== null) {
+    return { errorMessage: safeJson(error) };
   }
   return { errorMessage: String(error) };
 }

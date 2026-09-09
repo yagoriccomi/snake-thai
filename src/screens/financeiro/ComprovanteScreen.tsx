@@ -100,10 +100,9 @@ export function ComprovanteScreen({
         if (!active) {
           return;
         }
-        log.error('Falha ao gerar URL do comprovante', {
+        log.error('Falha ao gerar URL do comprovante', erro, {
           paymentId,
           provedor: comprovante.proof_provider,
-          motivo: erro instanceof Error ? erro.message : 'desconhecido',
         });
         setSignedUrl(null);
         setFalhouAoCarregar(true);

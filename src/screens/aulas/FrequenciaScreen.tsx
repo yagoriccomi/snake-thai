@@ -56,10 +56,7 @@ export function FrequenciaScreen({
       try {
         await setStudentStatus(userId, status);
       } catch (erro) {
-        log.error('Falha ao definir presença', {
-          classId,
-          motivo: erro instanceof Error ? erro.message : 'desconhecido',
-        });
+        log.error('Falha ao definir presença', erro, { classId });
       } finally {
         setAlterandoId(null);
       }
@@ -73,10 +70,7 @@ export function FrequenciaScreen({
       try {
         await clearStudentStatus(userId);
       } catch (erro) {
-        log.error('Falha ao limpar presença', {
-          classId,
-          motivo: erro instanceof Error ? erro.message : 'desconhecido',
-        });
+        log.error('Falha ao limpar presença', erro, { classId });
       } finally {
         setAlterandoId(null);
       }
