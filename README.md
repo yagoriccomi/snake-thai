@@ -18,7 +18,13 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   de outros professores e gerencia a presença apenas das suas — o bloco
   financeiro não aparece para ele.
 - Agenda de aulas (rotina e eventos) por turma.
-- Registro de presença explícito por aula.
+- **Controle de frequência**: o aluno declara se vem (só sugestivo) e a presença
+  vale pela chamada do professor, efetivada em "Concluir chamada". Cada aluno
+  vê "Presença em Aulas X/Y · Frequência N%" e o histórico dos meses fechados
+  (congelados no dia 1). Ao avisar falta, pode enviar justificativa com
+  mensagem de até 255 caracteres e imagem ou PDF, que o professor da aula ou o
+  admin aprova ou recusa. Aulas que passam sem chamada geram aviso na agenda.
+  Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes.
 - **Mensalidades geradas automaticamente**: no dia 1 de cada mês para todo aluno
   ativo com plano, sem depender de o mês anterior estar quitado. Quem é

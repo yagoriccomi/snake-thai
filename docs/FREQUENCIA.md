@@ -1,6 +1,8 @@
 # Controle de Frequência — especificação e plano
 
-> **Estado:** Fases 0 e 1 entregues em 2026-09-14; Fases 2 e 3 pendentes.
+> **Estado:** Fases 0 a 3 entregues em 2026-09-14 (app 1.4.0). O anexo da
+> justificativa depende do deploy do módulo de justificativas do `snake-server`
+> — ver "Entregue nas Fases 2 e 3".
 > Decisões tomadas com o cliente em 2026-09-09; este documento é a fonte da
 > verdade das regras de cálculo.
 
@@ -19,9 +21,36 @@
 - **Compatibilidade:** APKs anteriores à 1.3.0 gravam a declaração em
   `status` e passam a receber recusa do banco. Todo aparelho precisa da 1.3.0.
 
-Ainda **não** existem: a função de cálculo, a conclusão da chamada
-(`attendance_taken_at` só é gravável pelo admin até a Fase 2), o fechamento
-mensal, o aviso de aula sem chamada e as telas de justificativa e frequência.
+### Entregue nas Fases 2 e 3 (2026-09-14)
+
+**Banco** — migration `20260914140000_frequencia_regras`, aplicada em produção;
+regressão `supabase/tests/regressao_frequencia_regras.sql` com 18 casos verdes.
+
+| Peça | Quem usa | O que faz |
+| --- | --- | --- |
+| `frequencia_mensal(ids[])` | aluno, professor, admin | A conta desta página, ao vivo, para vários alunos numa chamada |
+| `concluir_chamada(aula)` | professor da aula, admin | Grava `attendance_taken_at`; recusa aula que ainda não começou |
+| `aulas_sem_chamada()` | professor (as suas), admin (todas) | Rotinas do mês passadas há mais de 1 h sem chamada |
+| `fechar_frequencia_do_mes()` | cron `close-monthly-attendance`, dia 1 às 00:20 (Brasília) | Congela o mês anterior em `attendance_monthly` |
+
+**App** — o que cada papel vê:
+
+- **Aluno:** card "Presença em Aulas X/Y · Frequência N%" no topo das aulas,
+  que abre o histórico dos meses fechados. Ao avisar falta, uma folha oferece
+  "Acrescentar justificativa?" (mensagem com contador de 255 e anexo de
+  imagem ou PDF). A linha da aula mostra se a justificativa está em análise,
+  aprovada ou recusada. Depois da revisão, a folha não reabre: o banco não
+  aceita editar justificativa já revisada.
+- **Professor / admin:** na chamada, "Concluir chamada" (com aviso de quantos
+  alunos sem chamada vão contar como falta), frequência do mês por aluno, a
+  justificativa com "Ver anexo", "Aprovar" e "Recusar", e toque no nome para
+  abrir o histórico. Na agenda, o aviso de aulas sem chamada leva direto à aula.
+
+**Dependência de servidor:** o anexo sobe por `POST /v1/justifications/sign-upload`
+e é visto por `/view-url`, do `snake-server` (branch
+`feature/modulo-justificativas`). Enquanto esse módulo não estiver no ar, a
+justificativa **só com mensagem** funciona; com anexo, o envio falha com
+mensagem genérica e nada é gravado.
 
 ## Por que este documento existe
 
