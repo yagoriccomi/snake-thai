@@ -9,7 +9,10 @@ import { PasswordRequirements } from '@/components/PasswordRequirements';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
 import { updatePassword } from '@/services/auth.service';
-import { completeProfileOnboarding } from '@/services/profile.service';
+import {
+  completeProfileOnboarding,
+  finishStaffOnboarding,
+} from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { describeError } from '@/utils/errors';
 import { dateBrToIso, maskCpf, maskDate, maskPhone, onlyDigits } from '@/utils/masks';
@@ -31,14 +34,35 @@ type OnboardingErrors = Partial<
 
 const SCREEN_EDGES = ['bottom'] as const;
 
-/** Rótulos das três etapas, na ordem. */
-const STEP_LABELS = ['Dados', 'Senha', 'Termos'] as const;
+/** Etapas possíveis do onboarding, identificadas por nome (não por índice). */
+type OnboardingStep = 'dados' | 'senha' | 'termos';
+
+const STEP_LABELS: Record<OnboardingStep, string> = {
+  dados: 'Dados',
+  senha: 'Senha',
+  termos: 'Termos',
+};
+
+const STEP_HEADINGS: Record<OnboardingStep, { title: string; subtitle: string }> = {
+  dados: { title: 'Seus dados', subtitle: 'Leva menos de um minuto.' },
+  senha: {
+    title: 'Segurança da conta',
+    subtitle: 'Crie uma senha forte para proteger seu acesso.',
+  },
+  termos: { title: 'Termos', subtitle: 'Quase lá — só falta o aceite.' },
+};
 
 /**
- * Onboarding obrigatório (primeiro login), agora em três etapas:
+ * Onboarding obrigatório (primeiro login):
  *   1) dados pessoais (nome, celular, CPF, nascimento);
  *   2) troca da senha padrão por uma forte;
  *   3) aceite do termo LGPD.
+ *
+ * A etapa de dados é PULADA para quem já nasce cadastrado — professor e admin
+ * criados pelo admin via `create-staff` chegam aqui com nome e CPF prontos, e
+ * pedir tudo de novo seria redigitação. As outras duas etapas nunca são
+ * puladas: são elas que tiram a conta da senha padrão (pública) e registram o
+ * aceite LGPD, o que vale para QUALQUER papel. [#54][#55]
  *
  * A validação acontece por etapa (só avança quando a etapa está válida) e de
  * novo no envio. Ao concluir, atualiza a senha em `auth.users` e o perfil
@@ -48,9 +72,21 @@ const STEP_LABELS = ['Dados', 'Senha', 'Termos'] as const;
 export function OnboardingScreen(): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
-  const { session, refreshProfile } = useAuth();
+  const { session, profile, refreshProfile } = useAuth();
+
+  // Cadastro já veio pronto do admin: nome e CPF são exatamente o que a
+  // constraint `profiles_complete_when_onboarded` exige para concluir.
+  const cadastroJaCompleto =
+    profile !== null && profile.name !== null && profile.cpf !== null;
+
+  const steps = useMemo<OnboardingStep[]>(
+    () => (cadastroJaCompleto ? ['senha', 'termos'] : ['dados', 'senha', 'termos']),
+    [cadastroJaCompleto],
+  );
 
   const [step, setStep] = useState(0);
+  const stepAtual: OnboardingStep = steps[step] ?? 'senha';
+  const ultimaEtapa = step === steps.length - 1;
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [cpf, setCpf] = useState('');
@@ -86,12 +122,12 @@ export function OnboardingScreen(): React.JSX.Element {
   }, [password, confirmPassword]);
 
   const goNext = useCallback(() => {
-    const stepErrors = step === 0 ? validateStep1() : validateStep2();
+    const stepErrors = stepAtual === 'dados' ? validateStep1() : validateStep2();
     setErrors(stepErrors);
     if (Object.keys(stepErrors).length === 0) {
-      setStep((current) => Math.min(2, current + 1));
+      setStep((current) => Math.min(steps.length - 1, current + 1));
     }
-  }, [step, validateStep1, validateStep2]);
+  }, [stepAtual, steps.length, validateStep1, validateStep2]);
 
   const goBack = useCallback(() => {
     setErrors({});
@@ -105,26 +141,29 @@ export function OnboardingScreen(): React.JSX.Element {
     }
     // Revalida tudo antes de enviar; se algo de uma etapa anterior falhar,
     // volta para a etapa certa em vez de submeter escondido.
-    const step1 = validateStep1();
-    if (Object.keys(step1).length > 0) {
-      setErrors(step1);
-      setStep(0);
-      return;
+    let isoDob: string | null = null;
+    if (!cadastroJaCompleto) {
+      const step1 = validateStep1();
+      if (Object.keys(step1).length > 0) {
+        setErrors(step1);
+        setStep(steps.indexOf('dados'));
+        return;
+      }
+      isoDob = dateBrToIso(dob);
+      if (isoDob === null) {
+        setErrors({ dob: 'Data de nascimento inválida.' });
+        setStep(steps.indexOf('dados'));
+        return;
+      }
     }
     const step2 = validateStep2();
     if (Object.keys(step2).length > 0) {
       setErrors(step2);
-      setStep(1);
+      setStep(steps.indexOf('senha'));
       return;
     }
     if (!lgpdAccepted) {
       setErrors({ lgpd: 'É necessário aceitar os Termos e a Política de Privacidade.' });
-      return;
-    }
-    const isoDob = dateBrToIso(dob);
-    if (isoDob === null) {
-      setErrors({ dob: 'Data de nascimento inválida.' });
-      setStep(0);
       return;
     }
 
@@ -134,12 +173,16 @@ export function OnboardingScreen(): React.JSX.Element {
       // USER_UPDATED, que dispara um reload do perfil no AuthProvider; se a senha
       // viesse primeiro, esse reload poderia reler is_first_login=true (cadastro
       // ainda não concluído) e remontar o Onboarding no passo 1 — o loop.
-      await completeProfileOnboarding(userId, {
-        name,
-        cpf: onlyDigits(cpf),
-        phone: onlyDigits(phone),
-        dob: isoDob,
-      });
+      if (cadastroJaCompleto || isoDob === null) {
+        await finishStaffOnboarding(userId);
+      } else {
+        await completeProfileOnboarding(userId, {
+          name,
+          cpf: onlyDigits(cpf),
+          phone: onlyDigits(phone),
+          dob: isoDob,
+        });
+      }
       await updatePassword(password);
       await refreshProfile();
     } catch (submitError) {
@@ -149,6 +192,8 @@ export function OnboardingScreen(): React.JSX.Element {
     }
   }, [
     session,
+    cadastroJaCompleto,
+    steps,
     validateStep1,
     validateStep2,
     lgpdAccepted,
@@ -160,11 +205,8 @@ export function OnboardingScreen(): React.JSX.Element {
     refreshProfile,
   ]);
 
-  const headings = [
-    { title: 'Seus dados', subtitle: 'Passo 1 de 3. Leva menos de um minuto.' },
-    { title: 'Segurança da conta', subtitle: 'Crie uma senha forte para proteger seu acesso.' },
-    { title: 'Termos', subtitle: 'Quase lá — só falta o aceite.' },
-  ][step] ?? { title: '', subtitle: '' };
+  const headings = STEP_HEADINGS[stepAtual];
+  const passoLabel = `Passo ${step + 1} de ${steps.length}.`;
 
   return (
     <ScreenWrapper edges={SCREEN_EDGES} avoidKeyboard>
@@ -172,9 +214,9 @@ export function OnboardingScreen(): React.JSX.Element {
         {/* Indicador de etapas */}
         <View style={styles.stepper}>
           <View style={styles.bars}>
-            {STEP_LABELS.map((label, index) => (
+            {steps.map((nome, index) => (
               <View
-                key={label}
+                key={nome}
                 style={[
                   styles.bar,
                   { backgroundColor: index <= step ? colors.primary : colors.surfaceElevated },
@@ -183,16 +225,16 @@ export function OnboardingScreen(): React.JSX.Element {
             ))}
           </View>
           <View style={styles.labels}>
-            {STEP_LABELS.map((label, index) => (
+            {steps.map((nome, index) => (
               <Text
-                key={label}
+                key={nome}
                 style={[
                   styles.stepLabel,
                   { color: index === step ? colors.primaryText : colors.textSecondary },
                   index === step ? styles.stepLabelActive : null,
                 ]}
               >
-                {index + 1} · {label}
+                {index + 1} · {STEP_LABELS[nome]}
               </Text>
             ))}
           </View>
@@ -201,7 +243,7 @@ export function OnboardingScreen(): React.JSX.Element {
         <View style={styles.titleBlock}>
           <AppText variant="heading">{headings.title}</AppText>
           <AppText variant="caption" style={styles.subtitle}>
-            {headings.subtitle}
+            {passoLabel} {headings.subtitle}
           </AppText>
         </View>
 
@@ -210,7 +252,7 @@ export function OnboardingScreen(): React.JSX.Element {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          {step === 0 ? (
+          {stepAtual === 'dados' ? (
             <View style={styles.fields}>
               <Input
                 label="Nome completo"
@@ -247,7 +289,7 @@ export function OnboardingScreen(): React.JSX.Element {
             </View>
           ) : null}
 
-          {step === 1 ? (
+          {stepAtual === 'senha' ? (
             <View style={styles.fields}>
               <Input
                 label="Nova senha"
@@ -273,7 +315,7 @@ export function OnboardingScreen(): React.JSX.Element {
             </View>
           ) : null}
 
-          {step === 2 ? (
+          {stepAtual === 'termos' ? (
             <View style={styles.terms}>
               <Checkbox
                 checked={lgpdAccepted}
@@ -313,7 +355,7 @@ export function OnboardingScreen(): React.JSX.Element {
               style={styles.footerBack}
             />
           ) : null}
-          {step < 2 ? (
+          {!ultimaEtapa ? (
             <Button title="Próximo" onPress={goNext} style={styles.footerNext} />
           ) : (
             <Button

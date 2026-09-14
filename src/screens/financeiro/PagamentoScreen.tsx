@@ -90,10 +90,7 @@ export function PagamentoScreen({
       } catch (erro) {
         // O detalhe técnico vai para o log; a tela recebe só o que a pessoa
         // consegue entender e resolver. Nunca a stack. [#92][#93]
-        log.error('Falha ao enviar comprovante', {
-          paymentId,
-          motivo: erro instanceof Error ? erro.message : 'desconhecido',
-        });
+        log.error('Falha ao enviar comprovante', erro, { paymentId });
         setError(FALHA_NO_ENVIO);
       } finally {
         setSubmitting(false);

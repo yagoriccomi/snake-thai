@@ -9,8 +9,13 @@ import { useAuth } from '@/context/AuthProvider';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /**
- * Tela de bloqueio biométrico do administrador. Exigida na abertura do app e a
- * cada retorno ao foreground: sem confirmar a identidade, o admin não navega.
+ * Tela de bloqueio biométrico. Aparece na abertura do app e a cada retorno do
+ * segundo plano, para QUEM ativou a opção — aluno, professor ou admin: a
+ * preferência é individual e fica na aba Dados.
+ *
+ * O texto não fala mais em "administrador" porque a trava nunca foi exclusiva
+ * dele: um professor, que enxerga a lista de alunos, via uma mensagem sobre um
+ * painel que não é o seu.
  */
 export function BiometricLockScreen(): React.JSX.Element {
   const { colors } = useTheme();
@@ -42,7 +47,10 @@ export function BiometricLockScreen(): React.JSX.Element {
           Acesso protegido
         </AppText>
         <AppText variant="caption" style={styles.message}>
-          Confirme sua biometria para acessar o painel de administrador.
+          Confirme sua biometria para continuar.
+        </AppText>
+        <AppText variant="caption" color={colors.textSecondary} style={styles.message}>
+          Você ativou esta proteção em Dados › Segurança, e pode desligá-la lá.
         </AppText>
         {error !== null ? (
           <AppText variant="caption" color={colors.error} style={styles.message}>

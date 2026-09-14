@@ -52,11 +52,18 @@ export async function fetchPaymentsByStatus(
   return data;
 }
 
-/** Aprova o pagamento (status → paid). */
+/**
+ * Aprova o pagamento (status → paid).
+ *
+ * `paid_at` viaja JUNTO com o status porque a constraint
+ * `payments_paid_at_matches_status` exige `(status = 'paid') = (paid_at is not
+ * null)`. Gravar só o status fazia TODA aprovação falhar no banco — o admin via
+ * "Não foi possível aprovar o pagamento" e nenhuma mensalidade era quitada.
+ */
 export async function approvePayment(paymentId: string): Promise<void> {
   const { error } = await supabase
     .from('payments')
-    .update({ status: 'paid' })
+    .update({ status: 'paid', paid_at: new Date().toISOString() })
     .eq('id', paymentId);
   if (error !== null) {
     throw error;
@@ -79,6 +86,9 @@ export async function rejectPayment(
     .from('payments')
     .update({
       status: 'open',
+      // Mesma constraint da aprovação, no sentido inverso: cobrança reaberta
+      // não pode carregar data de pagamento.
+      paid_at: null,
       proof_provider: null,
       proof_public_id: null,
       proof_storage_path: null,

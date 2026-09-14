@@ -9,11 +9,12 @@ import { AulasHomeScreen } from '@/screens/aulas/AulasHomeScreen';
 import { CriarAulaScreen } from '@/screens/aulas/CriarAulaScreen';
 import { DetalheAulaScreen } from '@/screens/aulas/DetalheAulaScreen';
 import { FrequenciaScreen } from '@/screens/aulas/FrequenciaScreen';
+import { HistoricoFrequenciaScreen } from '@/screens/aulas/HistoricoFrequenciaScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<AulasStackParamList>();
 
-/** Stack da aba "Aulas": lista, criação (admin) e controle de frequência (admin). */
+/** Stack da aba "Aulas": lista, criação, chamada e frequência. */
 export function AulasStackNavigator(): React.JSX.Element {
   const { colors, fonts } = useTheme();
 
@@ -45,10 +46,16 @@ export function AulasStackNavigator(): React.JSX.Element {
         component={FrequenciaScreen}
         options={FREQUENCIA_OPTIONS}
       />
+      <Stack.Screen
+        name="HistoricoFrequencia"
+        component={HistoricoFrequenciaScreen}
+        options={HISTORICO_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
 
 const HOME_OPTIONS: NativeStackNavigationOptions = { title: 'Aulas' };
 const DETALHE_OPTIONS: NativeStackNavigationOptions = { title: 'Aula' };
-const FREQUENCIA_OPTIONS: NativeStackNavigationOptions = { title: 'Frequência' };
+const FREQUENCIA_OPTIONS: NativeStackNavigationOptions = { title: 'Chamada' };
+const HISTORICO_OPTIONS: NativeStackNavigationOptions = { title: 'Frequência' };

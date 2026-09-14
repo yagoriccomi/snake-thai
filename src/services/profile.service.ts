@@ -51,6 +51,25 @@ export async function completeProfileOnboarding(
   }
 }
 
+/**
+ * Conclui o onboarding de quem JÁ nasce com cadastro completo (professor e
+ * admin, criados pela Edge Function `create-staff`): só levanta a flag, sem
+ * regravar nome/CPF que o admin já informou.
+ *
+ * A constraint `profiles_complete_when_onboarded` exige apenas nome e CPF
+ * para sair do primeiro login — telefone e nascimento seguem opcionais, e é
+ * o que permite este atalho existir sem furar a integridade.
+ */
+export async function finishStaffOnboarding(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ is_first_login: false })
+    .eq('id', userId);
+  if (error !== null) {
+    throw error;
+  }
+}
+
 /** Campos editáveis do perfil (variam conforme o papel — validado na UI). */
 export interface EditableProfileData {
   /** Editável apenas por admin (aluno não altera o próprio nome nesta fase). */
@@ -86,9 +105,10 @@ export async function updateProfile(
 export async function createStudent(
   email: string,
   groupId: string | null,
+  planId: string | null = null,
 ): Promise<void> {
   const { error } = await supabase.functions.invoke('create-student', {
-    body: { email: email.trim().toLowerCase(), groupId },
+    body: { email: email.trim().toLowerCase(), groupId, planId },
   });
   if (error !== null) {
     throw error;
@@ -106,6 +126,86 @@ export async function fetchAllStudents(): Promise<Profile[]> {
     throw error;
   }
   return data;
+}
+
+/** Lista todos os professores (para o admin escolher em quais aulas colocar). */
+export async function fetchAllProfessors(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('role', 'professor')
+    .order('name', { ascending: true });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/** Cargo de um funcionário (professor ou administrador) — nunca aluno aqui. */
+export type StaffRole = Extract<Database['public']['Enums']['user_role'], 'professor' | 'admin'>;
+
+/** Dados para cadastrar professor ou admin (cadastro completo — sem onboarding). */
+export interface StaffInput {
+  email: string;
+  name: string;
+  /** Só dígitos. */
+  cpf: string;
+  role: StaffRole;
+  /** Obrigatório para `professor`; deve ficar `null` para `admin`. */
+  color: string | null;
+}
+
+/**
+ * Cadastra professor ou administrador. Diferente de `createStudent`: o
+ * cadastro nasce COMPLETO (nome e CPF já informados) — não há onboarding
+ * depois. Roda na Edge Function `create-staff` (service_role, nunca no
+ * cliente), que também valida o formato da cor e se o chamador é admin.
+ */
+export async function createStaff(input: StaffInput): Promise<void> {
+  const { error } = await supabase.functions.invoke('create-staff', {
+    body: {
+      email: input.email.trim().toLowerCase(),
+      name: input.name.trim(),
+      cpf: input.cpf,
+      role: input.role,
+      color: input.color,
+    },
+  });
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Atualiza a cor do PRÓPRIO professor. A RLS permite a autoedição deste
+ * campo (e só deste, para quem não é admin); a constraint do banco garante
+ * que só quem é professor pode ter uma cor.
+ */
+export async function updateOwnColor(userId: string, color: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ color }).eq('id', userId);
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Atribui/altera o plano de um aluno (apenas admin — enforced por RLS).
+ *
+ * É este vínculo que faz o aluno ser faturado: a recorrência mensal no banco
+ * (`gerar_mensalidades_do_mes`) só cobra quem tem `plan_id`. Aluno sem plano
+ * simplesmente não gera cobrança — de propósito, para não inventar dívida.
+ */
+export async function updateStudentPlan(
+  studentId: string,
+  planId: string | null,
+): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ plan_id: planId })
+    .eq('id', studentId);
+  if (error !== null) {
+    throw error;
+  }
 }
 
 /** Atribui/altera a turma de um aluno (apenas admin — enforced por RLS). */

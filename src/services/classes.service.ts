@@ -56,10 +56,38 @@ export async function fetchOwnAttendance(userId: string): Promise<AttendanceRow[
 }
 
 /**
- * Registra/atualiza a presença do aluno (INSERT ou UPDATE), disparado apenas
- * pela ação explícita do aluno. Usa o UNIQUE (class_id, user_id) como conflito.
+ * Registra a DECLARAÇÃO do aluno ("vou" / "não vou") — apenas sugestiva.
+ *
+ * Grava em `declared_status`, nunca em `status`: a presença só é efetivada
+ * pela chamada do professor, e o banco recusa (42501) um aluno escrevendo na
+ * chamada. O upsert do PostgREST só atualiza as colunas enviadas, então uma
+ * chamada já registrada pelo professor é preservada. Regras em
+ * docs/FREQUENCIA.md.
  */
-export async function upsertAttendance(
+export async function declareAttendance(
+  classId: string,
+  userId: string,
+  declared: AttendanceStatus,
+): Promise<void> {
+  const { error } = await supabase
+    .from('attendance')
+    .upsert(
+      { class_id: classId, user_id: userId, declared_status: declared },
+      { onConflict: 'class_id,user_id' },
+    );
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Registra a CHAMADA de um aluno — a presença oficial. Ação de quem gerencia a
+ * aula (professor dela ou admin); para qualquer outro, o banco recusa.
+ *
+ * Não envia `declared_status`: o que o aluno declarou continua registrado,
+ * como referência para quem faz a chamada.
+ */
+export async function recordRollCall(
   classId: string,
   userId: string,
   status: AttendanceStatus,
@@ -131,19 +159,50 @@ export async function updateClass(id: string, input: NewClassInput): Promise<voi
 }
 
 /**
+ * Aluno na lista de chamada — o mínimo para identificá-lo em tela. Não é o
+ * `Profile` inteiro de propósito: quem faz a chamada não precisa (nem deve
+ * receber) CPF, telefone e data de nascimento.
+ */
+export interface StudentRef {
+  id: string;
+  name: string | null;
+}
+
+/**
  * Alunos elegíveis a uma aula: os da turma informada; para eventos globais
  * (`groupId` nulo), todos os alunos.
  */
 export async function fetchStudentsForGroup(
   groupId: string | null,
-): Promise<Profile[]> {
-  const base = supabase.from('profiles').select('*').eq('role', 'user');
+): Promise<StudentRef[]> {
+  // Do DIRETÓRIO, não de `profiles`: o professor precisa listar os alunos
+  // para fazer a chamada, e a RLS de profiles não o deixa vê-los (nem deve —
+  // ali há CPF, telefone e nascimento). A chamada só precisa de id e nome. [#54]
+  const base = supabase.from('diretorio_perfis').select('id, name').eq('role', 'user');
   const query = groupId !== null ? base.eq('group_id', groupId) : base;
   const { data, error } = await query.order('name', { ascending: true });
   if (error !== null) {
     throw error;
   }
-  return data;
+  return data.filter((linha): linha is StudentRef => linha.id !== null);
+}
+
+/**
+ * Desfaz o registro da CHAMADA de um aluno — ele volta a "sem chamada".
+ *
+ * Zera só `status` em vez de apagar a linha: apagar levaria junto a
+ * declaração do aluno, que não pertence a quem faz a chamada. Ação do
+ * professor da aula ou do admin. [#55]
+ */
+export async function clearRollCall(classId: string, userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('attendance')
+    .update({ status: null })
+    .eq('class_id', classId)
+    .eq('user_id', userId);
+  if (error !== null) {
+    throw error;
+  }
 }
 
 /** Presenças registradas para uma aula (visão do admin). */
@@ -158,4 +217,128 @@ export async function fetchAttendanceForClass(
     throw error;
   }
   return data;
+}
+
+/**
+ * Um professor vinculado a uma aula — o suficiente para desenhar a bolinha
+ * (nome + cor) e a faixa da borda. `joinedAt` decide a ORDEM das faixas: quem
+ * entrou primeiro na aula ocupa a primeira faixa, da esquerda pra direita.
+ */
+export interface ClassTeacherRef {
+  id: string;
+  name: string | null;
+  color: string | null;
+  joinedAt: string;
+}
+
+/**
+ * Professores de um conjunto de aulas, agrupados por `class_id`.
+ *
+ * Uma consulta só (join embutido do PostgREST), não uma por aula: a tela de
+ * um dia inteiro não pode disparar N+1 requisições para pintar N cards. [#70]
+ */
+export async function fetchTeachersForClasses(
+  classIds: string[],
+): Promise<Record<string, ClassTeacherRef[]>> {
+  if (classIds.length === 0) {
+    return {};
+  }
+  const { data: vinculos, error } = await supabase
+    .from('class_teachers')
+    .select('class_id, teacher_id, created_at')
+    .in('class_id', classIds)
+    .order('created_at', { ascending: true });
+  if (error !== null) {
+    throw error;
+  }
+  if (vinculos.length === 0) {
+    return {};
+  }
+
+  // Nome e cor vêm do DIRETÓRIO, não de `profiles`: a RLS de profiles é
+  // "só o próprio ou admin", então um join embutido devolvia `null` para
+  // aluno e professor, e a bolinha colorida sumia justamente para quem ela
+  // foi feita. O diretório expõe só id/nome/cor, sem dado pessoal. [#54]
+  const idsDosProfessores = [...new Set(vinculos.map((v) => v.teacher_id))];
+  const { data: professores, error: erroProfessores } = await supabase
+    .from('diretorio_perfis')
+    .select('id, name, color')
+    .in('id', idsDosProfessores);
+  if (erroProfessores !== null) {
+    throw erroProfessores;
+  }
+
+  const porId = new Map(professores.map((p) => [p.id, p]));
+  const porAula: Record<string, ClassTeacherRef[]> = {};
+  for (const vinculo of vinculos) {
+    const professor = porId.get(vinculo.teacher_id);
+    if (professor === undefined) {
+      continue;
+    }
+    const lista = porAula[vinculo.class_id] ?? [];
+    lista.push({
+      id: vinculo.teacher_id,
+      name: professor.name,
+      color: professor.color,
+      joinedAt: vinculo.created_at,
+    });
+    porAula[vinculo.class_id] = lista;
+  }
+  return porAula;
+}
+
+/**
+ * Cria uma aula em nome de um PROFESSOR e o vincula como um dos professores
+ * dela, na mesma operação lógica (dois passos, não uma transação — mesmo
+ * padrão de `submitProof`: se o segundo passo falhar, a aula fica sem
+ * professor, um problema de dado visível e corrigível, não uma brecha de
+ * segurança). Sem o segundo passo, "criar para si mesmo" não teria efeito
+ * algum, porque `classes` não guarda professor nenhum — só `class_teachers`. [#55]
+ */
+export async function createClassAsProfessor(
+  input: NewClassInput,
+  teacherId: string,
+): Promise<void> {
+  const { data, error } = await supabase
+    .from('classes')
+    .insert({
+      title: input.title.trim(),
+      type: input.type,
+      date_time: input.dateTimeIso,
+      group_id: input.groupId,
+    })
+    .select('id')
+    .single();
+  if (error !== null) {
+    throw error;
+  }
+  await addClassTeacher(data.id, teacherId);
+}
+
+/**
+ * Vincula um professor a uma aula.
+ *
+ * Serve os dois fluxos ao mesmo tempo — "professor se inclui" (chamando com
+ * o próprio id) e "admin põe qualquer professor" — porque quem decide se a
+ * chamada é permitida é a RLS de `class_teachers`, não este código. [#20]
+ */
+export async function addClassTeacher(classId: string, teacherId: string): Promise<void> {
+  const { error } = await supabase
+    .from('class_teachers')
+    .insert({ class_id: classId, teacher_id: teacherId });
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/** Remove o vínculo de um professor com uma aula (sair da aula / ser removido). */
+export async function removeClassTeacher(classId: string, teacherId: string): Promise<void> {
+  const { error } = await supabase
+    .from('class_teachers')
+    .delete()
+    .eq('class_id', classId)
+    .eq('teacher_id', teacherId);
+  if (error !== null) {
+    throw error;
+  }
 }

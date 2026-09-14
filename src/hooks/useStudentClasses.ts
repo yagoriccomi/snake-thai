@@ -2,16 +2,29 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthProvider';
 import {
+  declareAttendance,
   fetchOwnAttendance,
+  fetchTeachersForClasses,
   fetchUpcomingClassesForStudent,
-  upsertAttendance,
   type AttendanceStatus,
   type ClassRow,
+  type ClassTeacherRef,
 } from '@/services/classes.service';
+import {
+  fetchOwnJustifications,
+  type JustificationRow,
+} from '@/services/justifications.service';
 
-/** Aula com a resposta de presença do próprio aluno anexada. */
+/** Aula com a declaração do próprio aluno e seus professores anexados. */
 export interface StudentClassItem extends ClassRow {
+  /**
+   * O que o aluno DECLAROU ("vou" / "não vou"). Apenas sugestivo: a presença
+   * oficial vem da chamada do professor (docs/FREQUENCIA.md).
+   */
   myStatus: AttendanceStatus | null;
+  /** Justificativa de falta enviada para esta aula, se houver. */
+  justification: JustificationRow | null;
+  teachers: ClassTeacherRef[];
 }
 
 interface UseStudentClassesResult {
@@ -19,12 +32,13 @@ interface UseStudentClassesResult {
   loading: boolean;
   error: string | null;
   reload: () => Promise<void>;
-  respond: (classId: string, status: AttendanceStatus) => Promise<void>;
+  /** @returns `true` se a declaração foi gravada. */
+  respond: (classId: string, status: AttendanceStatus) => Promise<boolean>;
 }
 
 /**
- * Carrega as próximas aulas do aluno já com o status de presença dele e expõe
- * a ação `respond` (INSERT/UPDATE otimista, revertido em caso de falha).
+ * Carrega as próximas aulas do aluno já com a declaração dele e expõe a ação
+ * `respond` (INSERT/UPDATE otimista da declaração, revertido em caso de falha).
  */
 export function useStudentClasses(): UseStudentClassesResult {
   const { session, profile } = useAuth();
@@ -40,15 +54,23 @@ export function useStudentClasses(): UseStudentClassesResult {
     setLoading(true);
     setError(null);
     try {
-      const [classes, attendance] = await Promise.all([
+      const [classes, attendance, justifications] = await Promise.all([
         fetchUpcomingClassesForStudent(profile?.group_id ?? null),
         fetchOwnAttendance(userId),
+        fetchOwnJustifications(userId),
       ]);
-      const statusByClass = new Map(attendance.map((row) => [row.class_id, row.status]));
+      const teachersByClass = await fetchTeachersForClasses(classes.map((item) => item.id));
+      // Lê a DECLARAÇÃO, não a chamada: o card mostra o que o aluno escolheu.
+      const declaredByClass = new Map(
+        attendance.map((row) => [row.class_id, row.declared_status]),
+      );
+      const justificationByClass = new Map(justifications.map((row) => [row.class_id, row]));
       setItems(
         classes.map((item) => ({
           ...item,
-          myStatus: statusByClass.get(item.id) ?? null,
+          myStatus: declaredByClass.get(item.id) ?? null,
+          justification: justificationByClass.get(item.id) ?? null,
+          teachers: teachersByClass[item.id] ?? [],
         })),
       );
     } catch {
@@ -63,10 +85,10 @@ export function useStudentClasses(): UseStudentClassesResult {
   }, [load]);
 
   const respond = useCallback(
-    async (classId: string, status: AttendanceStatus) => {
+    async (classId: string, status: AttendanceStatus): Promise<boolean> => {
       const userId = session?.user.id;
       if (userId === undefined) {
-        return;
+        return false;
       }
       setError(null);
       // Atualização otimista.
@@ -76,10 +98,12 @@ export function useStudentClasses(): UseStudentClassesResult {
         ),
       );
       try {
-        await upsertAttendance(classId, userId, status);
+        await declareAttendance(classId, userId, status);
+        return true;
       } catch {
         setError('Não foi possível salvar sua resposta.');
         await load();
+        return false;
       }
     },
     [session, load],

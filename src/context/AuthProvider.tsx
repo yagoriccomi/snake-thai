@@ -32,6 +32,7 @@ interface AuthContextValue {
   session: Session | null;
   profile: Profile | null;
   isAdmin: boolean;
+  isProfessor: boolean;
   /** True quando o usuário precisa confirmar biometria para navegar. */
   adminLocked: boolean;
   /** Registra a escolha do usuário sobre o desbloqueio biométrico. */
@@ -72,6 +73,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const [biometricAvailable, setBiometricAvailable] = useState(false);
 
   const isAdmin = profile?.role === 'admin';
+  const isProfessor = profile?.role === 'professor';
 
   // Sessão inicial + listener de mudanças de autenticação.
   useEffect(() => {
@@ -219,6 +221,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       session,
       profile,
       isAdmin,
+      isProfessor,
       adminLocked,
       biometricEnabled,
       biometricAvailable,
@@ -234,6 +237,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       session,
       profile,
       isAdmin,
+      isProfessor,
       adminLocked,
       biometricEnabled,
       biometricAvailable,

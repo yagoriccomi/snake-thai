@@ -55,6 +55,26 @@ export async function fetchPlans(onlyActive = false): Promise<PlanRow[]> {
 }
 
 /**
+ * Busca um plano pelo id — usado pelo aluno para ver o próprio plano.
+ *
+ * Aceita plano inativo de propósito: se a academia aposentar um plano, quem
+ * ainda está nele precisa continuar enxergando o que contratou.
+ *
+ * @returns O plano, ou `null` se não existir (aluno sem plano vinculado).
+ */
+export async function fetchPlanById(id: string): Promise<PlanRow | null> {
+  const { data, error } = await supabase
+    .from('plans')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/**
  * Cria um plano (apenas admin — garantido por RLS).
  *
  * @param input Dados do plano, com preço já convertido para centavos.

@@ -22,7 +22,11 @@ export async function isBiometricAvailable(): Promise<boolean> {
  */
 export async function authenticateBiometric(): Promise<boolean> {
   const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: 'Confirme sua identidade para acessar o painel de administrador',
+    // Este texto aparece no diálogo NATIVO da digital — é o que a pessoa lê
+    // ao desbloquear. Falava em "painel de administrador", mas a trava é
+    // opt-in de qualquer papel: um professor lia sobre um painel que não é o
+    // dele. [#93]
+    promptMessage: 'Confirme sua identidade para acessar o Snake Thai',
     cancelLabel: 'Cancelar',
     disableDeviceFallback: false,
   });

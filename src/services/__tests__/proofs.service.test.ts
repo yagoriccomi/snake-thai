@@ -87,9 +87,14 @@ function prepararUpdateDoPagamento() {
 describe('proofs.service', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Duas chamadas acontecem agora: a primeira LÊ o arquivo local (o
+    // `fetch(uri).blob()` que substituiu o `{uri,name,type}` recusado pelo
+    // fetch do SDK 57), a segunda envia à Cloudinary. Por isso o dublê
+    // precisa saber responder `blob()` também.
     globalThis.fetch = jest.fn(() =>
       Promise.resolve({
         ok: true,
+        blob: () => Promise.resolve(new Blob(['conteudo'], { type: 'image/jpeg' })),
         json: () => Promise.resolve({ public_id: `comprovantes/${USUARIO}/${PAGAMENTO}` }),
       }),
     ) as unknown as typeof fetch;
@@ -142,11 +147,35 @@ describe('proofs.service', () => {
 
       await submitProof(UPLOAD);
 
-      const [urlDoUpload] = (globalThis.fetch as jest.Mock).mock.calls[0] as [string];
-      expect(urlDoUpload).toContain('api.cloudinary.com');
+      const urls = (globalThis.fetch as jest.Mock).mock.calls.map(
+        (chamada) => chamada[0] as string,
+      );
+      // O arquivo sobe DIRETO ao provedor: nenhuma chamada de upload passa
+      // pelo nosso backend, que só assina (corpo limitado a 32kb).
+      expect(urls.some((url) => url.includes('api.cloudinary.com'))).toBe(true);
+      expect(urls.some((url) => url.includes('/v1/proofs/'))).toBe(false);
       expect(mockChamarApi).toHaveBeenCalledWith('/v1/proofs/sign-upload', {
         paymentId: PAGAMENTO,
       });
+    });
+
+    it('deveAnexarUmBlobRealPorqueOFetchDoSdk57RecusaOFormatoAntigo', async () => {
+      prepararUpdateDoPagamento();
+
+      await submitProof(UPLOAD);
+
+      // Regressão de uma falha verificada no aparelho: anexar
+      // `{ uri, name, type }` — o jeito clássico do React Native — quebra com
+      // "Unsupported FormDataPart implementation" ao MONTAR o corpo, antes de
+      // qualquer byte sair. Nenhum comprovante era enviado, e o servidor
+      // parecia saudável porque a requisição nunca chegava nele.
+      const chamadas = (globalThis.fetch as jest.Mock).mock.calls;
+      const upload = chamadas.find((c) => String(c[0]).includes('api.cloudinary.com'));
+      const corpo = upload?.[1]?.body as FormData;
+      const anexo = corpo.get('file');
+      expect(anexo).toBeInstanceOf(Blob);
+      // O uri local é LIDO (vira Blob), não repassado como se fosse o arquivo.
+      expect(chamadas.some((c) => c[0] === UPLOAD.fileUri)).toBe(true);
     });
 
     it('deveCairNoStorageQuandoOBuildNaoTemBackendConfigurado', async () => {

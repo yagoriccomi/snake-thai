@@ -10,8 +10,14 @@ import {
   SegmentedControl,
   type SegmentOption,
 } from '@/components/SegmentedControl';
+import { useAuth } from '@/context/AuthProvider';
 import type { AulasStackScreenProps } from '@/navigation/types';
-import { createClass, updateClass, type ClassType } from '@/services/classes.service';
+import {
+  createClass,
+  createClassAsProfessor,
+  updateClass,
+  type ClassType,
+} from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { combineDateTimeToIso } from '@/utils/datetime';
 import { maskDate, maskTime } from '@/utils/masks';
@@ -38,15 +44,20 @@ const TYPE_OPTIONS: ReadonlyArray<SegmentOption<ClassType>> = [
 const SCREEN_EDGES = ['bottom'] as const;
 
 /**
- * Formulário de criação de aula (admin):
+ * Formulário de criação/edição de aula:
  * - Rotina: título, data/hora e turma (group_id).
  * - Evento: título e data/hora, atribuído globalmente (todas as turmas).
+ *
+ * Edição é ação de admin. Criação: admin cria "solta" (sem professor); um
+ * professor que cria já se vincula automaticamente como um dos professores
+ * dela — "só podem criar aulas para seu usuário". [#55]
  */
 export function CriarAulaScreen({
   navigation,
   route,
 }: AulasStackScreenProps<'CriarAula'>): React.JSX.Element {
   const { colors, spacing } = useTheme();
+  const { isProfessor, profile } = useAuth();
   const params = route.params;
   const editingId = params?.classId;
   const isEditing = editingId !== undefined;
@@ -93,6 +104,8 @@ export function CriarAulaScreen({
       };
       if (editingId !== undefined) {
         await updateClass(editingId, input);
+      } else if (isProfessor && profile !== null) {
+        await createClassAsProfessor(input, profile.id);
       } else {
         await createClass(input);
       }
@@ -106,7 +119,19 @@ export function CriarAulaScreen({
     } finally {
       setSaving(false);
     }
-  }, [title, date, time, isRoutine, groupId, type, navigation, editingId, isEditing]);
+  }, [
+    title,
+    date,
+    time,
+    isRoutine,
+    groupId,
+    type,
+    navigation,
+    editingId,
+    isEditing,
+    isProfessor,
+    profile,
+  ]);
 
   const styles = useMemo(() => makeStyles(spacing.xxl), [spacing.xxl]);
 

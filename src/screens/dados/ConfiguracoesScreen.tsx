@@ -12,6 +12,8 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ErrorState } from '@/components/ErrorState';
 import { Input } from '@/components/Input';
+import { PlanPicker } from '@/components/PlanPicker';
+import { usePlans } from '@/hooks/usePlans';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -62,6 +64,16 @@ export function ConfiguracoesScreen(): React.JSX.Element {
   const [address, setAddress] = useState('');
   const [dueDay, setDueDay] = useState('');
   const [studentPassword, setStudentPassword] = useState('');
+  const [defaultPlanId, setDefaultPlanId] = useState<string | null>(null);
+
+  // Só para exibir o NOME no modo leitura — o PlanPicker cuida da edição.
+  const { plans } = usePlans();
+  const defaultPlanName = useMemo(() => {
+    if (defaultPlanId === null) {
+      return 'Nenhum';
+    }
+    return plans.find((plan) => plan.id === defaultPlanId)?.name ?? 'Plano selecionado';
+  }, [defaultPlanId, plans]);
 
   const [errors, setErrors] = useState<SettingsErrors>({});
   const [saving, setSaving] = useState(false);
@@ -83,6 +95,7 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     setAddress(settings.address ?? '');
     setDueDay(String(settings.default_due_day));
     setStudentPassword(settings.default_student_password);
+    setDefaultPlanId(settings.default_plan_id);
   }, [settings]);
 
   // Espelha a configuração carregada nos campos, uma única vez por carga.
@@ -148,6 +161,7 @@ export function ConfiguracoesScreen(): React.JSX.Element {
         address: emptyToNull(address),
         default_due_day: parsedDueDay,
         default_student_password: studentPassword,
+        default_plan_id: defaultPlanId,
       });
       setSaved(true);
       setEditing(false);
@@ -166,6 +180,7 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     address,
     dueDay,
     studentPassword,
+    defaultPlanId,
     save,
   ]);
 
@@ -252,6 +267,11 @@ export function ConfiguracoesScreen(): React.JSX.Element {
               onChangeText={setDueDay}
               error={errors.dueDay}
             />
+            <PlanPicker
+              label="Plano padrão do novo aluno"
+              value={defaultPlanId}
+              onChange={setDefaultPlanId}
+            />
 
             <Text style={styles.sectionLabel}>CONTATO</Text>
             <Input
@@ -331,6 +351,11 @@ export function ConfiguracoesScreen(): React.JSX.Element {
               <ValueRow
                 label="Vencimento padrão"
                 value={dueDay.trim() === '' ? '—' : `dia ${dueDay.trim()}`}
+                styles={styles}
+              />
+              <ValueRow
+                label="Plano padrão"
+                value={defaultPlanName}
                 styles={styles}
                 last
               />
