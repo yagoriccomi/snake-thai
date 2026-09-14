@@ -22,6 +22,7 @@ import {
 } from '@/services/biometricPreference.service';
 import { fetchProfile } from '@/services/profile.service';
 import type { Profile } from '@/types/models';
+import { deveBloquearAoVoltar } from '@/utils/bloqueio';
 
 /** Estado e ações de autenticação expostos ao app. */
 interface AuthContextValue {
@@ -60,8 +61,11 @@ interface AuthProviderProps {
  * Responsabilidades:
  * - Recupera a sessão persistida (cifrada) e escuta `onAuthStateChange`.
  * - Carrega o perfil do usuário e deriva `isAdmin`.
- * - Aplica o "lock" biométrico do administrador na abertura e a cada retorno
- *   do app ao foreground.
+ * - Aplica o bloqueio biométrico (opt-in) SÓ em dois momentos: ao reabrir o
+ *   app com a sessão guardada, e ao voltar depois de mais de 10 minutos em
+ *   segundo plano (`deveBloquearAoVoltar`). Login com senha, renovação do token
+ *   e idas curtas ao segundo plano — como abrir a galeria para anexar um
+ *   comprovante — não bloqueiam.
  */
 export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element {
   const [initializing, setInitializing] = useState(true);
@@ -71,6 +75,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   const [adminLocked, setAdminLocked] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
   const [biometricAvailable, setBiometricAvailable] = useState(false);
+  /**
+   * Verdadeiro até a primeira carga de perfil desta abertura do app. É o que
+   * separa "reabriu o app" (bloqueia) de "a sessão mudou depois" — renovação
+   * do token dispara `onAuthStateChange` e recarrega o perfil, e antes isso
+   * reaplicava o bloqueio a cada renovação.
+   */
+  const aberturaPendente = useRef(true);
 
   const isAdmin = profile?.role === 'admin';
   const isProfessor = profile?.role === 'professor';
@@ -83,6 +94,11 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       .getSession()
       .then(({ data }) => {
         if (mounted) {
+          // Abriu sem sessão guardada: o próximo perfil vem de um login com
+          // senha, que já é a verificação — não há abertura a bloquear.
+          if (data.session === null) {
+            aberturaPendente.current = false;
+          }
           setSession(data.session);
           setInitializing(false);
         }
@@ -127,7 +143,10 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       }
       const choice = await getBiometricChoice(userId);
       setBiometricEnabled(choice === 'enabled');
-      setAdminLocked(choice === 'enabled');
+      if (aberturaPendente.current) {
+        aberturaPendente.current = false;
+        setAdminLocked(choice === 'enabled');
+      }
     } catch {
       // Falha transitória (rede/servidor) NÃO pode derrubar a sessão: manter o
       // usuário logado e deixar que a próxima tentativa recarregue o perfil.
@@ -146,18 +165,20 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     void loadProfile(userId);
   }, [session, loadProfile]);
 
-  // Ao retornar do background, o admin precisa reautenticar por biometria.
-  const appState = useRef<AppStateStatus>(AppState.currentState);
+  // Volta do segundo plano: só pede a digital se ficou fora mais de 10 minutos.
+  const saiuEm = useRef<number | null>(null);
   useEffect(() => {
     const subscription = AppState.addEventListener(
       'change',
       (nextState: AppStateStatus) => {
-        const cameToForeground =
-          appState.current.match(/inactive|background/) !== null &&
-          nextState === 'active';
-        appState.current = nextState;
-
-        if (cameToForeground && biometricEnabled) {
+        if (nextState !== 'active') {
+          // Guarda a PRIMEIRA saída: inactive → background não reinicia a conta.
+          saiuEm.current ??= Date.now();
+          return;
+        }
+        const bloquear = deveBloquearAoVoltar(saiuEm.current, Date.now());
+        saiuEm.current = null;
+        if (bloquear && biometricEnabled) {
           setAdminLocked(true);
         }
       },
