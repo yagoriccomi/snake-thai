@@ -1,17 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '@/components/AppText';
+import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import { Checkbox } from '@/components/Checkbox';
 import {
@@ -55,6 +47,9 @@ function mensagemDeErro(erro: unknown): string {
  * aqui ele decide se "Acrescentar justificativa?" — mensagem de até 255
  * caracteres e/ou imagem ou PDF (docs/FREQUENCIA.md).
  *
+ * É uma `BottomSheet`, não um `Modal`: o campo de mensagem ficava escondido
+ * atrás do teclado no Android (ver Portal.tsx).
+ *
  * Remonte com `key` para cada aula: o rascunho é local e não deve vazar de
  * uma aula para outra.
  */
@@ -96,97 +91,87 @@ export function JustificationSheet({
   }, [onSubmit, onClose, mensagem, anexo]);
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable
-        style={styles.backdrop}
-        onPress={onClose}
-        accessibilityRole="button"
-        accessibilityLabel="Fechar"
-      />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.sheet}>
-          <AppText variant="subtitle">Falta avisada</AppText>
-          <AppText variant="caption" color={colors.textSecondary}>
-            {classTitle} · a presença só vale com a chamada do professor.
-          </AppText>
+    <BottomSheet visible={visible} onClose={onClose}>
+      <AppText variant="subtitle">Falta avisada</AppText>
+      <AppText variant="caption" color={colors.textSecondary}>
+        {classTitle} · a presença só vale com a chamada do professor.
+      </AppText>
 
-          <Checkbox
-            checked={querJustificar}
-            onChange={setQuerJustificar}
-            accessibilityLabel="Acrescentar justificativa?"
-            style={styles.checkbox}
-          >
-            <AppText variant="body">Acrescentar justificativa?</AppText>
-          </Checkbox>
+      <Checkbox
+        checked={querJustificar}
+        onChange={setQuerJustificar}
+        accessibilityLabel="Acrescentar justificativa?"
+        style={styles.checkbox}
+      >
+        <AppText variant="body">Acrescentar justificativa?</AppText>
+      </Checkbox>
 
-          {querJustificar ? (
-            <>
-              <TextInput
-                value={mensagem}
-                onChangeText={setMensagem}
-                maxLength={JUSTIFICATION_MESSAGE_MAX}
-                multiline
-                placeholder="Conte o motivo da falta"
-                placeholderTextColor={colors.textSecondary}
-                style={styles.mensagem}
-                accessibilityLabel="Mensagem da justificativa"
-              />
-              <Text style={styles.contador}>
-                {mensagem.length}/{JUSTIFICATION_MESSAGE_MAX}
+      {querJustificar ? (
+        <>
+          <TextInput
+            value={mensagem}
+            onChangeText={setMensagem}
+            maxLength={JUSTIFICATION_MESSAGE_MAX}
+            multiline
+            placeholder="Conte o motivo da falta"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.mensagem}
+            accessibilityLabel="Mensagem da justificativa"
+          />
+          <Text style={styles.contador}>
+            {mensagem.length}/{JUSTIFICATION_MESSAGE_MAX}
+          </Text>
+
+          {anexo !== null ? (
+            <View style={styles.anexo}>
+              <Ionicons name="document-attach-outline" size={18} color={colors.textSecondary} />
+              <Text style={styles.anexoNome} numberOfLines={1}>
+                {anexo.name}
               </Text>
-
-              {anexo !== null ? (
-                <View style={styles.anexo}>
-                  <Ionicons name="document-attach-outline" size={18} color={colors.textSecondary} />
-                  <Text style={styles.anexoNome} numberOfLines={1}>
-                    {anexo.name}
-                  </Text>
-                  <Pressable
-                    onPress={() => setAnexo(null)}
-                    hitSlop={12}
-                    accessibilityRole="button"
-                    accessibilityLabel="Remover anexo"
-                  >
-                    <Ionicons name="close" size={18} color={colors.textSecondary} />
-                  </Pressable>
-                </View>
-              ) : (
-                <View style={styles.botoes}>
-                  <Button
-                    title="Anexar imagem"
-                    variant="secondary"
-                    onPress={() => void escolher(pickImageProof)}
-                    style={styles.botao}
-                  />
-                  <Button
-                    title="Anexar PDF"
-                    variant="secondary"
-                    onPress={() => void escolher(pickDocumentProof)}
-                    style={styles.botao}
-                  />
-                </View>
-              )}
-
-              {erro !== null ? (
-                <AppText variant="caption" color={colors.error}>
-                  {erro}
-                </AppText>
-              ) : null}
-
-              <Button
-                title="Enviar justificativa"
-                onPress={() => void handleEnviar()}
-                disabled={!podeEnviar}
-                loading={enviando}
-                accessibilityHint="Envia a justificativa para o professor analisar"
-              />
-            </>
+              <Pressable
+                onPress={() => setAnexo(null)}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Remover anexo"
+              >
+                <Ionicons name="close" size={18} color={colors.textSecondary} />
+              </Pressable>
+            </View>
           ) : (
-            <Button title="Fechar" variant="secondary" onPress={onClose} />
+            <View style={styles.botoes}>
+              <Button
+                title="Anexar imagem"
+                variant="secondary"
+                onPress={() => void escolher(pickImageProof)}
+                style={styles.botao}
+              />
+              <Button
+                title="Anexar PDF"
+                variant="secondary"
+                onPress={() => void escolher(pickDocumentProof)}
+                style={styles.botao}
+              />
+            </View>
           )}
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+          {erro !== null ? (
+            <AppText variant="caption" color={colors.error}>
+              {erro}
+            </AppText>
+          ) : null}
+
+          <Button
+            title="Enviar justificativa"
+            onPress={() => void handleEnviar()}
+            disabled={!podeEnviar}
+            loading={enviando}
+            accessibilityHint="Envia a justificativa para o professor analisar"
+          />
+        </>
+      ) : (
+        <Button title="Fechar" variant="secondary" onPress={onClose} />
+      )}
+    </BottomSheet>
   );
 }
 
@@ -195,14 +180,6 @@ function makeStyles(
   fonts: ReturnType<typeof useTheme>['fonts'],
 ) {
   return StyleSheet.create({
-    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
-    sheet: {
-      backgroundColor: colors.surface,
-      borderTopLeftRadius: 16,
-      borderTopRightRadius: 16,
-      padding: 20,
-      gap: 10,
-    },
     checkbox: { marginTop: 4 },
     mensagem: {
       minHeight: 96,

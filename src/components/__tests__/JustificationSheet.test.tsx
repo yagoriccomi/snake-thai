@@ -18,13 +18,16 @@ jest.mock('@/services/justifications.service', () => {
 });
 
 import { JustificationSheet } from '@/components/JustificationSheet';
+import { PortalProvider } from '@/components/Portal';
 import { JustificativaInvalidaError } from '@/services/justifications.service';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
 function renderSheet(onSubmit = jest.fn().mockResolvedValue(undefined), onClose = jest.fn()) {
   const utils = render(
     <ThemeProvider>
-      <JustificationSheet visible classTitle="Muay Thai" onClose={onClose} onSubmit={onSubmit} />
+      <PortalProvider>
+        <JustificationSheet visible classTitle="Muay Thai" onClose={onClose} onSubmit={onSubmit} />
+      </PortalProvider>
     </ThemeProvider>,
   );
   return { ...utils, onSubmit, onClose };
