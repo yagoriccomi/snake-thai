@@ -22,5 +22,5 @@ export function AulasHomeScreen({
   if (isProfessor) {
     return <ProfessorAulasList navigation={navigation} />;
   }
-  return <StudentAulasList />;
+  return <StudentAulasList navigation={navigation} />;
 }

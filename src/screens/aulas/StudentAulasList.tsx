@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -13,15 +13,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
+import { FrequencyCard } from '@/components/FrequencyCard';
+import { JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TeacherRail } from '@/components/TeacherRail';
+import { useAuth } from '@/context/AuthProvider';
+import { useMonthlyFrequency } from '@/hooks/useMonthlyFrequency';
 import { useStudentClasses, type StudentClassItem } from '@/hooks/useStudentClasses';
+import type { AulasStackScreenProps } from '@/navigation/types';
 import type { AttendanceStatus } from '@/services/classes.service';
+import { submitJustification } from '@/services/justifications.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatDayMonth, formatTime, formatWeekday } from '@/utils/datetime';
+import { ROTULO_DA_JUSTIFICATIVA } from '@/utils/frequency';
 
 const SCREEN_EDGES = ['bottom'] as const;
+const SEM_ALUNO: readonly string[] = [];
 
 /** Uma seção da agenda: as aulas de um mesmo dia. */
 interface DaySection {
@@ -48,14 +56,34 @@ function dayLabel(iso: string): string {
 }
 
 /**
- * Aulas do aluno (Painel — agenda cronológica). Agrupa as próximas aulas por
- * dia, com trilho de horário à esquerda, e mantém a marcação de presença
- * (confirmar/avisar falta) por aula.
+ * Justificativa só pode ser (re)enviada enquanto ninguém a revisou: depois
+ * disso o banco recusa a edição, e reabrir a folha seria convite a um erro.
  */
-export function StudentAulasList(): React.JSX.Element {
+function aceitaJustificativa(item: StudentClassItem): boolean {
+  return item.justification === null || item.justification.status === 'pending';
+}
+
+interface StudentAulasListProps {
+  navigation: AulasStackScreenProps<'AulasHome'>['navigation'];
+}
+
+/**
+ * Aulas do aluno (Painel — agenda cronológica). Mostra a frequência do mês,
+ * agrupa as próximas aulas por dia e mantém a declaração de presença por aula.
+ * Ao avisar falta, oferece anexar uma justificativa (docs/FREQUENCIA.md).
+ */
+export function StudentAulasList({ navigation }: StudentAulasListProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
+  const { session, profile } = useAuth();
   const { items, loading, error, respond, reload } = useStudentClasses();
+  const [aulaDaFalta, setAulaDaFalta] = useState<StudentClassItem | null>(null);
+
+  const userId = session?.user.id ?? null;
+  const idsDoAluno = useMemo(() => (userId === null ? SEM_ALUNO : [userId]), [userId]);
+  const frequencia = useMonthlyFrequency(idsDoAluno);
+  const minhaFrequencia = userId !== null ? frequencia.byUser[userId] ?? null : null;
+  const recarregarFrequencia = frequencia.reload;
 
   // Agrupa as aulas (já ordenadas por data) em seções por dia, preservando a ordem.
   const sections = useMemo<DaySection[]>(() => {
@@ -73,11 +101,60 @@ export function StudentAulasList(): React.JSX.Element {
     return result;
   }, [items]);
 
+  const handleRespond = useCallback(
+    async (item: StudentClassItem, status: AttendanceStatus) => {
+      if (status === 'present') {
+        await respond(item.id, 'present');
+        return;
+      }
+      // Tocar de novo em "não vou" reabre a justificativa sem regravar a falta.
+      if (item.myStatus !== 'absent' && !(await respond(item.id, 'absent'))) {
+        return;
+      }
+      if (aceitaJustificativa(item)) {
+        setAulaDaFalta(item);
+      }
+    },
+    [respond],
+  );
+
+  const fecharFolha = useCallback(() => setAulaDaFalta(null), []);
+
+  const enviarJustificativa = useCallback(
+    async (rascunho: JustificationDraft) => {
+      if (userId === null || aulaDaFalta === null) {
+        return;
+      }
+      await submitJustification(userId, {
+        classId: aulaDaFalta.id,
+        message: rascunho.message,
+        attachment: rascunho.attachment,
+      });
+      await reload();
+    },
+    [userId, aulaDaFalta, reload],
+  );
+
+  const abrirHistorico = useCallback(() => {
+    if (userId === null) {
+      return;
+    }
+    navigation.navigate('HistoricoFrequencia', {
+      userId,
+      name: profile?.name ?? 'Minha frequência',
+    });
+  }, [navigation, userId, profile]);
+
+  const handleRefresh = useCallback(() => {
+    void reload();
+    void recarregarFrequencia();
+  }, [reload, recarregarFrequencia]);
+
   const renderItem = useCallback(
     ({ item }: { item: StudentClassItem }) => (
-      <ClassRow item={item} onRespond={respond} styles={styles} colors={colors} />
+      <ClassRow item={item} onRespond={handleRespond} styles={styles} colors={colors} />
     ),
-    [respond, styles, colors],
+    [handleRespond, styles, colors],
   );
 
   if (error !== null && items.length === 0) {
@@ -103,6 +180,11 @@ export function StudentAulasList(): React.JSX.Element {
       <View style={styles.header}>
         <Text style={styles.overline}>MINHAS AULAS</Text>
         <AppText variant="heading">Próximas</AppText>
+        <FrequencyCard
+          frequency={minhaFrequencia}
+          loading={frequencia.loading}
+          onPress={abrirHistorico}
+        />
       </View>
       {error !== null ? (
         <AppText variant="caption" color={colors.error} style={styles.error}>
@@ -120,7 +202,7 @@ export function StudentAulasList(): React.JSX.Element {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={reload} tintColor={colors.primary} />
+          <RefreshControl refreshing={loading} onRefresh={handleRefresh} tintColor={colors.primary} />
         }
         ListEmptyComponent={
           <EmptyState
@@ -129,13 +211,22 @@ export function StudentAulasList(): React.JSX.Element {
           />
         }
       />
+      {aulaDaFalta !== null ? (
+        <JustificationSheet
+          key={aulaDaFalta.id}
+          visible
+          classTitle={aulaDaFalta.title}
+          onClose={fecharFolha}
+          onSubmit={enviarJustificativa}
+        />
+      ) : null}
     </ScreenWrapper>
   );
 }
 
 interface ClassRowProps {
   item: StudentClassItem;
-  onRespond: (classId: string, status: AttendanceStatus) => void;
+  onRespond: (item: StudentClassItem, status: AttendanceStatus) => Promise<void>;
   styles: ReturnType<typeof makeStyles>;
   colors: ReturnType<typeof useTheme>['colors'];
 }
@@ -150,6 +241,7 @@ const ClassRow = React.memo(function ClassRow({
   const isEvent = item.type === 'event';
   const present = item.myStatus === 'present';
   const absent = item.myStatus === 'absent';
+  const justificativa = absent && item.justification !== null ? item.justification : null;
 
   return (
     <View style={styles.row}>
@@ -164,6 +256,11 @@ const ClassRow = React.memo(function ClassRow({
         <Text style={styles.subtitle} numberOfLines={1}>
           {isEvent ? 'Evento · aberto a todas as turmas' : 'Sua turma'}
         </Text>
+        {justificativa !== null ? (
+          <Text style={styles.justificativa} numberOfLines={1}>
+            {ROTULO_DA_JUSTIFICATIVA[justificativa.status]}
+          </Text>
+        ) : null}
         <TeacherDot teachers={item.teachers} />
       </View>
 
@@ -174,7 +271,7 @@ const ClassRow = React.memo(function ClassRow({
       ) : (
         <View style={styles.presence}>
           <Pressable
-            onPress={() => onRespond(item.id, 'present')}
+            onPress={() => void onRespond(item, 'present')}
             style={[styles.pBtn, { borderColor: colors.success }, present ? { backgroundColor: colors.success } : null]}
             accessibilityRole="button"
             accessibilityState={{ selected: present }}
@@ -183,11 +280,12 @@ const ClassRow = React.memo(function ClassRow({
             <Ionicons name="checkmark" size={18} color={present ? colors.onPrimary : colors.success} />
           </Pressable>
           <Pressable
-            onPress={() => onRespond(item.id, 'absent')}
+            onPress={() => void onRespond(item, 'absent')}
             style={[styles.pBtn, { borderColor: colors.error }, absent ? { backgroundColor: colors.error } : null]}
             accessibilityRole="button"
             accessibilityState={{ selected: absent }}
             accessibilityLabel="Avisar falta"
+            accessibilityHint="Registra a falta e permite acrescentar uma justificativa"
           >
             <Ionicons name="close" size={18} color={absent ? colors.onPrimary : colors.error} />
           </Pressable>
@@ -236,14 +334,14 @@ function makeStyles(
       color: colors.textPrimary,
       fontVariant: ['tabular-nums'],
     },
-    rail: { width: 2, alignSelf: 'stretch', borderRadius: 2, backgroundColor: colors.border },
     info: { flex: 1 },
     title: { fontFamily: fonts.bodySemiBold, fontSize: 15, color: colors.textPrimary },
     subtitle: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary, marginTop: 3 },
+    justificativa: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.warning, marginTop: 3 },
     presence: { flexDirection: 'row', gap: 8 },
     pBtn: {
-      width: 36,
-      height: 36,
+      width: 44,
+      height: 44,
       borderRadius: 12,
       borderWidth: 1.5,
       alignItems: 'center',

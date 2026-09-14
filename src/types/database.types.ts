@@ -751,11 +751,37 @@ export type Database = {
       }
     }
     Functions: {
+      aulas_sem_chamada: {
+        Args: { p_referencia?: string }
+        Returns: {
+          class_id: string
+          date_time: string
+          group_id: string
+          title: string
+        }[]
+      }
+      concluir_chamada: { Args: { p_class_id: string }; Returns: string }
       eliminar_comprovantes_do_titular: {
         Args: { p_user_id: string }
         Returns: number
       }
       export_my_data: { Args: never; Returns: Json }
+      fechar_frequencia_do_mes: {
+        Args: { p_agora?: string; p_mes?: string }
+        Returns: number
+      }
+      frequencia_mensal: {
+        Args: { p_referencia?: string; p_user_ids: string[] }
+        Returns: {
+          attended: number
+          counted_classes: number
+          frequency_percent: number
+          justified: number
+          reference_month: string
+          total_classes: number
+          user_id: string
+        }[]
+      }
       gerar_mensalidades_do_mes: {
         Args: { p_referencia?: string }
         Returns: number

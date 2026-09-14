@@ -48,6 +48,12 @@ export type AulasStackParamList = {
      */
     canManage: boolean;
   };
+  /**
+   * Frequência do mês corrente e histórico congelado de um aluno. O próprio
+   * aluno abre a sua; professor e admin abrem a de qualquer aluno (a RLS de
+   * attendance_monthly e a função frequencia_mensal decidem). [FREQUENCIA.md]
+   */
+  HistoricoFrequencia: { userId: string; name: string };
 };
 
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */

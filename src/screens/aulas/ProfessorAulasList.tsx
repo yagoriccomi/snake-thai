@@ -14,6 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
+import { MissedRollCallBanner } from '@/components/MissedRollCallBanner';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TeacherRail } from '@/components/TeacherRail';
@@ -21,6 +22,7 @@ import { TypeBadge } from '@/components/TypeBadge';
 import { WeekStrip } from '@/components/WeekStrip';
 import { useAdminClassesForDay } from '@/hooks/useAdminClassesForDay';
 import { useGroups } from '@/hooks/useGroups';
+import { useMissedRollCalls } from '@/hooks/useMissedRollCalls';
 import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import {
@@ -28,6 +30,7 @@ import {
   type ClassRow,
   type ClassTeacherRef,
 } from '@/services/classes.service';
+import type { MissedRollCall } from '@/services/frequency.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { buildDayStrip, formatTime, type DayItem } from '@/utils/datetime';
 
@@ -58,6 +61,8 @@ export function ProfessorAulasList({
 
   const { items, loading, error, reload } = useAdminClassesForDay(selectedDate);
   const { groups } = useGroups();
+  // O banco devolve ao professor só as aulas dele sem chamada.
+  const { items: aulasSemChamada, reload: recarregarSemChamada } = useMissedRollCalls(true);
   const [teachersByClass, setTeachersByClass] = useState<Record<string, ClassTeacherRef[]>>({});
 
   const groupNameById = useMemo(() => {
@@ -71,7 +76,8 @@ export function ProfessorAulasList({
   useFocusEffect(
     useCallback(() => {
       void reload();
-    }, [reload]),
+      void recarregarSemChamada();
+    }, [reload, recarregarSemChamada]),
   );
 
   useEffect(() => {
@@ -113,6 +119,22 @@ export function ProfessorAulasList({
   const openCriarAula = useCallback(() => {
     navigation.navigate('CriarAula');
   }, [navigation]);
+
+  // Só aulas de rotina entram no aviso (o banco filtra), daí o tipo fixo.
+  const abrirAulaSemChamada = useCallback(
+    (item: MissedRollCall) => {
+      navigation.navigate('DetalheAula', {
+        classId: item.classId,
+        title: item.title,
+        type: 'routine',
+        dateTimeIso: item.dateTimeIso,
+        groupId: item.groupId,
+        groupLabel:
+          item.groupId === null ? 'Global' : groupNameById.get(item.groupId) ?? 'Turma',
+      });
+    },
+    [navigation, groupNameById],
+  );
 
   const renderItem = useCallback<ListRenderItem<ClassRow>>(
     ({ item }) => {
@@ -157,6 +179,7 @@ export function ProfessorAulasList({
       <View style={styles.strip}>
         <WeekStrip days={days} selectedKey={selectedKey} onSelect={handleSelectDay} />
       </View>
+      <MissedRollCallBanner items={aulasSemChamada} onPressItem={abrirAulaSemChamada} />
 
       {error !== null && items.length === 0 ? (
         <ErrorState message={error} onRetry={() => void reload()} />
