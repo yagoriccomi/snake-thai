@@ -144,6 +144,18 @@ O fluxo de pagamento é pensado para a realidade do PIX no Brasil:
 Você também vê, separados, os pagamentos **em aberto** (ainda não pagos) e os
 **vencidos** (passaram da data) — o sistema marca o vencimento sozinho.
 
+### Averiguar o histórico de um aluno
+
+1. Na aba **Financeiro**, toque em **Histórico por aluno**.
+2. Busque o aluno pelo nome e toque nele (alunos inativos também aparecem).
+3. No topo, veja quantas mensalidades estão pagas, em atraso e em aberto.
+4. Toque no **mês** que quer averiguar. A bolinha colorida de cada mês já
+   mostra a situação: verde paga, vermelha em atraso, amarela em aberto, azul
+   em análise.
+5. O cartão do mês mostra o valor, o vencimento, **quando o aluno pagou e com
+   quantos dias de atraso**, e se ele enviou comprovante. Se o comprovante
+   estiver aguardando você, o botão **Validar comprovante** leva direto a ele.
+
 ---
 
 ## 7. Segurança da sua conta

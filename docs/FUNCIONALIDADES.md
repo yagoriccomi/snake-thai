@@ -57,6 +57,7 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 > QUANDO vence, mas não QUANTO. É mudança de esquema — precede qualquer UI.
 
 - [x] Aprovar / recusar comprovante PIX · OK
+- [x] **P0** Histórico de pagamentos por aluno — o admin escolhe o aluno e o mês (valor, vencimento, dias de atraso, comprovante) · OK
 - [x] **P0** Planos com preço e periodicidade — tela de CRUD em `PlanosScreen` · OK
 - [~] **P0** Campo de valor no pagamento — `payments.amount_cents` + FK real para `plans` · BANCO OK
 - [x] **P0** Dia de vencimento configurável — por plano e padrão da academia · OK
