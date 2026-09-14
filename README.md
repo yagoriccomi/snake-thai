@@ -226,8 +226,9 @@ psql "$DATABASE_URL" -f supabase/seed/demo_seed.sql
 ```
 
 O script é **idempotente** — rodar de novo apenas completa o que faltar, sem
-duplicar ninguém. Todas as contas criadas usam a senha `Snake@123` e ficam no
-domínio `@demo.snakethai.com`, justamente para serem localizáveis depois.
+duplicar ninguém. As contas criadas ficam num domínio de e-mail próprio de
+demonstração, justamente para serem localizáveis e removíveis depois. As
+credenciais de acesso são combinadas com a equipe, fora do repositório.
 
 Para dar corpo à frequência e ao histórico financeiro, rode em seguida:
 
