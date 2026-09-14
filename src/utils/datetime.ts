@@ -59,6 +59,11 @@ export function formatFullDateTime(iso: string): string {
   return `${formatWeekday(iso)}, ${formatDayMonth(iso)} • ${formatTime(iso)}`;
 }
 
+/** Competência do mês corrente, `AAAA-MM-01`, pelo calendário do aparelho. */
+export function currentMonthIso(hoje: Date = new Date()): string {
+  return `${hoje.getFullYear()}-${pad(hoje.getMonth() + 1)}-01`;
+}
+
 /** Formata um ISO com hora como `DD/MM/AAAA` (fuso local). */
 export function formatFullDate(iso: string): string {
   const date = new Date(iso);

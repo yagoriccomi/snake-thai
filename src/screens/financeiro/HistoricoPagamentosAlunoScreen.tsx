@@ -1,53 +1,43 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  StyleSheet,
+  Text,
+  View,
+  type ListRenderItem,
+} from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
 import { AppText } from '@/components/AppText';
-import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
-import { MonthSelector, type MonthOption } from '@/components/MonthSelector';
-import { PaymentStatusBadge } from '@/components/PaymentStatusBadge';
+import { PaymentHistoryItem } from '@/components/PaymentHistoryItem';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { usePaymentHistory } from '@/hooks/usePaymentHistory';
+import { createLogger } from '@/lib/logger';
 import type { FinanceiroStackScreenProps } from '@/navigation/types';
-import type { PaymentStatus } from '@/services/payments.service';
+import {
+  approvePayment,
+  markPaymentAsUnpaid,
+  type PaymentRow,
+} from '@/services/payments.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatCents } from '@/utils/currency';
-import { formatMonthShort, formatMonthYear } from '@/utils/datetime';
-import { dateIsoToBr } from '@/utils/masks';
-import { descreverPagamento, resumirPagamentos } from '@/utils/payments';
+import { formatMonthYear } from '@/utils/datetime';
+import { resumirPagamentos } from '@/utils/payments';
 
 const SCREEN_EDGES = ['bottom'] as const;
-
-type Estilos = ReturnType<typeof makeStyles>;
-
-/** Uma linha rótulo → valor do cartão da competência. */
-function Linha({
-  rotulo,
-  valor,
-  styles,
-}: {
-  rotulo: string;
-  valor: string;
-  styles: Estilos;
-}): React.JSX.Element {
-  return (
-    <View style={styles.linha} accessible accessibilityLabel={`${rotulo}: ${valor}`}>
-      <Text style={styles.rotulo}>{rotulo}</Text>
-      <Text style={styles.valor}>{valor}</Text>
-    </View>
-  );
-}
+const log = createLogger('HistoricoPagamentosAlunoScreen');
 
 /**
- * Histórico de pagamentos de UM aluno (admin): escolhe-se o mês na faixa de
- * competências e o cartão mostra valor, vencimento, quando pagou (e com
- * quantos dias de atraso) e se há comprovante.
+ * Histórico de pagamentos de UM aluno (admin), em lista expansível: cada
+ * mensalidade mostra fechada o mês, a situação e se tem anexo; aberta, os
+ * detalhes, o anexo e as ações "Marcar como paga" / "Marcar como não paga".
  *
- * "Validar comprovante" só aparece para mensalidade em análise: a tela de
- * comprovante sempre oferece aprovar e recusar, e recusar uma mensalidade já
- * paga a reabriria.
+ * O anexo de mensalidade já decidida abre só para visualizar: a tela de
+ * comprovante oferece "Recusar", e recusar uma mensalidade paga a reabriria
+ * apagando o arquivo.
  */
 export function HistoricoPagamentosAlunoScreen({
   navigation,
@@ -57,7 +47,8 @@ export function HistoricoPagamentosAlunoScreen({
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { userId, name } = route.params;
   const { payments, loading, error, reload } = usePaymentHistory(userId);
-  const [mesEscolhido, setMesEscolhido] = useState<string | null>(null);
+  const [expandido, setExpandido] = useState<string | null>(null);
+  const [processandoId, setProcessandoId] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -65,43 +56,99 @@ export function HistoricoPagamentosAlunoScreen({
     }, [reload]),
   );
 
-  // Sem escolha, a competência mais recente — é a que quase sempre se procura.
-  const selecionado =
-    payments.find((payment) => payment.reference_month === mesEscolhido) ?? payments[0] ?? null;
-
-  const corDaSituacao = useMemo<Record<PaymentStatus, string>>(
-    () => ({
-      paid: colors.success,
-      overdue: colors.error,
-      pending_approval: '#93C5FD',
-      open: colors.warning,
-    }),
-    [colors],
-  );
-
-  const opcoes = useMemo<MonthOption[]>(
-    () =>
-      payments.map((payment) => ({
-        value: payment.reference_month,
-        label: formatMonthShort(payment.reference_month),
-        accessibilityLabel: formatMonthYear(payment.reference_month),
-        dotColor: corDaSituacao[payment.status],
-      })),
-    [payments, corDaSituacao],
-  );
-
   const resumo = useMemo(() => resumirPagamentos(payments), [payments]);
 
-  const validarComprovante = useCallback(() => {
-    if (selecionado === null) {
-      return;
-    }
-    navigation.navigate('Comprovante', {
-      paymentId: selecionado.id,
-      comprovante: selecionado,
-      studentName: name,
-    });
-  }, [navigation, selecionado, name]);
+  const alternar = useCallback((paymentId: string) => {
+    setExpandido((atual) => (atual === paymentId ? null : paymentId));
+  }, []);
+
+  const abrirAnexo = useCallback(
+    (payment: PaymentRow) => {
+      navigation.navigate('Comprovante', {
+        paymentId: payment.id,
+        comprovante: payment,
+        studentName: name,
+        somenteLeitura: payment.status !== 'pending_approval',
+      });
+    },
+    [navigation, name],
+  );
+
+  const executar = useCallback(
+    async (payment: PaymentRow, acao: () => Promise<void>, falha: string) => {
+      setProcessandoId(payment.id);
+      try {
+        await acao();
+        await reload();
+      } catch (erro) {
+        log.error(falha, erro, { paymentId: payment.id });
+        Alert.alert('Erro', `${falha}. Tente de novo.`);
+      } finally {
+        setProcessandoId(null);
+      }
+    },
+    [reload],
+  );
+
+  const marcarComoPaga = useCallback(
+    (payment: PaymentRow) => {
+      Alert.alert(
+        'Marcar como paga',
+        `${formatMonthYear(payment.reference_month)} de ${name} será registrada como paga hoje, sem exigir anexo.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Marcar como paga',
+            onPress: () =>
+              void executar(
+                payment,
+                () => approvePayment(payment.id),
+                'Não foi possível marcar a mensalidade como paga',
+              ),
+          },
+        ],
+      );
+    },
+    [name, executar],
+  );
+
+  const marcarComoNaoPaga = useCallback(
+    (payment: PaymentRow) => {
+      Alert.alert(
+        'Marcar como não paga',
+        `${formatMonthYear(payment.reference_month)} de ${name} volta a ficar pendente. O anexo, se houver, continua guardado.`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Marcar como não paga',
+            style: 'destructive',
+            onPress: () =>
+              void executar(
+                payment,
+                () => markPaymentAsUnpaid(payment),
+                'Não foi possível desfazer o pagamento',
+              ),
+          },
+        ],
+      );
+    },
+    [name, executar],
+  );
+
+  const renderItem = useCallback<ListRenderItem<PaymentRow>>(
+    ({ item }) => (
+      <PaymentHistoryItem
+        payment={item}
+        expanded={expandido === item.id}
+        busy={processandoId === item.id}
+        onToggle={alternar}
+        onOpenAttachment={abrirAnexo}
+        onMarkPaid={marcarComoPaga}
+        onMarkUnpaid={marcarComoNaoPaga}
+      />
+    ),
+    [expandido, processandoId, alternar, abrirAnexo, marcarComoPaga, marcarComoNaoPaga],
+  );
 
   if (error !== null && payments.length === 0) {
     return (
@@ -121,70 +168,49 @@ export function HistoricoPagamentosAlunoScreen({
     );
   }
 
+  const cabecalho = (
+    <View style={styles.cabecalho}>
+      <Text style={styles.sobrescrito}>HISTÓRICO DE PAGAMENTOS</Text>
+      <AppText variant="heading" numberOfLines={2}>
+        {name}
+      </AppText>
+      <View style={styles.resumo}>
+        <Text style={styles.resumoItem}>
+          <Text style={{ color: colors.success }}>{resumo.pagas}</Text> pagas
+        </Text>
+        <Text style={styles.resumoItem}>
+          <Text style={{ color: colors.error }}>{resumo.emAtraso}</Text> em atraso
+        </Text>
+        <Text style={styles.resumoItem}>
+          <Text style={{ color: colors.warning }}>{resumo.emAberto + resumo.emAnalise}</Text>{' '}
+          em aberto
+        </Text>
+      </View>
+    </View>
+  );
+
   return (
     <ScreenWrapper edges={SCREEN_EDGES}>
-      <ScrollView contentContainerStyle={styles.conteudo} showsVerticalScrollIndicator={false}>
-        <Text style={styles.sobrescrito}>HISTÓRICO DE PAGAMENTOS</Text>
-        <AppText variant="heading" numberOfLines={2}>
-          {name}
-        </AppText>
-
-        {selecionado === null ? (
+      <FlatList
+        data={payments}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        ListHeaderComponent={cabecalho}
+        contentContainerStyle={styles.conteudo}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
           <EmptyState
             icon="cash-outline"
             title="Nenhuma mensalidade"
             message="Este aluno ainda não tem cobranças registradas."
           />
-        ) : (
-          <>
-            <View style={styles.resumo}>
-              <Text style={styles.resumoItem}>
-                <Text style={{ color: colors.success }}>{resumo.pagas}</Text> pagas
-              </Text>
-              <Text style={styles.resumoItem}>
-                <Text style={{ color: colors.error }}>{resumo.emAtraso}</Text> em atraso
-              </Text>
-              <Text style={styles.resumoItem}>
-                <Text style={{ color: colors.warning }}>{resumo.emAberto + resumo.emAnalise}</Text>{' '}
-                em aberto
-              </Text>
-            </View>
-
-            <Text style={styles.tituloSecao}>MÊS</Text>
-            <MonthSelector
-              options={opcoes}
-              value={selecionado.reference_month}
-              onChange={setMesEscolhido}
-            />
-
-            <View style={styles.cartao}>
-              <View style={styles.cartaoTopo}>
-                <Text style={styles.mes}>{formatMonthYear(selecionado.reference_month)}</Text>
-                <PaymentStatusBadge status={selecionado.status} variant="soft" />
-              </View>
-              <Linha rotulo="Valor" valor={formatCents(selecionado.amount_cents)} styles={styles} />
-              <Linha rotulo="Vencimento" valor={dateIsoToBr(selecionado.due_date)} styles={styles} />
-              <Linha rotulo="Pagamento" valor={descreverPagamento(selecionado)} styles={styles} />
-              <Linha
-                rotulo="Comprovante"
-                valor={selecionado.proof_provider !== null ? 'Enviado' : 'Não enviado'}
-                styles={styles}
-              />
-              {selecionado.status === 'pending_approval' && selecionado.proof_provider !== null ? (
-                <Button
-                  title="Validar comprovante"
-                  onPress={validarComprovante}
-                  style={styles.botao}
-                  accessibilityHint="Abre o comprovante para aprovar ou recusar"
-                />
-              ) : null}
-            </View>
-          </>
-        )}
-      </ScrollView>
+        }
+      />
     </ScreenWrapper>
   );
 }
+
+const keyExtractor = (item: PaymentRow): string => item.id;
 
 function makeStyles(
   colors: ReturnType<typeof useTheme>['colors'],
@@ -192,7 +218,8 @@ function makeStyles(
 ) {
   return StyleSheet.create({
     centro: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-    conteudo: { paddingTop: 12, paddingBottom: 32, gap: 4 },
+    conteudo: { paddingTop: 12, paddingBottom: 32, flexGrow: 1 },
+    cabecalho: { gap: 4, marginBottom: 16 },
     sobrescrito: {
       fontFamily: fonts.bodySemiBold,
       fontSize: 11,
@@ -201,39 +228,5 @@ function makeStyles(
     },
     resumo: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 8 },
     resumoItem: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.textSecondary },
-    tituloSecao: {
-      fontFamily: fonts.bodySemiBold,
-      fontSize: 11,
-      letterSpacing: 1,
-      color: colors.textSecondary,
-      marginTop: 20,
-      marginBottom: 4,
-    },
-    cartao: {
-      marginTop: 12,
-      padding: 16,
-      gap: 12,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-    },
-    cartaoTopo: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-    },
-    mes: { flex: 1, fontFamily: fonts.headingBold, fontSize: 20, color: colors.textPrimary },
-    linha: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-    rotulo: { fontFamily: fonts.body, fontSize: 14, color: colors.textSecondary },
-    valor: {
-      flexShrink: 1,
-      textAlign: 'right',
-      fontFamily: fonts.bodySemiBold,
-      fontSize: 14,
-      color: colors.textPrimary,
-    },
-    botao: { marginTop: 4 },
   });
 }

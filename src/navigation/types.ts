@@ -71,6 +71,11 @@ export type FinanceiroStackParamList = {
      */
     comprovante: ReferenciaDeComprovante;
     studentName: string;
+    /**
+     * Só mostra o anexo, sem "Aprovar" e "Recusar". Para mensalidade já
+     * decidida: recusar uma paga a reabriria e apagaria o arquivo.
+     */
+    somenteLeitura?: boolean;
   };
   /** Admin: escolhe o aluno cujo histórico de pagamentos quer averiguar. */
   HistoricoPagamentosAlunos: undefined;
