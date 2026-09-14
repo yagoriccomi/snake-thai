@@ -37,6 +37,24 @@ export async function fetchStudentPayments(
   return data;
 }
 
+/**
+ * Histórico completo de mensalidades de um aluno, da competência mais recente
+ * para a mais antiga. Todas as situações, não só as pagas: ao averiguar um mês,
+ * o admin precisa ver também o que ficou em aberto. A RLS limita o aluno ao
+ * próprio histórico.
+ */
+export async function fetchPaymentHistory(userId: string): Promise<PaymentRow[]> {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('user_id', userId)
+    .order('reference_month', { ascending: false });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
 /** Pagamentos por status (visão do admin). */
 export async function fetchPaymentsByStatus(
   status: PaymentStatus,

@@ -14,6 +14,7 @@ import {
   AdminPaymentCard,
 } from '@/components/AdminPaymentCard';
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
 import { FinanceSummary } from '@/components/FinanceSummary';
 import { ErrorState } from '@/components/ErrorState';
@@ -82,6 +83,10 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
     [navigation],
   );
 
+  const abrirHistorico = useCallback(() => {
+    navigation.navigate('HistoricoPagamentosAlunos');
+  }, [navigation]);
+
   const renderItem = useCallback<ListRenderItem<PaymentWithName>>(
     ({ item }) => <AdminPaymentCard item={item} onPress={openComprovante} />,
     [openComprovante],
@@ -105,6 +110,13 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
         </View>
 
         <FinanceSummary totals={totals} />
+
+        <Button
+          title="Histórico por aluno"
+          variant="secondary"
+          onPress={abrirHistorico}
+          accessibilityHint="Escolha um aluno e o mês para ver as mensalidades"
+        />
 
         <SegmentedControl options={options} value={category} onChange={setCategory} />
       </View>

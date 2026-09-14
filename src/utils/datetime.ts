@@ -59,6 +59,38 @@ export function formatFullDateTime(iso: string): string {
   return `${formatWeekday(iso)}, ${formatDayMonth(iso)} • ${formatTime(iso)}`;
 }
 
+/** Formata um ISO com hora como `DD/MM/AAAA` (fuso local). */
+export function formatFullDate(iso: string): string {
+  const date = new Date(iso);
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
+const MESES_LONGOS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+] as const;
+
+const MESES_CURTOS = [
+  'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez',
+] as const;
+
+/**
+ * Competência `AAAA-MM-DD` → "Agosto de 2026".
+ *
+ * Lê a data como TEXTO, sem `new Date`: "2026-08-01" interpretado como UTC vira
+ * 31 de julho no fuso de São Paulo, e a tela mostraria o mês errado.
+ */
+export function formatMonthYear(dateIso: string): string {
+  const [ano, mes] = dateIso.split('-');
+  return `${MESES_LONGOS[Number(mes) - 1] ?? ''} de ${ano ?? ''}`;
+}
+
+/** Competência `AAAA-MM-DD` → "Ago/26" (seletores compactos). */
+export function formatMonthShort(dateIso: string): string {
+  const [ano, mes] = dateIso.split('-');
+  return `${MESES_CURTOS[Number(mes) - 1] ?? ''}/${(ano ?? '').slice(2)}`;
+}
+
 /** Limites `[início, fim)` do dia informado, em ISO — para filtrar por data. */
 export function dayBoundsIso(date: Date): { startIso: string; endIso: string } {
   const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
