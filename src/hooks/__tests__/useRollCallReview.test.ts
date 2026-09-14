@@ -1,13 +1,13 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 const mockFetchRollCallState = jest.fn();
-const mockConcludeRollCall = jest.fn();
+const mockSaveRollCall = jest.fn();
 const mockFetchJustificationsForClass = jest.fn();
 const mockReviewJustification = jest.fn();
 
 jest.mock('@/services/frequency.service', () => ({
   fetchRollCallState: (...args: unknown[]): unknown => mockFetchRollCallState(...args),
-  concludeRollCall: (...args: unknown[]): unknown => mockConcludeRollCall(...args),
+  saveRollCall: (...args: unknown[]): unknown => mockSaveRollCall(...args),
 }));
 
 jest.mock('@/services/justifications.service', () => ({
@@ -31,11 +31,12 @@ import { useRollCallReview } from '@/hooks/useRollCallReview';
 const AULA = 'aula-1';
 const ESTADO = { type: 'routine', dateTimeIso: '2026-11-03T22:00:00+00:00', concludedAt: null };
 const JUSTIFICATIVA = { id: 'just-1', user_id: 'aluno-1', class_id: AULA, status: 'pending' };
+const CHAMADA = { presentes: ['aluno-1'], ausentes: ['aluno-2'] };
 
 beforeEach(() => {
   mockFetchRollCallState.mockReset().mockResolvedValue(ESTADO);
   mockFetchJustificationsForClass.mockReset().mockResolvedValue([JUSTIFICATIVA]);
-  mockConcludeRollCall.mockReset().mockResolvedValue('2026-11-03T23:00:00+00:00');
+  mockSaveRollCall.mockReset().mockResolvedValue('2026-11-03T23:00:00+00:00');
   mockReviewJustification.mockReset().mockResolvedValue(undefined);
   mockLogError.mockReset();
 });
@@ -53,30 +54,30 @@ describe('useRollCallReview', () => {
     const { result } = renderHook(() => useRollCallReview(AULA));
 
     await waitFor(() => expect(result.current.error).not.toBeNull());
-    // Sem estado, a tela não oferece "Concluir chamada" às cegas.
     expect(result.current.state).toBeNull();
     expect(mockLogError).toHaveBeenCalled();
   });
 
-  it('deveRecarregarDepoisDeConcluirParaMostrarAConclusao', async () => {
+  it('deveSalvarAChamadaInteiraERecarregarParaMostrarAConclusao', async () => {
     const { result } = renderHook(() => useRollCallReview(AULA));
     await waitFor(() => expect(result.current.state).not.toBeNull());
 
     const concluida = { ...ESTADO, concludedAt: '2026-11-03T23:00:00+00:00' };
     mockFetchRollCallState.mockResolvedValue(concluida);
-    await act(() => result.current.conclude());
+    await act(() => result.current.save(CHAMADA));
 
-    expect(mockConcludeRollCall).toHaveBeenCalledWith(AULA);
+    expect(mockSaveRollCall).toHaveBeenCalledWith(AULA, CHAMADA);
     expect(result.current.state).toEqual(concluida);
   });
 
-  it('devePropagarRecusaAoConcluir', async () => {
+  it('devePropagarRecusaAoSalvar', async () => {
     const recusa = { code: '42501', message: 'permission denied' };
-    mockConcludeRollCall.mockRejectedValue(recusa);
+    mockSaveRollCall.mockRejectedValue(recusa);
     const { result } = renderHook(() => useRollCallReview(AULA));
     await waitFor(() => expect(result.current.state).not.toBeNull());
 
-    await expect(result.current.conclude()).rejects.toEqual(recusa);
+    // A tela precisa saber que falhou para manter as marcações e avisar.
+    await expect(result.current.save(CHAMADA)).rejects.toEqual(recusa);
   });
 
   it('deveRevisarERecarregar', async () => {

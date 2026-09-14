@@ -11,7 +11,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import {
-  concludeRollCall,
+  saveRollCall,
   fetchMissedRollCalls,
   fetchMonthlyFrequency,
   fetchMonthlyHistory,
@@ -135,20 +135,29 @@ describe('fetchRollCallState', () => {
   });
 });
 
-describe('concludeRollCall', () => {
-  it('deveConcluirPelaFuncaoDoBancoEDevolverOInstante', async () => {
+describe('saveRollCall', () => {
+  it('deveEnviarAChamadaInteiraNumaRequisicaoSo', async () => {
     mockRpc.mockResolvedValue({ data: '2026-11-05T23:00:00+00:00', error: null });
 
-    await expect(concludeRollCall(AULA)).resolves.toBe('2026-11-05T23:00:00+00:00');
-    // Nunca um UPDATE direto em classes: a policy de UPDATE é só do admin, e
-    // é a função que aplica "só o professor da aula" e "aula já começou".
-    expect(mockRpc).toHaveBeenCalledWith('concluir_chamada', { p_class_id: AULA });
+    await expect(
+      saveRollCall(AULA, { presentes: [ALUNO], ausentes: ['outro'] }),
+    ).resolves.toBe('2026-11-05T23:00:00+00:00');
+    // Uma chamada de RPC, nunca um upsert por aluno: é o que impede a tela de
+    // recarregar a cada toque e deixa a gravação atômica.
+    expect(mockRpc).toHaveBeenCalledTimes(1);
+    expect(mockRpc).toHaveBeenCalledWith('salvar_chamada', {
+      p_class_id: AULA,
+      p_presentes: [ALUNO],
+      p_ausentes: ['outro'],
+    });
     expect(mockFrom).not.toHaveBeenCalled();
   });
 
   it('devePropagarARecusaDeQuemNaoEhProfessorDaAula', async () => {
     mockRpc.mockResolvedValue({ data: null, error: RLS_DENIED.error });
-    await expect(concludeRollCall(AULA)).rejects.toEqual(RLS_DENIED.error);
+    await expect(saveRollCall(AULA, { presentes: [], ausentes: [] })).rejects.toEqual(
+      RLS_DENIED.error,
+    );
   });
 });
 

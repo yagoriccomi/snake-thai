@@ -80,29 +80,6 @@ export async function declareAttendance(
   }
 }
 
-/**
- * Registra a CHAMADA de um aluno — a presença oficial. Ação de quem gerencia a
- * aula (professor dela ou admin); para qualquer outro, o banco recusa.
- *
- * Não envia `declared_status`: o que o aluno declarou continua registrado,
- * como referência para quem faz a chamada.
- */
-export async function recordRollCall(
-  classId: string,
-  userId: string,
-  status: AttendanceStatus,
-): Promise<void> {
-  const { error } = await supabase
-    .from('attendance')
-    .upsert(
-      { class_id: classId, user_id: userId, status },
-      { onConflict: 'class_id,user_id' },
-    );
-  if (error !== null) {
-    throw error;
-  }
-}
-
 /** Aulas de um dia (intervalo `[startIso, endIso)`), para a visão do admin. */
 export async function fetchClassesForDay(
   startIso: string,
@@ -185,24 +162,6 @@ export async function fetchStudentsForGroup(
     throw error;
   }
   return data.filter((linha): linha is StudentRef => linha.id !== null);
-}
-
-/**
- * Desfaz o registro da CHAMADA de um aluno — ele volta a "sem chamada".
- *
- * Zera só `status` em vez de apagar a linha: apagar levaria junto a
- * declaração do aluno, que não pertence a quem faz a chamada. Ação do
- * professor da aula ou do admin. [#55]
- */
-export async function clearRollCall(classId: string, userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('attendance')
-    .update({ status: null })
-    .eq('class_id', classId)
-    .eq('user_id', userId);
-  if (error !== null) {
-    throw error;
-  }
 }
 
 /** Presenças registradas para uma aula (visão do admin). */

@@ -1,61 +1,50 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { createLogger } from '@/lib/logger';
-
 import {
-  clearRollCall,
   fetchAttendanceForClass,
   fetchStudentsForGroup,
-  recordRollCall,
   type AttendanceStatus,
   type StudentRef,
 } from '@/services/classes.service';
 
-/** Alunos agrupados pela CHAMADA do professor (a presença oficial). */
-export interface AttendanceBreakdown {
-  present: StudentRef[];
-  absent: StudentRef[];
-  /** Ainda sem registro na chamada. */
-  pending: StudentRef[];
-}
-
 const log = createLogger('useClassAttendance');
 
-interface UseClassAttendanceResult extends AttendanceBreakdown {
+type PorAluno = Readonly<Record<string, AttendanceStatus>>;
+
+interface UseClassAttendanceResult {
+  /** Alunos elegíveis à aula, em ordem alfabética. */
+  students: StudentRef[];
+  /** A CHAMADA gravada (presença oficial), por id do aluno. */
+  officialByStudent: PorAluno;
   /**
    * O que cada aluno DECLAROU no app ("vou" / "não vou"), por id. Referência
    * para quem faz a chamada — não conta como presença nem como falta.
    */
-  declaredByStudent: Readonly<Record<string, AttendanceStatus>>;
+  declaredByStudent: PorAluno;
   loading: boolean;
   /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
   error: string | null;
   reload: () => Promise<void>;
-  /**
-   * Registra a chamada de um aluno — ação de quem GERENCIA a aula (professor
-   * dela ou admin; a RLS e o gatilho do banco decidem quem realmente pode).
-   */
-  setStudentStatus: (userId: string, status: AttendanceStatus) => Promise<void>;
-  /** Desfaz o registro da chamada, preservando a declaração do aluno. */
-  clearStudentStatus: (userId: string) => Promise<void>;
 }
 
-const EMPTY: AttendanceBreakdown = { present: [], absent: [], pending: [] };
-const SEM_DECLARACOES: Readonly<Record<string, AttendanceStatus>> = {};
+const SEM_ALUNOS: StudentRef[] = [];
+const VAZIO: PorAluno = {};
 
 /**
- * Monta a chamada de uma aula: cruza os alunos elegíveis (turma, ou todos se
- * evento global) com os registros de presença, separando pela CHAMADA do
- * professor. A declaração do aluno segue à parte, só como referência — regra
- * em docs/FREQUENCIA.md.
+ * Dados da chamada de uma aula: os alunos elegíveis (turma, ou todos se evento
+ * global), a chamada gravada e as declarações.
+ *
+ * Só LÊ. Gravar é da tela, de uma vez, em "Concluir chamada" — quando cada
+ * toque gravava e recarregava, a lista era remontada e voltava ao topo.
  */
 export function useClassAttendance(
   classId: string,
   groupId: string | null,
 ): UseClassAttendanceResult {
-  const [breakdown, setBreakdown] = useState<AttendanceBreakdown>(EMPTY);
-  const [declaredByStudent, setDeclaredByStudent] =
-    useState<Readonly<Record<string, AttendanceStatus>>>(SEM_DECLARACOES);
+  const [students, setStudents] = useState<StudentRef[]>(SEM_ALUNOS);
+  const [officialByStudent, setOfficialByStudent] = useState<PorAluno>(VAZIO);
+  const [declaredByStudent, setDeclaredByStudent] = useState<PorAluno>(VAZIO);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,40 +52,28 @@ export function useClassAttendance(
     setLoading(true);
     setError(null);
     try {
-      const [students, attendance] = await Promise.all([
+      const [alunos, presencas] = await Promise.all([
         fetchStudentsForGroup(groupId),
         fetchAttendanceForClass(classId),
       ]);
-      const officialByUser = new Map(attendance.map((row) => [row.user_id, row.status]));
-      const declared: Record<string, AttendanceStatus> = {};
-      for (const row of attendance) {
-        if (row.declared_status !== null) {
-          declared[row.user_id] = row.declared_status;
+      const oficial: Record<string, AttendanceStatus> = {};
+      const declarado: Record<string, AttendanceStatus> = {};
+      for (const linha of presencas) {
+        if (linha.status !== null) {
+          oficial[linha.user_id] = linha.status;
+        }
+        if (linha.declared_status !== null) {
+          declarado[linha.user_id] = linha.declared_status;
         }
       }
-
-      const present: StudentRef[] = [];
-      const absent: StudentRef[] = [];
-      const pending: StudentRef[] = [];
-      for (const student of students) {
-        const official = officialByUser.get(student.id) ?? null;
-        if (official === 'present') {
-          present.push(student);
-        } else if (official === 'absent') {
-          absent.push(student);
-        } else {
-          pending.push(student);
-        }
-      }
-      setBreakdown({ present, absent, pending });
-      setDeclaredByStudent(declared);
-    } catch (loadError) {
-      // Devolver vazio faria o usuário concluir que não há dados, quando na
+      setStudents(alunos);
+      setOfficialByStudent(oficial);
+      setDeclaredByStudent(declarado);
+    } catch (erro) {
+      // Devolver vazio faria o usuário concluir que não há alunos, quando na
       // verdade a carga falhou. Sinaliza para a tela poder oferecer retry.
-      log.error('Falha ao carregar dados', loadError);
+      log.error('Falha ao carregar dados', erro);
       setError('Não foi possível carregar a lista de presença.');
-      setBreakdown(EMPTY);
-      setDeclaredByStudent(SEM_DECLARACOES);
     } finally {
       setLoading(false);
     }
@@ -106,29 +83,5 @@ export function useClassAttendance(
     void load();
   }, [load]);
 
-  const setStudentStatus = useCallback(
-    async (userId: string, status: AttendanceStatus) => {
-      await recordRollCall(classId, userId, status);
-      await load();
-    },
-    [classId, load],
-  );
-
-  const clearStudentStatus = useCallback(
-    async (userId: string) => {
-      await clearRollCall(classId, userId);
-      await load();
-    },
-    [classId, load],
-  );
-
-  return {
-    ...breakdown,
-    declaredByStudent,
-    loading,
-    error,
-    reload: load,
-    setStudentStatus,
-    clearStudentStatus,
-  };
+  return { students, officialByStudent, declaredByStudent, loading, error, reload: load };
 }
