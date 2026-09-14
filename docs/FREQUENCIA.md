@@ -1,8 +1,7 @@
 # Controle de Frequência — especificação e plano
 
-> **Estado:** Fases 0 a 3 entregues em 2026-09-14 (app 1.4.0). O anexo da
-> justificativa depende do deploy do módulo de justificativas do `snake-server`
-> — ver "Entregue nas Fases 2 e 3".
+> **Estado:** Fases 0 a 3 entregues e em produção em 2026-09-14 (app 1.4.0 e
+> módulo de justificativas do `snake-server`, PR #14).
 > Decisões tomadas com o cliente em 2026-09-09; este documento é a fonte da
 > verdade das regras de cálculo.
 
@@ -46,11 +45,10 @@ regressão `supabase/tests/regressao_frequencia_regras.sql` com 18 casos verdes.
   justificativa com "Ver anexo", "Aprovar" e "Recusar", e toque no nome para
   abrir o histórico. Na agenda, o aviso de aulas sem chamada leva direto à aula.
 
-**Dependência de servidor:** o anexo sobe por `POST /v1/justifications/sign-upload`
-e é visto por `/view-url`, do `snake-server` (branch
-`feature/modulo-justificativas`). Enquanto esse módulo não estiver no ar, a
-justificativa **só com mensagem** funciona; com anexo, o envio falha com
-mensagem genérica e nada é gravado.
+**Servidor:** o anexo sobe por `POST /v1/justifications/sign-upload` e é visto
+por `/view-url`, do `snake-server` (no ar desde 2026-09-14, PR #14). Se a API
+estiver fora, a justificativa **só com mensagem** continua funcionando; com
+anexo, o envio falha com mensagem genérica e nada é gravado.
 
 ## Por que este documento existe
 
