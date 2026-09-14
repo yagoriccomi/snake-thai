@@ -19,6 +19,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 
 import { PROOF_BUCKET } from '@/constants/payments';
 import { apiDisponivel, chamarApi } from '@/lib/api';
+import { enviarArquivoAssinado, sanitizeFileName } from '@/lib/cloudinaryUpload';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
 
@@ -33,30 +34,13 @@ export type ReferenciaDeComprovante = Pick<
 /** Validade da URL assinada do Storage, em segundos (comprovante legado). */
 const VALIDADE_URL_LEGADA_SEGUNDOS = 600;
 
-/** Resposta de `POST /v1/proofs/sign-upload`. */
-interface UploadAssinado {
-  cloudName: string;
-  apiKey: string;
-  timestamp: number;
-  signature: string;
-  folder: string;
-  public_id: string;
-  type: string;
-  uploadUrl: string;
-}
-
-/** Resposta de `POST /v1/proofs/view-url`. */
+/** Resposta de `POST /v1/<módulo>/view-url`. */
 export interface ComprovanteVisualizavel {
   url: string;
   /** Total de páginas do documento. `1` para imagem comum. */
   paginas: number;
   /** Qual página a `url` mostra. */
   pagina: number;
-}
-
-/** Remove caracteres perigosos do nome do arquivo antes de compor o caminho. */
-function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-80);
 }
 
 export interface ProofUpload {
@@ -70,59 +54,16 @@ export interface ProofUpload {
 }
 
 /**
- * Envia o comprovante à Cloudinary com uma assinatura emitida pelo backend.
- *
- * O ARQUIVO NÃO PASSA PELO NOSSO SERVIDOR: ele pede a assinatura (JSON
- * pequeno) e o app faz o multipart direto para a Cloudinary. É o que permite
- * ao backend limitar o corpo das requisições a 32kb sem impedir o envio de um
- * comprovante de vários megabytes. [#65]
- *
- * O destino (pasta e nome) vem NA RESPOSTA do servidor, derivado do token
- * verificado — o app não escolhe onde grava. É essa derivação que impede um
- * aluno de gravar na pasta de outro. [#55]
+ * Envia o comprovante à Cloudinary. O caminho (assinatura no backend, arquivo
+ * direto ao provedor, Blob exigido pelo SDK 57) vive em `@/lib/cloudinaryUpload`,
+ * compartilhado com o anexo de justificativa de falta.
  */
 async function enviarParaCloudinary(upload: ProofUpload): Promise<string> {
-  const assinatura = await chamarApi<UploadAssinado>('/v1/proofs/sign-upload', {
-    paymentId: upload.paymentId,
-  });
-
-  // O arquivo vai como Blob de verdade, e não como o `{ uri, name, type }`
-  // que o React Native aceitava: o `fetch` do Expo SDK 57 rejeita aquele
-  // formato com "Unsupported FormDataPart implementation" — e a falha
-  // acontece ao MONTAR o corpo, antes de qualquer byte sair do aparelho.
-  // Era por isso que o servidor e a Cloudinary pareciam saudáveis enquanto
-  // nenhum comprovante era enviado: a requisição nunca chegava neles. [#9]
-  const arquivo = await fetch(upload.fileUri).then(async (r) => r.blob());
-
-  const formulario = new FormData();
-  formulario.append('file', arquivo, sanitizeFileName(upload.fileName));
-  formulario.append('api_key', assinatura.apiKey);
-  formulario.append('timestamp', String(assinatura.timestamp));
-  formulario.append('signature', assinatura.signature);
-  formulario.append('folder', assinatura.folder);
-  formulario.append('public_id', assinatura.public_id);
-  formulario.append('type', assinatura.type);
-
-  const resposta = await fetch(assinatura.uploadUrl, {
-    method: 'POST',
-    body: formulario,
-  });
-  if (!resposta.ok) {
-    // A Cloudinary explica a recusa no corpo (`{"error":{"message":"..."}}`).
-    // Descartar isso — como esta função fazia — transforma qualquer problema
-    // de upload num "Falha ao enviar" sem causa, impossível de depurar a
-    // partir do log. O texto vai para o LOG; a tela continua com a mensagem
-    // amigável de sempre. [#93]
-    const detalhe = await resposta.text().catch(() => '');
-    throw new Error(
-      `Cloudinary recusou o upload (HTTP ${resposta.status}): ${detalhe.slice(0, 300)}`,
-    );
-  }
-
-  const enviado = (await resposta.json()) as { public_id?: string };
-  // A Cloudinary devolve o public_id definitivo; o esperado é o mesmo que o
-  // servidor assinou, mas quem manda é a resposta do provedor.
-  return enviado.public_id ?? `${assinatura.folder}/${assinatura.public_id}`;
+  return enviarArquivoAssinado(
+    '/v1/proofs/sign-upload',
+    { paymentId: upload.paymentId },
+    { uri: upload.fileUri, name: upload.fileName },
+  );
 }
 
 /** Caminho do comprovante legado no bucket privado: `<userId>/<arquivo>`. */
