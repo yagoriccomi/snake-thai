@@ -1,7 +1,27 @@
 # Controle de Frequência — especificação e plano
 
-> **Estado:** planejado, não iniciado. Decisões tomadas com o cliente em
-> 2026-09-09; este documento é a fonte da verdade das regras de cálculo.
+> **Estado:** Fases 0 e 1 entregues em 2026-09-14; Fases 2 e 3 pendentes.
+> Decisões tomadas com o cliente em 2026-09-09; este documento é a fonte da
+> verdade das regras de cálculo.
+
+### Entregue na Fase 1 (2026-09-14)
+
+- Migrations `20260914120000_motivo_justificativa_removida` (isolada) e
+  `20260914120100_frequencia_fundacao`, aplicadas em produção.
+- Regressão `supabase/tests/regressao_frequencia_fundacao.sql`: 22 casos,
+  verdes contra o banco real, em transação com ROLLBACK.
+- As 160 respostas que existiam viraram **declarações**; nenhuma virou
+  presença oficial (nenhuma aula tinha chamada concluída).
+- App adaptado: o aluno grava em `declared_status`; a chamada grava em
+  `status`; "desfazer chamada" zera só a chamada e preserva a declaração.
+  Confirmado de ponta a ponta com logins reais: o upsert do professor não
+  apaga o que o aluno declarou.
+- **Compatibilidade:** APKs anteriores à 1.3.0 gravam a declaração em
+  `status` e passam a receber recusa do banco. Todo aparelho precisa da 1.3.0.
+
+Ainda **não** existem: a função de cálculo, a conclusão da chamada
+(`attendance_taken_at` só é gravável pelo admin até a Fase 2), o fechamento
+mensal, o aviso de aula sem chamada e as telas de justificativa e frequência.
 
 ## Por que este documento existe
 
@@ -89,8 +109,19 @@ professor **daquela aula** e o admin aprovam.
 - **Professor/Admin:** botão "Concluir chamada" (é o que efetiva as presenças),
   fila de justificativas e a frequência por aluno.
 
-## Risco conhecido
+## Aviso de aula sem chamada (decidido em 2026-09-14)
 
 `attendance_taken_at` cria uma responsabilidade nova: se o professor nunca
-concluir a chamada, aquelas aulas somem da conta de todos — silenciosamente.
-Mitigação prevista: avisar o admin quando uma aula passar sem chamada.
+concluir a chamada, aquelas aulas somem da conta de todos — em silêncio. Por
+isso, quando uma aula de rotina passa sem chamada concluída:
+
+- **o admin** é avisado (de todas as aulas);
+- **os professores daquela aula** são avisados (só das suas).
+
+O aviso é **dentro do app** — o projeto não tem push notification
+(`expo-notifications` não está instalado). A lista vem de uma consulta ao
+banco, protegida por RLS, e não de estado guardado no aparelho: assim ela some
+sozinha no momento em que alguém conclui a chamada, sem sincronização manual.
+
+Push de verdade (avisar com o app fechado) fica registrado como evolução
+possível, não incluída no escopo.

@@ -2,17 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/context/AuthProvider';
 import {
+  declareAttendance,
   fetchOwnAttendance,
   fetchTeachersForClasses,
   fetchUpcomingClassesForStudent,
-  upsertAttendance,
   type AttendanceStatus,
   type ClassRow,
   type ClassTeacherRef,
 } from '@/services/classes.service';
 
-/** Aula com a resposta de presença do próprio aluno e seus professores anexados. */
+/** Aula com a declaração do próprio aluno e seus professores anexados. */
 export interface StudentClassItem extends ClassRow {
+  /**
+   * O que o aluno DECLAROU ("vou" / "não vou"). Apenas sugestivo: a presença
+   * oficial vem da chamada do professor (docs/FREQUENCIA.md).
+   */
   myStatus: AttendanceStatus | null;
   teachers: ClassTeacherRef[];
 }
@@ -26,8 +30,8 @@ interface UseStudentClassesResult {
 }
 
 /**
- * Carrega as próximas aulas do aluno já com o status de presença dele e expõe
- * a ação `respond` (INSERT/UPDATE otimista, revertido em caso de falha).
+ * Carrega as próximas aulas do aluno já com a declaração dele e expõe a ação
+ * `respond` (INSERT/UPDATE otimista da declaração, revertido em caso de falha).
  */
 export function useStudentClasses(): UseStudentClassesResult {
   const { session, profile } = useAuth();
@@ -48,11 +52,14 @@ export function useStudentClasses(): UseStudentClassesResult {
         fetchOwnAttendance(userId),
       ]);
       const teachersByClass = await fetchTeachersForClasses(classes.map((item) => item.id));
-      const statusByClass = new Map(attendance.map((row) => [row.class_id, row.status]));
+      // Lê a DECLARAÇÃO, não a chamada: o card mostra o que o aluno escolheu.
+      const declaredByClass = new Map(
+        attendance.map((row) => [row.class_id, row.declared_status]),
+      );
       setItems(
         classes.map((item) => ({
           ...item,
-          myStatus: statusByClass.get(item.id) ?? null,
+          myStatus: declaredByClass.get(item.id) ?? null,
           teachers: teachersByClass[item.id] ?? [],
         })),
       );
@@ -81,7 +88,7 @@ export function useStudentClasses(): UseStudentClassesResult {
         ),
       );
       try {
-        await upsertAttendance(classId, userId, status);
+        await declareAttendance(classId, userId, status);
       } catch {
         setError('Não foi possível salvar sua resposta.');
         await load();

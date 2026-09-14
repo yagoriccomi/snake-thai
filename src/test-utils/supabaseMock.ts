@@ -19,6 +19,7 @@ export interface SupabaseResult<T = unknown> {
 export interface QueryChainMock {
   select: jest.Mock;
   insert: jest.Mock;
+  upsert: jest.Mock;
   update: jest.Mock;
   delete: jest.Mock;
   eq: jest.Mock;
@@ -45,6 +46,7 @@ export function createQueryChain(result: SupabaseResult): QueryChainMock {
 
   chain.select = jest.fn(passthrough);
   chain.insert = jest.fn(passthrough);
+  chain.upsert = jest.fn(passthrough);
   chain.update = jest.fn(passthrough);
   chain.delete = jest.fn(passthrough);
   chain.eq = jest.fn(passthrough);

@@ -15,9 +15,11 @@ jest.mock('@/lib/supabase', () => ({
 
 import {
   addClassTeacher,
-  clearAttendance,
+  clearRollCall,
   createClassAsProfessor,
+  declareAttendance,
   fetchTeachersForClasses,
+  recordRollCall,
   removeClassTeacher,
   type NewClassInput,
 } from '@/services/classes.service';
@@ -151,18 +153,58 @@ describe('addClassTeacher / removeClassTeacher', () => {
   });
 });
 
-describe('clearAttendance', () => {
-  it('deveApagarARespostaDePresencaDoAluno', async () => {
+const STUDENT_ID = 'student-1';
+
+describe('declareAttendance', () => {
+  it('deveGravarADeclaracaoSemTocarNaChamadaOficial', async () => {
     const chain = mockQuery({ data: null, error: null });
-    await clearAttendance(CLASS_ID, TEACHER_ID);
-    expect(chain.delete).toHaveBeenCalled();
+    await declareAttendance(CLASS_ID, STUDENT_ID, 'absent');
+    // A presença só é efetivada pela chamada do professor: a declaração do
+    // aluno nunca pode viajar em `status` — o banco recusaria com 42501.
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { class_id: CLASS_ID, user_id: STUDENT_ID, declared_status: 'absent' },
+      { onConflict: 'class_id,user_id' },
+    );
+    const [payload] = chain.upsert.mock.calls[0] as [Record<string, unknown>];
+    expect(payload).not.toHaveProperty('status');
+  });
+
+  it('devePropagarARecusaDoBanco', async () => {
+    mockQuery(RLS_DENIED);
+    await expect(declareAttendance(CLASS_ID, STUDENT_ID, 'present')).rejects.toEqual(
+      RLS_DENIED.error,
+    );
+  });
+});
+
+describe('recordRollCall', () => {
+  it('deveGravarAChamadaSemSobrescreverADeclaracaoDoAluno', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await recordRollCall(CLASS_ID, STUDENT_ID, 'present');
+    expect(chain.upsert).toHaveBeenCalledWith(
+      { class_id: CLASS_ID, user_id: STUDENT_ID, status: 'present' },
+      { onConflict: 'class_id,user_id' },
+    );
+    // Sem `declared_status` no payload, o upsert preserva o que o aluno disse.
+    const [payload] = chain.upsert.mock.calls[0] as [Record<string, unknown>];
+    expect(payload).not.toHaveProperty('declared_status');
+  });
+});
+
+describe('clearRollCall', () => {
+  it('deveZerarSoAChamadaPreservandoADeclaracao', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await clearRollCall(CLASS_ID, STUDENT_ID);
+    // Apagar a linha levaria junto a declaração, que não é de quem faz a chamada.
+    expect(chain.update).toHaveBeenCalledWith({ status: null });
+    expect(chain.delete).not.toHaveBeenCalled();
     expect(chain.eq).toHaveBeenCalledWith('class_id', CLASS_ID);
-    expect(chain.eq).toHaveBeenCalledWith('user_id', TEACHER_ID);
+    expect(chain.eq).toHaveBeenCalledWith('user_id', STUDENT_ID);
   });
 
   it('devePropagarFalhaDeRede', async () => {
     mockQuery(NETWORK_FAILURE);
-    await expect(clearAttendance(CLASS_ID, TEACHER_ID)).rejects.toEqual(
+    await expect(clearRollCall(CLASS_ID, STUDENT_ID)).rejects.toEqual(
       NETWORK_FAILURE.error,
     );
   });

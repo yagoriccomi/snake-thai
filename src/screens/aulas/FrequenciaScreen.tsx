@@ -31,8 +31,10 @@ interface AttendanceSection {
 }
 
 /**
- * Controle de frequência de uma aula: lista os alunos elegíveis separados em
- * Confirmaram / Faltarão / Pendentes.
+ * Chamada de uma aula: lista os alunos elegíveis separados pela CHAMADA do
+ * professor em Presentes / Faltaram / Sem chamada. O que cada aluno declarou
+ * no app aparece abaixo do nome só como referência — não conta como presença
+ * (docs/FREQUENCIA.md).
  *
  * Quando `canManage` é `true` (admin sempre; professor só nas próprias
  * aulas — decidido por quem navegou até aqui), cada aluno ganha ações para
@@ -46,8 +48,15 @@ export function FrequenciaScreen({
 }: AulasStackScreenProps<'Frequencia'>): React.JSX.Element {
   const { colors } = useTheme();
   const { classId, title, groupId, canManage } = route.params;
-  const { present, absent, pending, loading, setStudentStatus, clearStudentStatus } =
-    useClassAttendance(classId, groupId);
+  const {
+    present,
+    absent,
+    pending,
+    declaredByStudent,
+    loading,
+    setStudentStatus,
+    clearStudentStatus,
+  } = useClassAttendance(classId, groupId);
   const [alterandoId, setAlterandoId] = useState<string | null>(null);
 
   const handleSetStatus = useCallback(
@@ -80,9 +89,9 @@ export function FrequenciaScreen({
 
   const sections = useMemo<AttendanceSection[]>(
     () => [
-      { key: 'present', title: 'Confirmaram', accent: colors.success, data: present },
-      { key: 'absent', title: 'Faltarão', accent: colors.error, data: absent },
-      { key: 'pending', title: 'Pendentes', accent: colors.textSecondary, data: pending },
+      { key: 'present', title: 'Presentes', accent: colors.success, data: present },
+      { key: 'absent', title: 'Faltaram', accent: colors.error, data: absent },
+      { key: 'pending', title: 'Sem chamada', accent: colors.textSecondary, data: pending },
     ],
     [present, absent, pending, colors],
   );
@@ -104,9 +113,16 @@ export function FrequenciaScreen({
       const emAlteracao = alterandoId === item.id;
       return (
         <View style={[styles.row, { borderBottomColor: colors.border }]}>
-          <AppText variant="body" style={styles.rowName}>
-            {item.name ?? 'Aluno pendente'}
-          </AppText>
+          <View style={styles.rowName}>
+            <AppText variant="body">{item.name ?? 'Aluno pendente'}</AppText>
+            {declaredByStudent[item.id] !== undefined ? (
+              <AppText variant="caption" color={colors.textSecondary}>
+                {declaredByStudent[item.id] === 'present'
+                  ? 'Declarou que vem'
+                  : 'Declarou que não vem'}
+              </AppText>
+            ) : null}
+          </View>
           {canManage && (
             <View style={styles.actions}>
               {section.key !== 'present' && (
@@ -136,7 +152,7 @@ export function FrequenciaScreen({
                   onPress={() => void handleClear(item.id)}
                   disabled={emAlteracao}
                   accessibilityRole="button"
-                  accessibilityLabel={`Limpar resposta de ${item.name ?? 'aluno'}`}
+                  accessibilityLabel={`Desfazer chamada de ${item.name ?? 'aluno'}`}
                   hitSlop={8}
                 >
                   <Ionicons
@@ -151,7 +167,7 @@ export function FrequenciaScreen({
         </View>
       );
     },
-    [colors, canManage, alterandoId, handleSetStatus, handleClear],
+    [colors, canManage, alterandoId, handleSetStatus, handleClear, declaredByStudent],
   );
 
   if (loading) {

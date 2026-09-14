@@ -39,6 +39,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      absence_justifications: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          message: string | null
+          proof_provider: Database["public"]["Enums"]["media_provider"] | null
+          proof_public_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["justification_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          proof_provider?: Database["public"]["Enums"]["media_provider"] | null
+          proof_public_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["justification_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          proof_provider?: Database["public"]["Enums"]["media_provider"] | null
+          proof_public_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["justification_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absence_justifications_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_justifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_justifications_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_justifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absence_justifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       academy_settings: {
         Row: {
           academy_name: string
@@ -102,6 +180,9 @@ export type Database = {
         Row: {
           class_id: string
           created_at: string
+          declared_status:
+            | Database["public"]["Enums"]["attendance_status"]
+            | null
           id: string
           status: Database["public"]["Enums"]["attendance_status"] | null
           updated_at: string
@@ -110,6 +191,9 @@ export type Database = {
         Insert: {
           class_id: string
           created_at?: string
+          declared_status?:
+            | Database["public"]["Enums"]["attendance_status"]
+            | null
           id?: string
           status?: Database["public"]["Enums"]["attendance_status"] | null
           updated_at?: string
@@ -118,6 +202,9 @@ export type Database = {
         Update: {
           class_id?: string
           created_at?: string
+          declared_status?:
+            | Database["public"]["Enums"]["attendance_status"]
+            | null
           id?: string
           status?: Database["public"]["Enums"]["attendance_status"] | null
           updated_at?: string
@@ -140,6 +227,67 @@ export type Database = {
           },
           {
             foreignKeyName: "attendance_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_monthly: {
+        Row: {
+          attended: number
+          closed_at: string
+          counted_classes: number
+          frequency_percent: number
+          group_id: string | null
+          id: string
+          justified: number
+          reference_month: string
+          total_classes: number
+          user_id: string
+        }
+        Insert: {
+          attended: number
+          closed_at?: string
+          counted_classes: number
+          frequency_percent: number
+          group_id?: string | null
+          id?: string
+          justified: number
+          reference_month: string
+          total_classes: number
+          user_id: string
+        }
+        Update: {
+          attended?: number
+          closed_at?: string
+          counted_classes?: number
+          frequency_percent?: number
+          group_id?: string | null
+          id?: string
+          justified?: number
+          reference_month?: string
+          total_classes?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_monthly_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_monthly_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_monthly_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
@@ -219,6 +367,7 @@ export type Database = {
       }
       classes: {
         Row: {
+          attendance_taken_at: string | null
           created_at: string
           date_time: string
           group_id: string | null
@@ -228,6 +377,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendance_taken_at?: string | null
           created_at?: string
           date_time: string
           group_id?: string | null
@@ -237,6 +387,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendance_taken_at?: string | null
           created_at?: string
           date_time?: string
           group_id?: string | null
@@ -334,6 +485,7 @@ export type Database = {
           asset_ref: string
           enfileirado_em: string
           id: string
+          justification_id: string | null
           motivo: Database["public"]["Enums"]["media_deletion_reason"]
           payment_id: string | null
           processado_em: string | null
@@ -345,6 +497,7 @@ export type Database = {
           asset_ref: string
           enfileirado_em?: string
           id?: string
+          justification_id?: string | null
           motivo: Database["public"]["Enums"]["media_deletion_reason"]
           payment_id?: string | null
           processado_em?: string | null
@@ -356,6 +509,7 @@ export type Database = {
           asset_ref?: string
           enfileirado_em?: string
           id?: string
+          justification_id?: string | null
           motivo?: Database["public"]["Enums"]["media_deletion_reason"]
           payment_id?: string | null
           processado_em?: string | null
@@ -364,6 +518,13 @@ export type Database = {
           ultimo_erro?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "media_deletion_queue_justification_id_fkey"
+            columns: ["justification_id"]
+            isOneToOne: false
+            referencedRelation: "absence_justifications"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "media_deletion_queue_payment_id_fkey"
             columns: ["payment_id"]
@@ -615,12 +776,14 @@ export type Database = {
       attendance_status: "present" | "absent"
       billing_period: "monthly" | "quarterly" | "semiannual" | "annual"
       class_type: "routine" | "event"
+      justification_status: "pending" | "approved" | "rejected"
       legal_document_kind: "terms_of_use" | "privacy_policy"
       media_deletion_reason:
         | "conta_excluida"
         | "comprovante_recusado"
         | "retencao_expirada"
         | "migrado_de_provedor"
+        | "justificativa_removida"
       media_provider: "supabase_storage" | "cloudinary"
       payment_status: "pending_approval" | "open" | "overdue" | "paid"
       profile_status: "active" | "inactive"
@@ -1220,12 +1383,14 @@ export const Constants = {
       attendance_status: ["present", "absent"],
       billing_period: ["monthly", "quarterly", "semiannual", "annual"],
       class_type: ["routine", "event"],
+      justification_status: ["pending", "approved", "rejected"],
       legal_document_kind: ["terms_of_use", "privacy_policy"],
       media_deletion_reason: [
         "conta_excluida",
         "comprovante_recusado",
         "retencao_expirada",
         "migrado_de_provedor",
+        "justificativa_removida",
       ],
       media_provider: ["supabase_storage", "cloudinary"],
       payment_status: ["pending_approval", "open", "overdue", "paid"],

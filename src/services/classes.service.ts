@@ -56,10 +56,38 @@ export async function fetchOwnAttendance(userId: string): Promise<AttendanceRow[
 }
 
 /**
- * Registra/atualiza a presença do aluno (INSERT ou UPDATE), disparado apenas
- * pela ação explícita do aluno. Usa o UNIQUE (class_id, user_id) como conflito.
+ * Registra a DECLARAÇÃO do aluno ("vou" / "não vou") — apenas sugestiva.
+ *
+ * Grava em `declared_status`, nunca em `status`: a presença só é efetivada
+ * pela chamada do professor, e o banco recusa (42501) um aluno escrevendo na
+ * chamada. O upsert do PostgREST só atualiza as colunas enviadas, então uma
+ * chamada já registrada pelo professor é preservada. Regras em
+ * docs/FREQUENCIA.md.
  */
-export async function upsertAttendance(
+export async function declareAttendance(
+  classId: string,
+  userId: string,
+  declared: AttendanceStatus,
+): Promise<void> {
+  const { error } = await supabase
+    .from('attendance')
+    .upsert(
+      { class_id: classId, user_id: userId, declared_status: declared },
+      { onConflict: 'class_id,user_id' },
+    );
+  if (error !== null) {
+    throw error;
+  }
+}
+
+/**
+ * Registra a CHAMADA de um aluno — a presença oficial. Ação de quem gerencia a
+ * aula (professor dela ou admin); para qualquer outro, o banco recusa.
+ *
+ * Não envia `declared_status`: o que o aluno declarou continua registrado,
+ * como referência para quem faz a chamada.
+ */
+export async function recordRollCall(
   classId: string,
   userId: string,
   status: AttendanceStatus,
@@ -160,15 +188,16 @@ export async function fetchStudentsForGroup(
 }
 
 /**
- * Remove o registro de presença de um aluno numa aula — ele volta a aparecer
- * como "Pendente" (a elegibilidade vem da turma, não desta linha; apagá-la
- * só limpa a RESPOSTA, nunca tira o aluno da turma). Ação de quem gerencia a
- * aula (admin, ou o professor dela), não do próprio aluno. [#55]
+ * Desfaz o registro da CHAMADA de um aluno — ele volta a "sem chamada".
+ *
+ * Zera só `status` em vez de apagar a linha: apagar levaria junto a
+ * declaração do aluno, que não pertence a quem faz a chamada. Ação do
+ * professor da aula ou do admin. [#55]
  */
-export async function clearAttendance(classId: string, userId: string): Promise<void> {
+export async function clearRollCall(classId: string, userId: string): Promise<void> {
   const { error } = await supabase
     .from('attendance')
-    .delete()
+    .update({ status: null })
     .eq('class_id', classId)
     .eq('user_id', userId);
   if (error !== null) {
