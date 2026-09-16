@@ -70,7 +70,8 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [~] **P0** Campo de valor no pagamento — `payments.amount_cents` + FK real para `plans` · BANCO OK
 - [x] **P0** Dia de vencimento configurável — por plano e padrão da academia · OK
 - [ ] **P0** Geração automática das mensalidades — hoje o cron só marca atraso · PARCIAL
-- [ ] **P0** Relatório de inadimplência e faturamento · FALTA
+- [x] **P0** Relatório de inadimplência (por aluno e por faixa de atraso) e
+  faturamento por competência de 12 meses — regras em [`PAINEL.md`](PAINEL.md) · FEITO
 - [ ] **P1** Descontos, bolsas e isenções · FALTA
 - [ ] **P1** Multa e juros por atraso · FALTA
 - [ ] **P1** Recibo para o aluno · FALTA
@@ -84,7 +85,8 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ## F. Painel e relatórios
 
-- [ ] **P0** Dashboard do admin (alunos ativos, receita do mês, inadimplência, frequência) · FALTA
+- [x] **P0** Dashboard do admin (alunos ativos, receita do mês, inadimplência,
+  frequência e alunos em risco de evasão) — aba **Painel** · FEITO
 - [ ] **P1** Relatório de frequência e evasão — depende de [`FREQUENCIA.md`](FREQUENCIA.md) · FALTA
 
 ## G. Governança, LGPD e continuidade
@@ -125,13 +127,13 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 | A. Marca | 4 | 0 |
 | B. Pessoas | 12 | 3 |
 | C. Turmas e agenda | 11 | 7 |
-| D. Financeiro | 10 | 1 |
+| D. Financeiro | 12 | 7 |
 | E. Comunicação | 3 | 0 |
-| F. Painel | 2 | 0 |
+| F. Painel | 2 | 1 |
 | G. Governança | 5 | 0 |
 | H. Configurações | 2 | 0 |
 | UI/UX | 2 | 0 |
-| **Total** | **51** | **11** |
+| **Total** | **53** | **18** |
 
 **20 itens P0.** Os três de maior peso: **planos e valores** (sem eles não há
 produto vendável), **gestão de papéis** (hoje o cliente depende do dev para

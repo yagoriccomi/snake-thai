@@ -122,7 +122,8 @@ export function diasDeAtraso(
   return Math.max(0, dias);
 }
 
-function rotuloDeAtraso(dias: number): string {
+/** "1 dia de atraso" / "N dias de atraso". */
+export function rotuloDeAtraso(dias: number): string {
   return dias === 1 ? '1 dia de atraso' : `${dias} dias de atraso`;
 }
 

@@ -230,9 +230,10 @@ Existem 125 testes e um `pre-commit` com typecheck, mas o gate é **local**: um
   `@deprecated` com o motivo documentado. Recomendação: remover quando o
   carregamento das configurações virar bloqueante no boot [#12].
 
-* **Ausência de índice em `payments.due_date`.** Os relatórios de inadimplência
-  filtrarão por vencimento; hoje há índice em `(status, paid_at)` e em
-  `plan_id`, mas não em `due_date` [#71]. Sem impacto no volume atual.
+* ~~**Ausência de índice em `payments.due_date`.**~~ *Desatualizado (T8,
+  2026-09-16): `idx_payments_due_date` existe desde a migration inicial. A T8
+  acrescentou `idx_payments_reference_month` para o faturamento por
+  competência.*
 
 * **`logo_url` sem upload correspondente.** A coluna existe em
   `academy_settings`, mas a tela de Configurações não oferece envio de imagem —

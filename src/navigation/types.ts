@@ -107,10 +107,19 @@ export type FinanceiroStackParamList = {
   HistoricoPagamentosAlunos: undefined;
   /** Admin: mensalidades de um aluno, mês a mês. [#55] */
   HistoricoPagamentosAluno: { userId: string; name: string };
+  /** Admin: devedores por aluno, do maior atraso (regras em docs/PAINEL.md). */
+  RelatorioInadimplencia: undefined;
+};
+
+/** Stack interna da aba "Painel" (só admin). */
+export type PainelStackParamList = {
+  PainelHome: undefined;
 };
 
 /** Abas do painel principal (usuário autenticado e onboarded). */
 export type MainTabParamList = {
+  /** Só existe para o admin: a aba nem é registrada para os outros papéis. */
+  Painel: NavigatorScreenParams<PainelStackParamList>;
   Aulas: NavigatorScreenParams<AulasStackParamList>;
   Financeiro: NavigatorScreenParams<FinanceiroStackParamList>;
   Dados: NavigatorScreenParams<DadosStackParamList>;
@@ -150,6 +159,13 @@ export type DadosStackScreenProps<T extends keyof DadosStackParamList> =
 export type AulasStackScreenProps<T extends keyof AulasStackParamList> =
   CompositeScreenProps<
     NativeStackScreenProps<AulasStackParamList, T>,
+    MainTabScreenProps<keyof MainTabParamList>
+  >;
+
+/** Props tipadas para telas da stack de "Painel". */
+export type PainelStackScreenProps<T extends keyof PainelStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<PainelStackParamList, T>,
     MainTabScreenProps<keyof MainTabParamList>
   >;
 

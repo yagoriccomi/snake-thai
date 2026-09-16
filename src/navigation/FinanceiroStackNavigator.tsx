@@ -11,6 +11,7 @@ import { HistoricoPagamentosAlunoScreen } from '@/screens/financeiro/HistoricoPa
 import { HistoricoPagamentosAlunosScreen } from '@/screens/financeiro/HistoricoPagamentosAlunosScreen';
 import { MeuPlanoScreen } from '@/screens/financeiro/MeuPlanoScreen';
 import { PagamentoScreen } from '@/screens/financeiro/PagamentoScreen';
+import { RelatorioInadimplenciaScreen } from '@/screens/financeiro/RelatorioInadimplenciaScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<FinanceiroStackParamList>();
@@ -62,6 +63,11 @@ export function FinanceiroStackNavigator(): React.JSX.Element {
         component={HistoricoPagamentosAlunoScreen}
         options={HISTORICO_ALUNO_OPTIONS}
       />
+      <Stack.Screen
+        name="RelatorioInadimplencia"
+        component={RelatorioInadimplenciaScreen}
+        options={RELATORIO_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
@@ -72,3 +78,4 @@ const PAGAMENTO_OPTIONS: NativeStackNavigationOptions = { title: 'Pagamento' };
 const COMPROVANTE_OPTIONS: NativeStackNavigationOptions = { title: 'Comprovante' };
 const HISTORICO_ALUNOS_OPTIONS: NativeStackNavigationOptions = { title: 'Histórico por aluno' };
 const HISTORICO_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Pagamentos' };
+const RELATORIO_OPTIONS: NativeStackNavigationOptions = { title: 'Inadimplência' };
