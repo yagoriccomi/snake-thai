@@ -45,8 +45,12 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
   regras em [`FREQUENCIA.md`](FREQUENCIA.md) · FEITO
 - [x] Chamada em andamento guardada no aparelho e recuperada ao reabrir o app,
   com aviso de conflito se outra pessoa salvou antes · FEITO
-- [ ] **P0** Renomear / excluir turma — hoje só existe criação · PARCIAL
-- [ ] **P0** Aulas recorrentes (grade semanal fixa em vez de aula a aula) · FALTA
+- [x] **P0** Renomear / excluir turma — turma com histórico é arquivada (e pode
+  ser reativada), a nunca usada é apagada; o admin escolhe para onde vão os
+  alunos · FEITO
+- [x] **P0** Aulas recorrentes — grade semanal por turma; as aulas são geradas
+  até o fim do mês seguinte e editar/encerrar um horário nunca mexe em aula com
+  chamada · FEITO
 - [ ] **P1** Capacidade máxima e professor responsável por turma · FALTA
 - [ ] **P1** Cancelar/remarcar aula e calendário de feriados · FALTA
 - [ ] **P2** Check-in pelo próprio aluno · FALTA
@@ -120,14 +124,14 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 | --- | --- | --- |
 | A. Marca | 4 | 0 |
 | B. Pessoas | 12 | 3 |
-| C. Turmas e agenda | 9 | 3 |
+| C. Turmas e agenda | 11 | 7 |
 | D. Financeiro | 10 | 1 |
 | E. Comunicação | 3 | 0 |
 | F. Painel | 2 | 0 |
 | G. Governança | 5 | 0 |
 | H. Configurações | 2 | 0 |
 | UI/UX | 2 | 0 |
-| **Total** | **49** | **7** |
+| **Total** | **51** | **11** |
 
 **20 itens P0.** Os três de maior peso: **planos e valores** (sem eles não há
 produto vendável), **gestão de papéis** (hoje o cliente depende do dev para

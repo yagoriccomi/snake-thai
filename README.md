@@ -17,7 +17,12 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   professor vê a agenda inteira da academia, cria aulas para si, entra em aulas
   de outros professores e gerencia a presença apenas das suas — o bloco
   financeiro não aparece para ele.
-- Agenda de aulas (rotina e eventos) por turma.
+- Agenda de aulas (rotina e eventos) por turma, com **grade semanal**: o admin
+  cadastra os horários fixos de cada turma e o banco gera as aulas até o fim do
+  mês seguinte. Editar ou encerrar um horário só muda aulas futuras sem chamada.
+- **Turmas** com renomear, excluir e reativar: a turma com histórico é arquivada
+  (aulas passadas e frequência preservadas) e o admin escolhe para onde vão os
+  alunos.
 - **Controle de frequência**: o aluno declara se vem (só sugestivo) e a presença
   vale pela chamada do professor, efetivada em "Concluir chamada". Cada aluno
   vê "Presença em Aulas X/Y · Frequência N%" e o histórico dos meses fechados

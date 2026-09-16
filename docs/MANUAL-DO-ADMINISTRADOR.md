@@ -129,13 +129,67 @@ rebaixe antes.
 
 ## 5. Turmas e aulas
 
-Na aba **Aulas**, como administrador, você:
+Como administrador, você:
 
-- **Cria turmas** (ex.: Turma Manhã, Turma Noite) e atribui alunos a elas.
-- **Cria aulas** com data, horário e turma.
+- **Organiza as turmas** em **Dados → Turmas e grade semanal**: cria, renomeia,
+  exclui e reativa.
+- **Monta a grade semanal** de cada turma (ex.: segunda e quarta às 19:00). O app
+  cria as aulas sozinho, sempre até o fim do mês seguinte.
+- **Cria aulas avulsas** na aba **Aulas** (aula extra, evento).
 - **Faz a chamada**: em cada aula, marca quem esteve presente.
 
 Os alunos veem só as aulas da própria turma (e os eventos abertos a todos).
+
+### Montar a grade semanal
+
+1. **Dados → Turmas e grade semanal** → no cartão da turma, **Grade semanal**.
+2. Toque em **Novo horário** e preencha: título, dia da semana, hora de início
+   (horário de Brasília), início da vigência e, se quiser, o fim. Escolha os
+   professores.
+3. Ao salvar, o app diz quantas aulas entraram na agenda. Elas aparecem na aba
+   **Aulas** e para os alunos da turma.
+
+A agenda é completada todo dia de madrugada. É por isso que o contador de
+presença do aluno já mostra o total do mês no dia 1.
+
+Se já existia uma aula avulsa da mesma turma no mesmo dia e hora, ela passa a
+fazer parte da grade (não duplica).
+
+### Mudar ou encerrar um horário
+
+- **Editar** (lápis): título, hora, vigência e professores. Só mudam as aulas
+  **futuras que ainda não tiveram chamada**. Aula com chamada e aula que você
+  editou à mão ficam como estão. O dia da semana não muda: encerre o horário e
+  crie outro.
+- **Encerrar** (botão vermelho): informe o último dia com aula. As aulas depois
+  dele que ainda não tiveram chamada saem da agenda, junto com as declarações e
+  justificativas dos alunos para elas.
+- Para reabrir um horário encerrado, edite e apague a data de fim.
+
+### Mudar uma aula específica
+
+Na aba **Aulas**, abra a aula e toque em **Editar aula**. Se ela veio da grade
+(selo **Grade semanal**), passa a ser independente: mudanças posteriores no
+horário não a alteram mais. Cancelar só uma data (feriado) ainda não existe no
+app.
+
+### Renomear, excluir e reativar turma
+
+- **Renomear** (lápis): o nome novo aparece em todas as aulas e frequências da
+  turma, inclusive as antigas.
+- **Excluir** (lixeira): antes de confirmar, o app mostra o que vai acontecer.
+  - Turma que nunca teve aula dada nem frequência fechada é **apagada**.
+  - Turma com histórico é **arquivada**: some dos seletores, as aulas futuras sem
+    chamada saem da agenda, os horários são encerrados e o histórico (aulas
+    passadas, chamadas e frequências) continua guardado.
+  - Se a turma tem alunos, você escolhe a turma de destino ou marca **Sem turma**
+    (o aluno passa a ver só eventos).
+  - Trocar alunos de turma no meio do mês muda a frequência do mês deles:
+    prefira a virada do mês.
+- **Reativar**: em **Arquivadas**, no fim da lista de turmas. A turma volta aos
+  seletores; os horários dela continuam encerrados.
+- A chamada das aulas de uma turma arquivada fica **congelada** (só leitura).
+  Para corrigir, reative a turma antes.
 
 ### Fazer a chamada
 

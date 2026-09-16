@@ -43,8 +43,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 6 | **T5** — GitHub Actions: build e publicação automática do APK | 🟡 PR #15 mesclado; 👤 secrets | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
 | 7 | **T11** — guardar a chamada em andamento no aparelho | 🟡 PR #16 mesclado; 👤 teste no celular | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
 | 8 | **T10** — monitoramento de erros no aparelho | 🟡 PR #17 mesclado; 👤 conta Sentry | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
-| 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | 🟡 PR aberto; 👤 publicar em produção | T1 | [PLANO-T7](planos/PLANO-T7.md) |
-| 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | ⬜ | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
+| 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | 🟡 PR #18 mesclado; 👤 publicar em produção | T1 | [PLANO-T7](planos/PLANO-T7.md) |
+| 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | 🟡 implementada; 👤 publicar em produção | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
 | 11 | **T8** — Painel do admin + relatório de inadimplência e faturamento | ⬜ | T1, T6, T7 | [PLANO-T8](planos/PLANO-T8.md) |
 | 12 | **T9** — notificações push | ⬜ | T1, T6, T7, 👤 Expo e Firebase | [PLANO-T9](planos/PLANO-T9.md) |
 
@@ -151,17 +151,21 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] Tela **Editar aluno** (nome, CPF, celular, nascimento, turma, plano, situação e e-mail)
 - [x] Exclusão pelo admin, "Excluir minha conta" (com senha) e "Exportar meus dados" — Edge Functions testadas no Supabase local
 - [x] Prazo de guarda das imagens de comprovante — varredura pronta, **criada desligada** (ligar apaga arquivos reais; recomendação: 90 dias)
-- [ ] PR mesclado
+- [x] PR #18 mesclado — `d71660d`
 - [ ] 👤⚠️ Publicar em produção **nesta ordem**: migrations (`db-push-prod.bat`, com backup) → Edge Functions (`--project-ref`) → só depois o APK. APK antes das funções chama a exclusão antiga, sem conferir a senha
 - [ ] 👤 Confirmar na Render se o Cron Job de limpeza de mídia existe (sem ele nenhum arquivo é apagado de fato)
 - [ ] 👤 Validar o prazo de guarda com o contador ou advogado e aprovar o texto da política
 
 ### T6 — Grade semanal e turmas ([plano](planos/PLANO-T6.md))
 
-- [ ] Renomear turma; excluir turma **arquiva** quando há histórico e apaga só a nunca usada; o admin escolhe para onde vão os alunos
-- [ ] Hoje excluir turma transformaria as aulas dela em eventos visíveis a **todos** os alunos — corrigido no banco
-- [ ] Grade semanal por turma: as aulas são geradas sozinhas até o fim do mês seguinte; editar ou encerrar um horário nunca mexe em aula com chamada
-- [ ] Telas de turmas, grade e horário para o admin
+- [x] Renomear turma; excluir turma **arquiva** quando há histórico e apaga só a nunca usada; o admin escolhe para onde vão os alunos
+- [x] Hoje excluir turma transformaria as aulas dela em eventos visíveis a **todos** os alunos — corrigido no banco (referências RESTRICT, rotina exige turma, chamada de turma arquivada congelada)
+- [x] Grade semanal por turma: as aulas são geradas sozinhas até o fim do mês seguinte; editar ou encerrar um horário nunca mexe em aula com chamada — 29 casos de regressão SQL
+- [x] Telas de turmas, grade e horário para o admin; seletores sem turma arquivada; chamada de turma arquivada só leitura
+- [ ] PR mesclado
+- [ ] 👤 Validar no app DEV (roteiro em [`ENTREGA-T6`](planos/ENTREGA-T6.md))
+- [ ] 👤⚠️ Publicar em produção depois da T7: conferir (somente leitura) que não há aula de rotina sem turma, `db-push-prod.bat`, e o APK novo antes de usar a grade
+- [ ] 👤 Decidir a limpeza das aulas futuras de demonstração em produção antes de cadastrar a grade real (se coincidirem, viram aulas da grade)
 - [ ] 👤 Informar a grade real de cada turma (ou cadastrar pelo app depois do deploy)
 
 ### T8 — Painel do admin ([plano](planos/PLANO-T8.md))
@@ -242,3 +246,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T10 implementada** (branch `feat/monitoramento-erros`): Sentry sem dado pessoal (filtros, id aleatório + papel), logger com coletor, tela de erro amigável, diagnóstico só no DEV, build sem token funcionando. Desligado até você criar a conta e colar o DSN. Relatório em [`ENTREGA-T10`](planos/ENTREGA-T10.md). |
 | 2026-09-16 | **T10:** PR #17 mesclado (`775dce1`); APK DEV com Sentry compilado, envio de source maps pulado sem token. |
 | 2026-09-16 | **T7 implementada** (branch `feat/editar-aluno-lgpd`): exclusão LGPD transacional (corrige imagens e justificativas esquecidas e fila duplicada), Edge Functions de conta testadas no local, editar aluno (inclui e-mail), excluir minha conta com senha, exportar meus dados, prazo de guarda criado desligado. Nada publicado em produção. Relatório em [`ENTREGA-T7`](planos/ENTREGA-T7.md). |
+| 2026-09-16 | **T7:** PR #18 mesclado (`d71660d`). |
+| 2026-09-16 | **T6 implementada** (branch `feat/grade-semanal-turmas`): turma arquivada em vez de apagada quando tem histórico, destino dos alunos, chamada congelada; grade semanal com geração diária até o fim do mês seguinte, edição e encerramento que não tocam aula com chamada; telas Turmas, Grade e Horário. 29 casos SQL e 577 testes Jest; chamadas conferidas na API local. Nada publicado em produção. Relatório em [`ENTREGA-T6`](planos/ENTREGA-T6.md). |

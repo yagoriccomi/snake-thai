@@ -135,6 +135,26 @@ quebre a frequência de todo mundo em silêncio.
 | Eventos globais (sem turma) | **Não entram** | Faltar num campeonato de sábado não derruba a frequência |
 | Histórico mensal | **Fecha o mês e congela** | O passado não muda se alguém editar uma chamada antiga |
 
+## Grade semanal e turma arquivada (T6)
+
+- O total do mês ("o 12 do 0/12") conta as aulas de rotina **cadastradas**. Com a
+  grade semanal, o banco gera as aulas até o **fim do mês seguinte**, todo dia às
+  00:40 de São Paulo (`generate-scheduled-classes`). Por isso o total já está
+  certo no dia 1; uma janela de 4 semanas deixaria de fora os dias 29 a 31.
+- Editar ou encerrar um horário só mexe em aula **futura sem chamada**. Aula com
+  chamada nunca muda, então a parte já contada da frequência não se altera.
+- **Turma arquivada congela a chamada.** A lista da chamada sai da turma ATUAL dos
+  alunos; depois de movidos, salvar uma aula antiga com a lista vazia apagaria a
+  chamada dela. O banco recusa `salvar_chamada` e `concluir_chamada` nessas
+  aulas, e elas saem do aviso de aula sem chamada.
+- **Troca de turma no meio do mês** (inclusive ao arquivar com destino): a
+  frequência do mês usa a turma atual. As aulas da turma antiga saem da conta do
+  aluno e as da nova passam a contar. A tela de exclusão avisa; o recomendado é
+  mudar na virada do mês. O mês já fechado não muda.
+
+Regressões: `supabase/tests/regressao_turmas.sql` (13 casos) e
+`supabase/tests/regressao_grade_semanal.sql` (16 casos).
+
 ## A conta
 
 ```
