@@ -1,6 +1,22 @@
 const mockGetSession = jest.fn();
 const mockSignInWithPassword = jest.fn();
 const mockUpdateUser = jest.fn();
+const mockSignOut = jest.fn();
+const mockApagarRascunhosDoAparelho = jest.fn();
+const mockLogWarn = jest.fn();
+
+jest.mock('@/services/rollCallDraft.service', () => ({
+  apagarRascunhosDoAparelho: (...args: unknown[]): unknown => mockApagarRascunhosDoAparelho(...args),
+}));
+
+jest.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: (...args: unknown[]): unknown => mockLogWarn(...args),
+    error: jest.fn(),
+  }),
+}));
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -9,11 +25,12 @@ jest.mock('@/lib/supabase', () => ({
       signInWithPassword: (...args: unknown[]): unknown =>
         mockSignInWithPassword(...args),
       updateUser: (...args: unknown[]): unknown => mockUpdateUser(...args),
+      signOut: (...args: unknown[]): unknown => mockSignOut(...args),
     },
   },
 }));
 
-import { changeOwnPassword } from '@/services/auth.service';
+import { changeOwnPassword, signOut } from '@/services/auth.service';
 
 const EMAIL = 'aluno@exemplo.test';
 
@@ -26,6 +43,35 @@ beforeEach(() => {
   mockGetSession.mockReset();
   mockSignInWithPassword.mockReset();
   mockUpdateUser.mockReset();
+  mockSignOut.mockReset().mockResolvedValue({ error: null });
+  mockApagarRascunhosDoAparelho.mockReset().mockResolvedValue(undefined);
+  mockLogWarn.mockReset();
+});
+
+describe('signOut — rascunhos de chamada', () => {
+  it('deveApagarOsRascunhosDeChamadaAntesDeSair', async () => {
+    const ordem: string[] = [];
+    mockApagarRascunhosDoAparelho.mockImplementation(async () => {
+      ordem.push('rascunhos');
+    });
+    mockSignOut.mockImplementation(async () => {
+      ordem.push('sessao');
+      return { error: null };
+    });
+
+    await signOut();
+
+    expect(ordem).toEqual(['rascunhos', 'sessao']);
+  });
+
+  it('deveSairMesmoQuandoALimpezaDosRascunhosFalha', async () => {
+    mockApagarRascunhosDoAparelho.mockRejectedValue(new Error('Keystore indisponível'));
+
+    await expect(signOut()).resolves.toBeUndefined();
+
+    expect(mockSignOut).toHaveBeenCalledTimes(1);
+    expect(mockLogWarn).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('changeOwnPassword — reautenticação obrigatória', () => {

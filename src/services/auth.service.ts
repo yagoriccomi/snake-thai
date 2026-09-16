@@ -1,6 +1,10 @@
 import type { Session } from '@supabase/supabase-js';
 
+import { createLogger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase';
+import { apagarRascunhosDoAparelho } from '@/services/rollCallDraft.service';
+
+const log = createLogger('auth.service');
 
 /**
  * Serviço de autenticação — encapsula as chamadas do Supabase Auth para manter
@@ -22,8 +26,21 @@ export async function signInWithPassword(
   return data.session;
 }
 
-/** Encerra a sessão atual. */
+/**
+ * Encerra a sessão atual.
+ *
+ * Antes, apaga os rascunhos de chamada guardados no aparelho: num celular
+ * compartilhado, a chamada não concluída de um professor não pode ficar para o
+ * próximo login. Todos os caminhos de saída passam por aqui (aba Dados, tela
+ * de biometria, perfil ausente). Falha nessa limpeza nunca impede sair.
+ * (A futura exclusão de conta também precisa passar por aqui.)
+ */
 export async function signOut(): Promise<void> {
+  try {
+    await apagarRascunhosDoAparelho();
+  } catch (erro) {
+    log.warn('Não foi possível apagar os rascunhos de chamada ao sair', erro);
+  }
   const { error } = await supabase.auth.signOut();
   if (error !== null) {
     throw error;
