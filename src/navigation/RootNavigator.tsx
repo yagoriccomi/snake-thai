@@ -9,6 +9,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '@/context/AuthProvider';
 import { MainTabNavigator } from '@/navigation/MainTabNavigator';
+import { navigationRef } from '@/navigation/navigationRef';
 import type { RootStackParamList } from '@/navigation/types';
 import { LoadingScreen } from '@/screens/LoadingScreen';
 import { BiometricLockScreen } from '@/screens/auth/BiometricLockScreen';
@@ -82,7 +83,7 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
   };
 
   return (
-    <NavigationContainer theme={navigationTheme} onReady={onReady}>
+    <NavigationContainer ref={navigationRef} theme={navigationTheme} onReady={onReady}>
       <Stack.Navigator screenOptions={SCREEN_OPTIONS}>{renderScreen()}</Stack.Navigator>
     </NavigationContainer>
   );

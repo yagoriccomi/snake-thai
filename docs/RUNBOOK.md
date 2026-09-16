@@ -138,6 +138,7 @@ Os jobs são criados nas próprias migrations e rodam em UTC.
 | `expire-payment-proofs` | 02:30 todo dia | Prazo de guarda das imagens de comprovante (desligado sem prazo) |
 | `close-monthly-attendance` | 03:20 do dia 1 | Fecha e congela a frequência do mês anterior |
 | `generate-scheduled-classes` | 03:40 todo dia (00:40 em São Paulo) | Gera as aulas da grade semanal até o fim do mês seguinte |
+| `push-*` (5 jobs) | ver [`NOTIFICACOES.md`](NOTIFICACOES.md) | Lembretes, avisos de chamada, despacho (a cada minuto) e limpeza |
 
 Um job que falha não avisa ninguém (lacuna L3). Para conferir, no SQL Editor:
 
@@ -167,7 +168,13 @@ npx supabase functions deploy reset-student-password --project-ref <PROJECT_REF>
 npx supabase functions deploy delete-my-account --project-ref <PROJECT_REF>
 npx supabase functions deploy delete-user-account --project-ref <PROJECT_REF>
 npx supabase functions deploy admin-update-user-email --project-ref <PROJECT_REF>
+npx supabase functions deploy send-push --no-verify-jwt --project-ref <PROJECT_REF>
 ```
+
+A `send-push` também precisa dos segredos `PUSH_DISPATCH_SECRET`,
+`PUSH_APP_VARIANT` e `EXPO_ACCESS_TOKEN` (`npx supabase secrets set`) e de
+`push_project_url` e `push_dispatch_secret` no Vault — passo a passo, monitoramento
+e rotação em [`NOTIFICACOES.md`](NOTIFICACOES.md).
 
 As de conta (`delete-*`, `admin-update-user-email`) dependem das funções SQL da
 migration `lgpd_exclusao_de_conta`: aplique a migration **antes** de publicá-las.

@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
+import { usePushNotifications } from '@/context/PushNotificationsProvider';
 import { ErroDeTelaProposital, useDiagnosticoDeErros } from '@/hooks/useDiagnosticoDeErros';
 import { useExportarMeusDados } from '@/hooks/useExportarMeusDados';
 import type { DadosStackScreenProps } from '@/navigation/types';
@@ -64,6 +65,7 @@ export function DadosScreen({
     biometricAvailable,
     chooseBiometric,
   } = useAuth();
+  const notificacoes = usePushNotifications();
   const [biometricBusy, setBiometricBusy] = useState(false);
   const [biometricError, setBiometricError] = useState<string | null>(null);
 
@@ -460,6 +462,45 @@ export function DadosScreen({
           ) : null}
         </View>
 
+        {/* Notificações */}
+        <View style={styles.group}>
+          <Text style={styles.sectionLabel}>NOTIFICAÇÕES</Text>
+          <View style={styles.card}>
+            <View style={styles.row}>
+              <View style={styles.rowTextBlock}>
+                <Text style={styles.rowLabel}>Receber notificações</Text>
+                <Text style={styles.rowHint}>{textoDasNotificacoes(notificacoes.status, notificacoes.motivo)}</Text>
+              </View>
+              <Switch
+                value={notificacoes.status === 'ativado'}
+                onValueChange={(ligar) => void (ligar ? notificacoes.ativar() : notificacoes.desativar())}
+                disabled={
+                  notificacoes.ocupado || notificacoes.status === 'carregando' || notificacoes.status === 'indisponivel'
+                }
+                trackColor={TRACK_COLOR}
+                thumbColor={notificacoes.status === 'ativado' ? colors.primary : colors.textSecondary}
+                accessibilityLabel="Receber notificações"
+                accessibilityHint="Liga ou desliga os avisos de mensalidade, comprovante e aulas neste aparelho"
+              />
+            </View>
+            {notificacoes.status === 'negado' && !notificacoes.podePerguntar ? (
+              <NavRow
+                icon="settings-outline"
+                label="Abrir configurações do Android"
+                onPress={notificacoes.abrirConfiguracoes}
+                styles={styles}
+                colors={colors}
+                last
+              />
+            ) : null}
+          </View>
+          {notificacoes.erro !== null ? (
+            <AppText variant="caption" color={colors.error} style={styles.savedHint} accessibilityLiveRegion="polite">
+              {notificacoes.erro}
+            </AppText>
+          ) : null}
+        </View>
+
         {/* Diagnóstico — só no app de desenvolvimento */}
         {diagnostico.visivel ? (
           <View style={styles.group}>
@@ -573,6 +614,27 @@ function ValueRow({ label, value, styles, muted, last }: ValueRowProps): React.J
       </Text>
     </View>
   );
+}
+
+/** Linha de apoio do switch de notificações, conforme o estado. */
+function textoDasNotificacoes(
+  status: ReturnType<typeof usePushNotifications>['status'],
+  motivo: ReturnType<typeof usePushNotifications>['motivo'],
+): string {
+  switch (status) {
+    case 'ativado':
+      return 'Mensalidade, comprovante e aulas. Nada de nomes nem valores na tela bloqueada.';
+    case 'negado':
+      return 'O Android não deu a permissão. Ative as notificações do app nas configurações.';
+    case 'indisponivel':
+      return motivo === 'plataforma'
+        ? 'Disponível só no Android por enquanto.'
+        : 'Esta versão do app ainda não está pronta para notificações.';
+    case 'carregando':
+      return 'Verificando…';
+    default:
+      return 'Desligadas neste aparelho.';
+  }
 }
 
 /** Cores da trilha do switch — constante, para não recriar objeto por render. */

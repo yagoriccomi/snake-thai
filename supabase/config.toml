@@ -52,3 +52,8 @@ enable_confirmations = false
 enabled = true
 # Limite de tamanho de upload (comprovantes são imagens/pdf pequenos) [#65].
 file_size_limit = "10MiB"
+
+# send-push é chamada pelo próprio banco (pg_cron + pg_net), sem usuário: o
+# JWT não se aplica e a função confere um segredo próprio (PUSH_DISPATCH_SECRET).
+[functions.send-push]
+verify_jwt = false

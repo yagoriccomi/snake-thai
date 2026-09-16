@@ -44,3 +44,22 @@ jest.mock('@sentry/react-native', () => {
     wrap: jest.fn((componente) => componente),
   };
 });
+
+// Notificações push: módulo nativo fora do Jest. Sem permissão e sem token por
+// padrão; os testes do serviço trocam o que precisarem.
+jest.mock('expo-notifications', () => ({
+  AndroidImportance: { DEFAULT: 3, HIGH: 4 },
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn().mockResolvedValue(null),
+  getPermissionsAsync: jest.fn().mockResolvedValue({ granted: false, canAskAgain: true }),
+  requestPermissionsAsync: jest.fn().mockResolvedValue({ granted: false, canAskAgain: true }),
+  getExpoPushTokenAsync: jest.fn().mockResolvedValue({ type: 'expo', data: 'ExponentPushToken[teste]' }),
+  addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponse: jest.fn(() => null),
+}));
+
+jest.mock('expo-constants', () => ({
+  __esModule: true,
+  default: { expoConfig: { extra: { eas: { projectId: 'projeto-de-teste' } } } },
+}));

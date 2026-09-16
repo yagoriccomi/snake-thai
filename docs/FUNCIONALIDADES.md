@@ -80,7 +80,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 ## E. Comunicação
 
 - [ ] **P1** Mural de avisos · FALTA
-- [ ] **P1** Push de vencimento e atraso · FALTA
+- [x] **P1** Push de vencimento e atraso (e comprovante, justificativa e aula sem
+  chamada) — regras em [`NOTIFICACOES.md`](NOTIFICACOES.md); chega ao aparelho
+  depois de configurar Expo e Firebase · FEITO
 - [ ] **P2** Mensagem direcionada por turma · FALTA
 
 ## F. Painel e relatórios
@@ -128,12 +130,12 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 | B. Pessoas | 12 | 3 |
 | C. Turmas e agenda | 11 | 7 |
 | D. Financeiro | 12 | 7 |
-| E. Comunicação | 3 | 0 |
+| E. Comunicação | 3 | 1 |
 | F. Painel | 2 | 1 |
 | G. Governança | 5 | 0 |
 | H. Configurações | 2 | 0 |
 | UI/UX | 2 | 0 |
-| **Total** | **53** | **18** |
+| **Total** | **53** | **19** |
 
 **20 itens P0.** Os três de maior peso: **planos e valores** (sem eles não há
 produto vendável), **gestão de papéis** (hoje o cliente depende do dev para

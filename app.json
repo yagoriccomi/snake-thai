@@ -50,6 +50,14 @@
         {
           "photosPermission": "O Snake Thai acessa suas fotos para você anexar o comprovante de pagamento."
         }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#39FF14",
+          "defaultChannel": "geral"
+        }
       ]
     ]
   }

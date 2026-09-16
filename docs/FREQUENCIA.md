@@ -219,10 +219,11 @@ isso, quando uma aula de rotina passa sem chamada concluída:
 - **o admin** é avisado (de todas as aulas);
 - **os professores daquela aula** são avisados (só das suas).
 
-O aviso é **dentro do app** — o projeto não tem push notification
-(`expo-notifications` não está instalado). A lista vem de uma consulta ao
-banco, protegida por RLS, e não de estado guardado no aparelho: assim ela some
-sozinha no momento em que alguém conclui a chamada, sem sincronização manual.
+O aviso **dentro do app** vem de uma consulta ao banco, protegida por RLS, e não
+de estado guardado no aparelho: assim ele some sozinho no momento em que alguém
+conclui a chamada, sem sincronização manual.
 
-Push de verdade (avisar com o app fechado) fica registrado como evolução
-possível, não incluída no escopo.
+Desde a T9 há também **push** para quem ativou as notificações: o professor da
+aula recebe "Chamada pendente" (1 hora depois do início) e o admin recebe o resumo
+das aulas sem chamada às 21:00. O aviso que perdeu o sentido (chamada feita antes
+do envio) não sai. Regras em [`NOTIFICACOES.md`](NOTIFICACOES.md).

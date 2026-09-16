@@ -45,8 +45,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 8 | **T10** — monitoramento de erros no aparelho | 🟡 PR #17 mesclado; 👤 conta Sentry | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
 | 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | 🟡 PR #18 mesclado; 👤 publicar em produção | T1 | [PLANO-T7](planos/PLANO-T7.md) |
 | 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | 🟡 PR #19 mesclado; 👤 publicar em produção | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
-| 11 | **T8** — Painel do admin + relatório de inadimplência e faturamento | 🟡 implementada; 👤 publicar em produção | T1, T6, T7 | [PLANO-T8](planos/PLANO-T8.md) |
-| 12 | **T9** — notificações push | ⬜ | T1, T6, T7, 👤 Expo e Firebase | [PLANO-T9](planos/PLANO-T9.md) |
+| 11 | **T8** — Painel do admin + relatório de inadimplência e faturamento | 🟡 PR #20 mesclado; 👤 publicar em produção | T1, T6, T7 | [PLANO-T8](planos/PLANO-T8.md) |
+| 12 | **T9** — notificações push | 🟡 implementada; 👤 Expo, Firebase e produção | T1, T6, T7, 👤 Expo e Firebase | [PLANO-T9](planos/PLANO-T9.md) |
 
 **Por que essa ordem:** os merges pendentes vêm primeiro, para toda branch nova nascer
 da `main` atualizada. Em seguida o ambiente DEV, porque T6, T7, T8 e T9 mexem no banco e
@@ -173,16 +173,20 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] Aba **Painel** (só admin, primeira aba): alunos ativos e inativos, recebido x esperado do mês, inadimplência por faixa de atraso, faturamento de 12 meses em gráfico, frequência média e alunos em risco de evasão
 - [x] Relatório de inadimplência por aluno, que abre o histórico para dar baixa (também pelo Financeiro)
 - [x] Toda a conta no banco, só para admin, sem CPF nem telefone saindo do banco — 12 casos de regressão SQL; funções abaixo de 10 ms com a demonstração
-- [ ] PR mesclado
+- [x] PR #20 mesclado — `1a94448`
 - [ ] 👤 Validar no app DEV (roteiro em [`ENTREGA-T8`](planos/ENTREGA-T8.md)) e conferir 2 ou 3 números que você conhece da academia
 - [ ] 👤⚠️ Publicar em produção: migration (`db-push-prod.bat`) **antes** do APK novo — com o APK antes, o Painel mostra erro
 
 ### T9 — Notificações push ([plano](planos/PLANO-T9.md))
 
-- [ ] Avisos: vencimento (3 dias antes e no dia), atraso (1 e 7 dias depois), comprovante enviado, aprovado e recusado, justificativa pendente, aula sem chamada
-- [ ] Ativação pelo usuário (cartão + botão no Perfil); tocar na notificação abre a tela certa; texto sem dado pessoal; silêncio entre 22h e 7h
-- [ ] 👤 Conta Expo, projeto Firebase com os 2 apps (produção e DEV), arquivo `google-services.json`, chave FCM e segredos do envio
-- [ ] 👤 Aprovar o texto da Política de Privacidade
+- [x] Avisos: vencimento (3 dias antes e no dia), atraso (1 e 7 dias depois), comprovante enviado, aprovado e recusado, justificativa pendente, aula sem chamada — fila no banco com 20 casos de regressão
+- [x] Edge Function `send-push` (segredo próprio, recibos, lotes, retentativa) — ensaiada de ponta a ponta no banco local com a Expo substituída por um servidor falso
+- [x] Ativação pelo usuário (cartão + botão no Perfil); tocar na notificação abre a tela certa; texto sem dado pessoal; silêncio entre 22h e 7h; aparelho sai do banco ao sair da conta e ao excluir a conta
+- [ ] PR mesclado
+- [ ] 👤 Conta Expo (`EAS_PROJECT_ID`), projeto Firebase com os 2 apps (produção e DEV), arquivo `google-services.json`, chave FCM V1 enviada à Expo — passo a passo em [`NOTIFICACOES.md`](NOTIFICACOES.md)
+- [ ] 👤⚠️ Publicar em produção: migrations → segredos da função e do Vault → deploy da `send-push` → APK novo
+- [ ] 👤 Testar no celular (ativar, receber, tocar com o app fechado e aberto)
+- [ ] 👤 Aprovar o texto da Política de Privacidade (L4) e decidir se o build no GitHub Actions (T5) recebe o `google-services.json` como secret
 
 ---
 
@@ -253,3 +257,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T6 implementada** (branch `feat/grade-semanal-turmas`): turma arquivada em vez de apagada quando tem histórico, destino dos alunos, chamada congelada; grade semanal com geração diária até o fim do mês seguinte, edição e encerramento que não tocam aula com chamada; telas Turmas, Grade e Horário. 29 casos SQL e 577 testes Jest; chamadas conferidas na API local. Nada publicado em produção. Relatório em [`ENTREGA-T6`](planos/ENTREGA-T6.md). |
 | 2026-09-16 | **T6:** PR #19 mesclado (`760da62`), CI verde. |
 | 2026-09-16 | **T8 implementada** (branch `feat/painel-admin`): 5 funções agregadas no banco (só admin, dia de São Paulo, conta excluída só na soma, sem CPF/telefone/e-mail), aba Painel como primeira aba do admin, gráfico de faturamento só com View, relatório de inadimplência por faixa que abre o histórico para dar baixa. 12 casos SQL, 612 testes Jest; números conferidos contra SQL direto na API local; professor e aluno recebem 403. Nada publicado em produção. Relatório em [`ENTREGA-T8`](planos/ENTREGA-T8.md). |
+| 2026-09-16 | **T8:** PR #20 mesclado (`1a94448`), CI verde. |
+| 2026-09-16 | **T9 implementada** (branch `feat/notificacoes-push`): aparelhos com RLS do titular e fila de notificações no banco (gatilhos de comprovante e justificativa, lembretes pelo dia de São Paulo, aula sem chamada, silêncio 22h–7h, deduplicação, retenção de 30 dias, export LGPD), Edge Function `send-push` chamada pelo pg_cron via pg_net, ativação no app (convite + Perfil), registro e remoção do aparelho, toque que abre a aba certa respeitando a digital. 20 casos SQL, 8 testes Deno, 642 Jest; ensaio local completo com Expo falsa. Nada publicado; falta você criar as contas Expo e Firebase. Relatório em [`ENTREGA-T9`](planos/ENTREGA-T9.md). |

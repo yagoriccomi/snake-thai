@@ -70,4 +70,24 @@ describe('app.config.js', () => {
   it('deveRecusarVarianteDesconhecida', () => {
     expect(() => configPara({ APP_VARIANT: 'staging' })).toThrow(/staging/);
   });
+  it('naoDeveExigirOArquivoDoFirebaseParaCompilar', () => {
+    const config = configPara({ APP_VARIANT: 'production', GOOGLE_SERVICES_JSON: 'C:/nao/existe/google-services.json' });
+    expect(config.android?.googleServicesFile).toBeUndefined();
+    expect(config.extra?.eas).toBeUndefined();
+  });
+
+  it('deveUsarOArquivoDoFirebaseEOProjectIdQuandoExistem', () => {
+    // Qualquer arquivo existente serve para provar a regra; o conteúdo é do build nativo.
+    const arquivo = (require('path') as { resolve: (...partes: string[]) => string }).resolve(process.cwd(), 'app.json');
+    const config = configPara({
+      APP_VARIANT: 'development',
+      EXPO_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:55321',
+      GOOGLE_SERVICES_JSON: arquivo,
+      EAS_PROJECT_ID: '00000000-0000-4000-8000-000000000000',
+    });
+    expect(config.android?.googleServicesFile).toBe(arquivo);
+    expect(config.android?.package).toBe('com.snakethai.app.dev');
+    expect(config.extra?.eas).toEqual({ projectId: '00000000-0000-4000-8000-000000000000' });
+    expect(config.plugins).toContainEqual(['expo-notifications', expect.objectContaining({ defaultChannel: 'geral' })]);
+  });
 });

@@ -22,6 +22,7 @@ import {
   setBiometricChoice,
 } from '@/services/biometricPreference.service';
 import { fetchProfile } from '@/services/profile.service';
+import { removerAparelhoAoSair } from '@/services/pushNotifications.service';
 import type { Profile } from '@/types/models';
 import { deveBloquearAoVoltar } from '@/utils/bloqueio';
 
@@ -203,10 +204,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
   }, []);
 
   const signOut = useCallback(async (): Promise<void> => {
+    // Antes de encerrar a sessão: sem o JWT, a RLS não deixa apagar o aparelho,
+    // e ele seguiria recebendo avisos da conta. Não trava a saída (timeout curto).
+    const userId = session?.user.id;
+    if (userId !== undefined) {
+      await removerAparelhoAoSair(userId);
+    }
     await authService.signOut();
     setProfile(null);
     setAdminLocked(false);
-  }, []);
+  }, [session]);
 
   const refreshProfile = useCallback(async (): Promise<void> => {
     const userId = session?.user.id;
