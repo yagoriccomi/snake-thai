@@ -1,0 +1,62 @@
+#!/usr/bin/env node
+/**
+ * Gera o .env.dev do app a partir do Supabase LOCAL em execução
+ * (`npx supabase status`). Não imprime a chave: ela vai direto para o arquivo,
+ * que o .gitignore bloqueia.
+ *
+ * Preserva o EXPO_PUBLIC_API_URL de um .env.dev existente — é o único valor
+ * escolhido à mão (o snake-server local só é usado com a Cloudinary de dev
+ * configurada).
+ */
+'use strict';
+
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+const { lerEnv } = require('./with-variant');
+
+const ARQUIVO = path.join(__dirname, '..', '.env.dev');
+
+function lerStatus() {
+  const saida = execSync('npx --no-install supabase status -o json', {
+    cwd: path.join(__dirname, '..'),
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  });
+  // A CLI pode escrever avisos antes do JSON.
+  const inicio = saida.indexOf('{');
+  const status = JSON.parse(saida.slice(inicio));
+  const url = status.API_URL;
+  const chave = status.ANON_KEY;
+  if (!url || !chave) {
+    throw new Error('supabase status não trouxe API_URL e ANON_KEY. O banco local está no ar? (scripts\\db-dev start)');
+  }
+  return { url, chave };
+}
+
+function principal() {
+  const { url, chave } = lerStatus();
+  const anterior = fs.existsSync(ARQUIVO) ? lerEnv(fs.readFileSync(ARQUIVO, 'utf8')) : {};
+  const apiUrl = anterior.EXPO_PUBLIC_API_URL ?? '';
+
+  const conteudo = [
+    '# Gerado por scripts/gerar-env-dev.js — app "DEV Snake Thai" contra o banco LOCAL.',
+    '# Nunca coloque aqui endereço de produção: o build e o app recusam.',
+    `EXPO_PUBLIC_SUPABASE_URL=${url}`,
+    `EXPO_PUBLIC_SUPABASE_ANON_KEY=${chave}`,
+    '# snake-server local (ex.: http://127.0.0.1:3000). Vazio: comprovante vai para o Storage local',
+    '# e o anexo de justificativa fica indisponível.',
+    `EXPO_PUBLIC_API_URL=${apiUrl}`,
+    '',
+  ].join('\n');
+
+  fs.writeFileSync(ARQUIVO, conteudo);
+  console.log(`.env.dev gerado para ${url}`);
+}
+
+try {
+  principal();
+} catch (erro) {
+  console.error(`[gerar-env-dev] ${erro.message}`);
+  process.exit(1);
+}

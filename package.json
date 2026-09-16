@@ -42,16 +42,18 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
-    "start": "expo start --port 6969",
-    "android": "expo run:android --port 6969",
-    "ios": "expo run:ios --port 6969",
-    "web": "expo start --web --port 6969",
+    "start": "node scripts/with-variant.js dev -- npx expo start --port 6969",
+    "start:prod": "node scripts/with-variant.js prod -- npx expo start --port 6969",
+    "android": "node scripts/with-variant.js dev -- npx expo run:android --port 6969",
+    "ios": "node scripts/with-variant.js dev -- npx expo run:ios --port 6969",
+    "web": "node scripts/with-variant.js dev -- npx expo start --web --port 6969",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "check:licenses": "node scripts/check-licenses.js",
     "audit:prod": "npm audit --omit=dev --audit-level=critical",
     "ci": "npm run typecheck && npm test && npm run check:licenses",
-    "supabase:types": "supabase gen types typescript --local > src/types/database.types.ts",
+    "supabase:types": "npx --no-install supabase gen types typescript --local > src/types/database.types.ts",
+    "env:dev": "node scripts/gerar-env-dev.js",
     "prepare": "husky || exit 0",
     "audit:report": "npm audit --omit=dev || true"
   },

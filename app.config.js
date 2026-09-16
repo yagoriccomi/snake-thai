@@ -1,0 +1,66 @@
+/**
+ * Configuração dinâmica do Expo: o app.json continua sendo a base (e a fonte da
+ * versão), e este arquivo só aplica as diferenças da variante escolhida em
+ * APP_VARIANT.
+ *
+ * - `production` (padrão): o app das pessoas, idêntico ao app.json.
+ * - `development`: "DEV Snake Thai", outro pacote Android — instala ao lado do
+ *   de produção —, ícone em âmbar e HTTP liberado só para o próprio computador
+ *   (o banco local da Supabase CLI não tem TLS).
+ *
+ * Os comandos do dia a dia passam por scripts/with-variant.js, que carrega o
+ * .env da variante e define APP_VARIANT. Ver docs/RUNBOOK.md. [#80][#81]
+ */
+const { VARIANTE_PADRAO, VARIANTES, problemaDeAmbiente } = require('./src/config/regrasDeAmbiente');
+
+/** Mesmo âmbar do token `devBanner` (src/theme/colors.ts): a cor que diz "isto é DEV". */
+const COR_DO_ICONE_DEV = '#F59E0B';
+
+const PACOTE_DEV = 'com.snakethai.app.dev';
+
+module.exports = ({ config }) => {
+  // Lido por referência, e não como `process.env.EXPO_PUBLIC_…`: o babel-preset-expo
+  // troca essa forma pelo valor na hora de transformar o arquivo, e a trava
+  // abaixo deixaria de ver a URL de verdade.
+  const ambiente = process.env;
+  const variante = ambiente.APP_VARIANT || VARIANTE_PADRAO;
+  if (!VARIANTES.includes(variante)) {
+    throw new Error(`APP_VARIANT="${variante}" desconhecida. Use ${VARIANTES.join(' ou ')}.`);
+  }
+
+  // Só confere quando as variáveis existem: comandos de manutenção (ex.:
+  // `expo install`) rodam sem .env, e o app ainda falha no boot se faltar algo.
+  const supabaseUrl = ambiente.EXPO_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    const problema = problemaDeAmbiente({
+      variante,
+      supabaseUrl,
+      apiUrl: ambiente.EXPO_PUBLIC_API_URL,
+    });
+    if (problema !== null) {
+      throw new Error(`Build recusado: ${problema}`);
+    }
+  }
+
+  const extra = { ...config.extra, appVariant: variante };
+
+  if (variante === 'production') {
+    return { ...config, extra };
+  }
+
+  const { backgroundImage: _imagemDeFundo, ...iconeSemImagemDeFundo } = config.android.adaptiveIcon;
+
+  return {
+    ...config,
+    name: 'DEV Snake Thai',
+    scheme: 'snakethai-dev',
+    ios: { ...config.ios, bundleIdentifier: PACOTE_DEV },
+    android: {
+      ...config.android,
+      package: PACOTE_DEV,
+      adaptiveIcon: { ...iconeSemImagemDeFundo, backgroundColor: COR_DO_ICONE_DEV },
+    },
+    plugins: [...config.plugins, './plugins/withDevCleartext.js'],
+    extra,
+  };
+};

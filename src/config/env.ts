@@ -7,6 +7,13 @@
  * de falhar silenciosamente numa requisição de rede mais tarde.
  */
 
+import {
+  problemaDeAmbiente,
+  VARIANTE_PADRAO,
+  VARIANTES,
+  type VarianteDoApp,
+} from '@/config/regrasDeAmbiente';
+
 /**
  * Garante que uma variável de ambiente obrigatória esteja presente.
  *
@@ -19,7 +26,7 @@ const requireEnv = (key: string, value: string | undefined): string => {
   if (value === undefined || value.trim() === '') {
     throw new Error(
       `Variável de ambiente ausente: "${key}". ` +
-        'Copie ".env.example" para ".env" e preencha os valores.',
+        'Rode o app pelos scripts (npm start ou menu.bat), que carregam o .env.dev ou o .env.prod. Ver .env.example.',
     );
   }
   return value;
@@ -41,12 +48,36 @@ const optionalEnv = (value: string | undefined): string | null => {
   return value.trim().replace(/\/+$/, '');
 };
 
+/**
+ * Qual app este bundle é: "DEV Snake Thai" (banco local) ou o de produção.
+ * Vem de scripts/with-variant.js; sem ela, é produção — nunca cair num banco de
+ * teste sem querer.
+ */
+const lerVariante = (valor: string | undefined): VarianteDoApp => {
+  const variante = valor === undefined || valor.trim() === '' ? VARIANTE_PADRAO : valor.trim();
+  if (!ehVariante(variante)) {
+    throw new Error(`EXPO_PUBLIC_APP_VARIANT inválida: "${variante}".`);
+  }
+  return variante;
+};
+
+const ehVariante = (valor: string): valor is VarianteDoApp =>
+  (VARIANTES as readonly string[]).includes(valor);
+
+const supabaseUrl = requireEnv('EXPO_PUBLIC_SUPABASE_URL', process.env.EXPO_PUBLIC_SUPABASE_URL);
+const apiUrl = optionalEnv(process.env.EXPO_PUBLIC_API_URL);
+const appVariant = lerVariante(process.env.EXPO_PUBLIC_APP_VARIANT);
+
+// Trava no boot, com a MESMA regra do build (regrasDeAmbiente.js): um app DEV
+// apontando para produção, ou o contrário, para aqui — antes de gravar nada.
+const problemaDoAmbiente = problemaDeAmbiente({ variante: appVariant, supabaseUrl, apiUrl });
+if (problemaDoAmbiente !== null) {
+  throw new Error(`Ambiente inconsistente: ${problemaDoAmbiente}`);
+}
+
 /** Configuração pública validada, consumida pelo restante do app. */
 export const env = {
-  supabaseUrl: requireEnv(
-    'EXPO_PUBLIC_SUPABASE_URL',
-    process.env.EXPO_PUBLIC_SUPABASE_URL,
-  ),
+  supabaseUrl,
   supabaseAnonKey: requireEnv(
     'EXPO_PUBLIC_SUPABASE_ANON_KEY',
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
@@ -55,5 +86,7 @@ export const env = {
    * Backend próprio na Render (`docs/BACKEND.md`). `null` enquanto não houver
    * deploy — o app segue funcionando pelo caminho Supabase.
    */
-  apiUrl: optionalEnv(process.env.EXPO_PUBLIC_API_URL),
+  apiUrl,
+  /** `development` no "DEV Snake Thai"; `production` no app das pessoas. */
+  appVariant,
 } as const;

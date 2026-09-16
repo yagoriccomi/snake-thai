@@ -1,0 +1,63 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
+import type { ExpoConfig } from 'expo/config';
+
+type ConfigFn = (entrada: { config: ExpoConfig }) => ExpoConfig;
+
+const criarConfig = require('../../../app.config.js') as ConfigFn;
+const base = (require('../../../app.json') as { expo: ExpoConfig }).expo;
+
+const AMBIENTE_ORIGINAL = { ...process.env };
+
+function configPara(ambiente: Record<string, string | undefined>): ExpoConfig {
+  process.env = { ...AMBIENTE_ORIGINAL, ...ambiente };
+  return criarConfig({ config: structuredClone(base) });
+}
+
+afterEach(() => {
+  process.env = { ...AMBIENTE_ORIGINAL };
+});
+
+describe('app.config.js', () => {
+  it('deveManterAConfiguracaoDeProducaoIgualAoAppJson', () => {
+    const config = configPara({ APP_VARIANT: 'production', EXPO_PUBLIC_SUPABASE_URL: undefined });
+
+    expect(config.name).toBe(base.name);
+    expect(config.android?.package).toBe('com.snakethai.app');
+    expect(config.scheme).toBe(base.scheme);
+    expect(config.plugins).toEqual(base.plugins);
+    expect(config.extra).toMatchObject({ appVariant: 'production' });
+  });
+
+  it('deveUsarProducaoQuandoAVarianteNaoEInformada', () => {
+    const config = configPara({ APP_VARIANT: undefined, EXPO_PUBLIC_SUPABASE_URL: undefined });
+    expect(config.android?.package).toBe('com.snakethai.app');
+  });
+
+  it('deveMontarOAppDevComOutroPacoteParaInstalarAoLado', () => {
+    const config = configPara({
+      APP_VARIANT: 'development',
+      EXPO_PUBLIC_SUPABASE_URL: 'http://127.0.0.1:55321',
+    });
+
+    expect(config.name).toBe('DEV Snake Thai');
+    expect(config.android?.package).toBe('com.snakethai.app.dev');
+    expect(config.scheme).toBe('snakethai-dev');
+    expect(config.android?.adaptiveIcon?.backgroundImage).toBeUndefined();
+    expect(config.plugins).toContain('./plugins/withDevCleartext.js');
+    // A liberação de HTTP nunca pode vazar para produção.
+    expect(base.plugins).not.toContain('./plugins/withDevCleartext.js');
+  });
+
+  it('deveRecusarBuildDevApontandoParaProducao', () => {
+    expect(() =>
+      configPara({
+        APP_VARIANT: 'development',
+        EXPO_PUBLIC_SUPABASE_URL: 'https://abcdefghijklmnop.supabase.co',
+      }),
+    ).toThrow(/Build recusado/);
+  });
+
+  it('deveRecusarVarianteDesconhecida', () => {
+    expect(() => configPara({ APP_VARIANT: 'staging' })).toThrow(/staging/);
+  });
+});
