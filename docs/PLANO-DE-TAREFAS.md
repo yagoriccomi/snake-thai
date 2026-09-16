@@ -39,8 +39,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | 🟡 #12 mesclado; #16 aguarda você | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
 | 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ✅ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
 | 4 | **T3** — padronizar número de versão | ✅ PR #13 | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
-| 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | 🟡 código pronto; 👤 keystore | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
-| 6 | **T5** — GitHub Actions: build e publicação automática do APK | ⬜ | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
+| 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | 🟡 PR #14 mesclado; 👤 keystore | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
+| 6 | **T5** — GitHub Actions: build e publicação automática do APK | 🟡 workflow pronto; 👤 secrets | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
 | 7 | **T11** — guardar a chamada em andamento no aparelho | ⬜ | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
 | 8 | **T10** — monitoramento de erros no aparelho | ⬜ | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
 | 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | ⬜ | T1 | [PLANO-T7](planos/PLANO-T7.md) |
@@ -110,7 +110,7 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] ⚠️ Apagar o APK assinado com a chave de debug do release `v1.6.0` e deixar aviso nas notas (a cópia local fica guardada; o asset teve 0 downloads) — confirmado pelo usuário e feito em 2026-09-16
 - [x] Build de release **falha** se a chave de produção não estiver configurada, com testes — provado no Gradle: `assembleRelease` para com a mensagem da trava, `assembleDebug` segue funcionando; o app DEV não exige chave
 - [x] Corrigir a documentação: a keystore fica **fora** da pasta `android/`, que o prebuild apaga (`docs/RELEASE-SIGNING.md`); `menu.bat` `[5]` mostra o certificado e alerta se for a chave de debug
-- [ ] PR da T2 mesclado
+- [x] PR #14 mesclado — `9b44140`
 - [ ] 👤 Gerar a keystore de produção (as senhas são digitadas por você), guardar em 2 lugares e testar a restauração
 - [ ] 👤 Configurar as propriedades de assinatura em `%USERPROFILE%\.gradle\gradle.properties`
 - [ ] Publicar o primeiro APK assinado — com a T1 e a T3 na `main` já há funcionalidade nova, então o caminho natural é **1.7.0**; 1.6.1 exige `--forcar` (decisão sua)
@@ -118,9 +118,11 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 
 ### T5 — Build automático no GitHub Actions ([plano](planos/PLANO-T5.md))
 
-- [ ] Workflow `release.yml` separado do CI: **tag `vX.Y.Z` publica**; botão manual na `main` gera um APK de ensaio
-- [ ] Travas: a tag precisa bater com a versão do app; o certificado precisa ser o de produção; nunca publica com chave de debug
-- [ ] APK e AAB (Play Store) anexados ao release, com `SHA256SUMS`
+- [x] Workflow `release.yml` separado do CI: **tag `vX.Y.Z` publica**; botão manual na `main` gera um APK de ensaio (`ci.yml` intocado; actionlint limpo)
+- [x] Travas: a tag precisa bater com a versão do app; o certificado precisa ser o de produção (APK e AAB); nunca publica com chave de debug; pacote, versionCode e versionName conferidos; bundle com o Supabase de produção
+- [x] APK e AAB (Play Store) anexados ao release, com `SHA256SUMS`; notas vindas do CHANGELOG
+- [ ] PR do workflow mesclado
+- [ ] Primeiro ensaio real no Actions (depende da keystore e dos secrets) e ajustes do primeiro build em Linux
 - [ ] 👤 Criar o Environment `release` no GitHub e cadastrar os secrets (keystore, senhas, URL e chave pública da Supabase de **produção**) e a impressão digital do certificado
 
 ### T11 — Chamada em andamento no aparelho ([plano](planos/PLANO-T11.md))
@@ -226,3 +228,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T3 implementada** (branch `chore/versionamento`). Versão só muda ao publicar; `versionCode` derivado (1006000); CLI `versao:*` com CHANGELOG; sufixo de build no app DEV e em testes; `[5]` do menu confere a versão; versão no Perfil. Política do servidor no PR #16. Relatório em [`ENTREGA-T3`](planos/ENTREGA-T3.md). |
 | 2026-09-16 | **T3 concluída:** PR #13 mesclado (`7578f13`). APK DEV recompilado com a versão (`1.6.0+dev.25.9289a3e`, `versionCode 1006000`). |
 | 2026-09-16 | **T2, parte de código:** plugin de assinatura com trava (release de produção sem keystore não compila, provado no Gradle), propriedades `SNAKETHAI_RELEASE_*`, DEV sem exigência, alerta de certificado no `menu.bat`, `docs/RELEASE-SIGNING.md` reescrito. Aguarda você gerar a keystore para assinar e publicar. |
+| 2026-09-16 | **T2:** PR #14 mesclado (`9b44140`). Release de produção não compila sem a keystore; falta a keystore (você). |
+| 2026-09-16 | **T5, workflow pronto** (branch `ci/release-android`): `Release Android` por tag e ensaio manual, com travas de assinatura, pacote, versão e banco. Só roda depois que você criar o Environment `release`, os secrets e a variável do certificado. |

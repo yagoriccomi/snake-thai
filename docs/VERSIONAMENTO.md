@@ -68,8 +68,8 @@ O versionCode do app DEV é o mesmo da última tag. Não há conflito: o DEV é 
 pacote (`com.snakethai.app.dev`).
 
 O sufixo depende de `git describe` enxergar as tags. **Num workflow do GitHub Actions,
-use `actions/checkout` com `fetch-depth: 0`**; sem isso o nome cai na versão pura (ou
-`+dev`).
+use `actions/checkout` com `fetch-depth: 0`** (o `release.yml` já usa); sem isso o nome
+cai na versão pura (ou `+dev`).
 
 ## Publicar uma versão
 
@@ -93,18 +93,22 @@ use `actions/checkout` com `fetch-depth: 0`**; sem isso o nome cai na versão pu
    git push origin main
    git push origin v1.7.0
    ```
-6. Gerar o APK de produção: `menu.bat` → `[V]` PROD → `[P]` → `[5]`. O `[5]` roda
-   `npm run versao:verificar -- --android` e para se a pasta `android/` estiver com a
-   versão velha. O APK sai em `release\snake-thai-v1.7.0.apk`.
-7. Criar o release no GitHub com as notas do CHANGELOG:
-   ```bash
-   node scripts/version.js notes v1.7.0 > %TEMP%\notas.md
-   gh release create v1.7.0 release\snake-thai-v1.7.0.apk --title "Snake Thai 1.7.0" --notes-file %TEMP%\notas.md
-   ```
+6. **O push da tag dispara o workflow `Release Android`** (`.github/workflows/release.yml`):
+   ele confere que a tag bate com a versão, compila APK e AAB assinados com a chave de
+   produção, recusa publicar se a assinatura, o pacote, a versão ou o banco embutido
+   não forem os de produção, e cria o GitHub Release com as notas do CHANGELOG,
+   `snake-thai-v1.7.0.apk`, `snake-thai-v1.7.0-playstore.aab` e `SHA256SUMS.txt`.
+   Acompanhe com `gh run watch`.
 
-Quando o build e a publicação pelo GitHub Actions existirem, os passos 6 e 7 passam
-a ser do workflow disparado pela tag, e o caminho manual vira plano de contingência.
-**Nunca os dois para a mesma tag.**
+**Ensaio antes da tag:** em *Actions → Release Android → Run workflow* (na `main`), ou
+`gh workflow run release.yml --ref main`. Gera o APK assinado como artefato por 3 dias,
+sem publicar nada.
+
+**Contingência (Actions fora do ar):** `menu.bat` → `[V]` PROD → `[P]` → `[5]` (confere
+a versão da pasta `android/` e o certificado) e depois
+`node scripts/version.js notes v1.7.0 > %TEMP%\notas.md` e
+`gh release create v1.7.0 release\snake-thai-v1.7.0.apk --title "Snake Thai 1.7.0" --notes-file %TEMP%\notas.md`.
+**Nunca os dois caminhos para a mesma tag.**
 
 ### Tag publicada não se move
 
