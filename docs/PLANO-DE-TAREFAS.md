@@ -182,7 +182,7 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] Avisos: vencimento (3 dias antes e no dia), atraso (1 e 7 dias depois), comprovante enviado, aprovado e recusado, justificativa pendente, aula sem chamada — fila no banco com 20 casos de regressão
 - [x] Edge Function `send-push` (segredo próprio, recibos, lotes, retentativa) — ensaiada de ponta a ponta no banco local com a Expo substituída por um servidor falso
 - [x] Ativação pelo usuário (cartão + botão no Perfil); tocar na notificação abre a tela certa; texto sem dado pessoal; silêncio entre 22h e 7h; aparelho sai do banco ao sair da conta e ao excluir a conta
-- [ ] PR mesclado
+- [x] PR mesclado (#21)
 - [ ] 👤 Conta Expo (`EAS_PROJECT_ID`), projeto Firebase com os 2 apps (produção e DEV), arquivo `google-services.json`, chave FCM V1 enviada à Expo — passo a passo em [`NOTIFICACOES.md`](NOTIFICACOES.md)
 - [ ] 👤⚠️ Publicar em produção: migrations → segredos da função e do Vault → deploy da `send-push` → APK novo
 - [ ] 👤 Testar no celular (ativar, receber, tocar com o app fechado e aberto)
@@ -272,3 +272,4 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **L7 feita:** roteiro único de publicação da 1.7.0 ([`PUBLICACAO-1.7.0.md`](PUBLICACAO-1.7.0.md)) — segurança e contas, checagens somente leitura, 9 migrations com backup, Edge Functions logo em seguida, ajustes com o app antigo, versão e APK assinado, reinstalação única, configuração inicial e 48 h de acompanhamento, com volta atrás por passo. |
 | 2026-09-16 | **L7:** PR #24 mesclado (`8804390`), CI verde. |
 | 2026-09-16 | **L4 feita** (branch `feat/politica-de-privacidade`): rascunhos da Política de Privacidade e dos Termos de Uso em `docs/legal/` com os fatos do app e campos `[PREENCHER]`; aceite registrado por versão no primeiro acesso; tela "Termos atualizados" a cada versão (sem travar sem rede); Perfil → Termos e privacidade; texto publicado imutável e publicação por migration gerada por script, que o banco recusa com campo em aberto. 9 grupos de casos SQL, 698 Jest; ensaio completo na API local. Nada publicado. Relatório em [`ENTREGA-L4`](planos/ENTREGA-L4.md). |
+| 2026-09-16 | **L4:** PR #25 mesclado (`da2688a`), CI verde. Com isso, todas as tarefas (T1–T11) e lacunas (L1–L7) estão feitas do lado do código; o que resta é decisão sua ou passo de produção (marcados com 👤). |
