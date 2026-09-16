@@ -81,7 +81,7 @@ porque usa regras das outras e depende de contas externas.
 - [x] Variante do app: `app.config.js` com **"DEV Snake Thai"** (`com.snakethai.app.dev`), instalável ao lado do app de produção
 - [x] `.env.dev` e `.env.prod` separados e trava que impede o app DEV de apontar para produção (e vice-versa); faixa "DEV · banco local" na tela
 - [x] `menu.bat` com escolha de variante e comandos do banco local
-- [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
+- [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0+dev.25.9289a3e.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
 - [x] `snake-server` local ligado ao banco local (verificado com token local); Cloudinary de dev aguarda as credenciais abaixo
 - [x] Fluxo novo: migration **primeiro no local**; produção só por `scripts\db-push-prod.bat` (backup, simulação e dupla confirmação)
 - [x] PR #12 (`snake-thai`) mesclado — `c03dc6d`

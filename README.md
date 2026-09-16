@@ -121,6 +121,11 @@ menu.bat  →  [V] escolher a variante  →  [P] preparar  →  [5] release  →
 O APK sai em `release/snake-thai-v<versão>.apk` (produção) ou
 `release/snake-thai-dev-v<versão>.apk` (DEV). O DEV nunca é publicado.
 
+> **O release de produção exige a chave de produção configurada** — sem ela o build
+> falha de propósito, em vez de sair assinado com a chave de debug, que é pública.
+> Como gerar e guardar: [`docs/RELEASE-SIGNING.md`](docs/RELEASE-SIGNING.md). O app DEV
+> não precisa de chave.
+
 | | Debug | Release |
 | --- | --- | --- |
 | Precisa do Metro rodando | Sim | Não |
