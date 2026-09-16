@@ -1,3 +1,7 @@
+// PRIMEIRA linha de propósito: o monitoramento de erros liga antes de o resto
+// do app carregar, para registrar também as falhas de boot.
+import './src/lib/monitoring/init';
+
 import { registerRootComponent } from 'expo';
 
 import App from './App';

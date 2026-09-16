@@ -8,6 +8,7 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
+import { ErroDeTelaProposital, useDiagnosticoDeErros } from '@/hooks/useDiagnosticoDeErros';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { updateOwnColor, updateProfile } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -196,6 +197,7 @@ export function DadosScreen({
     [navigation],
   );
   const handleSignOut = useCallback(() => void signOut(), [signOut]);
+  const diagnostico = useDiagnosticoDeErros();
 
   /**
    * Liga/desliga o desbloqueio biométrico. Ativar dispara a confirmação da
@@ -445,6 +447,24 @@ export function DadosScreen({
             </AppText>
           ) : null}
         </View>
+
+        {/* Diagnóstico — só no app de desenvolvimento */}
+        {diagnostico.visivel ? (
+          <View style={styles.group}>
+            <Text style={styles.sectionLabel}>DIAGNÓSTICO</Text>
+            <View style={styles.card}>
+              <NavRow
+                icon="bug-outline"
+                label="Diagnóstico de erros"
+                onPress={diagnostico.abrir}
+                styles={styles}
+                colors={colors}
+                last
+              />
+            </View>
+            {diagnostico.erroDeTela ? <ErroDeTelaProposital /> : null}
+          </View>
+        ) : null}
 
         {/* Conta */}
         <View style={styles.group}>

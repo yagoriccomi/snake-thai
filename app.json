@@ -38,6 +38,7 @@
           "exigirChaveDeProducao": true
         }
       ],
+      "@sentry/react-native/expo",
       [
         "expo-local-authentication",
         {
