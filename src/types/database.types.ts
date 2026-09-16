@@ -969,11 +969,81 @@ export type Database = {
           title: string
         }[]
       }
+      painel_admin_resumo: {
+        Args: { p_referencia?: string }
+        Returns: {
+          alunos_ativos: number
+          alunos_ativos_sem_plano: number
+          alunos_com_aula_no_mes: number
+          alunos_com_aula_ultimo_mes: number
+          alunos_inadimplentes: number
+          alunos_inativos: number
+          competencia: string
+          em_aberto_cents: number
+          em_analise_cents: number
+          esperado_cents: number
+          frequencia_media_mes: number
+          frequencia_media_ultimo_mes: number
+          inadimplencia_cents: number
+          inadimplencia_contas_encerradas_cents: number
+          mensalidades_pagas: number
+          mensalidades_total: number
+          recebido_cents: number
+          saidas_no_mes: number
+          ultimo_mes_fechado: string
+          vencido_cents: number
+        }[]
+      }
+      painel_alunos_em_risco: {
+        Args: {
+          p_limite_percent?: number
+          p_min_aulas?: number
+          p_referencia?: string
+        }
+        Returns: {
+          frequencia_mes_atual: number
+          frequencia_ultimo_mes: number
+          nome: string
+          turma: string
+          user_id: string
+        }[]
+      }
+      painel_faturamento_mensal: {
+        Args: { p_meses?: number; p_referencia?: string }
+        Returns: {
+          esperado_cents: number
+          pendente_cents: number
+          recebido_cents: number
+          reference_month: string
+        }[]
+      }
+      painel_inadimplencia_faixas: {
+        Args: { p_referencia?: string }
+        Returns: {
+          faixa: string
+          mensalidades: number
+          ordem: number
+          valor_cents: number
+        }[]
+      }
       previa_exclusao_turma: { Args: { p_group_id: string }; Returns: Json }
       reativar_turma: { Args: { p_group_id: string }; Returns: undefined }
       registrar_fatura_de_entrada: {
         Args: { p_data: string; p_user_id: string }
         Returns: boolean
+      }
+      relatorio_inadimplencia: {
+        Args: { p_referencia?: string }
+        Returns: {
+          aluno_ativo: boolean
+          maior_atraso_dias: number
+          mensalidades: number
+          nome: string
+          total_devido_cents: number
+          turma: string
+          user_id: string
+          vencimento_mais_antigo: string
+        }[]
       }
       salvar_chamada: {
         Args: {
