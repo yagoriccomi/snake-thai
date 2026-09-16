@@ -44,3 +44,33 @@ export async function lerErroDaFuncao(erro: unknown): Promise<unknown> {
   }
   return erro;
 }
+
+/**
+ * Mensagem escrita para a pessoa por uma função do BANCO (RPC).
+ *
+ * As funções de turma e da grade recusam com `raise exception` em português
+ * ("Esta turma já tem um horário nesse dia e hora."). Sem isto, a tela
+ * trocaria a explicação pela genérica do SQLSTATE. Só passa o erro dos códigos
+ * informados e SEM `details`: violação de restrição do Postgres traz
+ * `details` ("Failing row contains (...)", com dados da linha) e continua com
+ * a mensagem genérica. [#93]
+ *
+ * @param erro O erro devolvido pelo `supabase.rpc`.
+ * @param codigos SQLSTATEs cujas mensagens a função escreveu para a pessoa.
+ */
+export function lerErroDoBanco(erro: unknown, codigos: readonly string[]): unknown {
+  if (typeof erro !== 'object' || erro === null) {
+    return erro;
+  }
+  const { code, message, details } = erro as { code?: unknown; message?: unknown; details?: unknown };
+  if (typeof code !== 'string' || !codigos.includes(code)) {
+    return erro;
+  }
+  if (typeof details === 'string' && details.trim() !== '') {
+    return erro;
+  }
+  if (typeof message !== 'string' || message.trim() === '') {
+    return erro;
+  }
+  return new ErroDeFuncao(message.trim(), null);
+}
