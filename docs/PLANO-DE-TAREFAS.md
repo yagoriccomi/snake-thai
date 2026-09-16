@@ -40,8 +40,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ✅ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
 | 4 | **T3** — padronizar número de versão | ✅ PR #13 | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
 | 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | 🟡 PR #14 mesclado; 👤 keystore | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
-| 6 | **T5** — GitHub Actions: build e publicação automática do APK | 🟡 workflow pronto; 👤 secrets | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
-| 7 | **T11** — guardar a chamada em andamento no aparelho | ⬜ | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
+| 6 | **T5** — GitHub Actions: build e publicação automática do APK | 🟡 PR #15 mesclado; 👤 secrets | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
+| 7 | **T11** — guardar a chamada em andamento no aparelho | 🟡 PR aberto; 👤 teste no celular | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
 | 8 | **T10** — monitoramento de erros no aparelho | ⬜ | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
 | 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | ⬜ | T1 | [PLANO-T7](planos/PLANO-T7.md) |
 | 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | ⬜ | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
@@ -121,17 +121,19 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] Workflow `release.yml` separado do CI: **tag `vX.Y.Z` publica**; botão manual na `main` gera um APK de ensaio (`ci.yml` intocado; actionlint limpo)
 - [x] Travas: a tag precisa bater com a versão do app; o certificado precisa ser o de produção (APK e AAB); nunca publica com chave de debug; pacote, versionCode e versionName conferidos; bundle com o Supabase de produção
 - [x] APK e AAB (Play Store) anexados ao release, com `SHA256SUMS`; notas vindas do CHANGELOG
-- [ ] PR do workflow mesclado
+- [x] PR #15 mesclado — `c34fd62`; "Release Android" ativo no GitHub
 - [ ] Primeiro ensaio real no Actions (depende da keystore e dos secrets) e ajustes do primeiro build em Linux
 - [ ] 👤 Criar o Environment `release` no GitHub e cadastrar os secrets (keystore, senhas, URL e chave pública da Supabase de **produção**) e a impressão digital do certificado
 
 ### T11 — Chamada em andamento no aparelho ([plano](planos/PLANO-T11.md))
 
-- [ ] Rascunho cifrado por usuário e aula, gravado a cada marcação e ao ir para segundo plano
-- [ ] Ao reabrir: aviso "rascunho recuperado" com opção de descartar
-- [ ] Conflito: se outra pessoa salvou a chamada depois, pergunta qual manter
-- [ ] Ao sair da tela: "Continuar marcando", "Descartar" ou "Sair e guardar"; rascunho vence em 7 dias; apagado ao sair do login
-- [ ] Testes e validação no app DEV (matar o app no meio da chamada e reabrir)
+- [x] Rascunho cifrado por usuário e aula, gravado a cada marcação (debounce de 0,5 s) e ao ir para segundo plano
+- [x] Ao reabrir: aviso "rascunho recuperado" com opção de descartar
+- [x] Conflito: se outra pessoa salvou a chamada depois, pergunta qual manter
+- [x] Ao sair da tela: "Continuar marcando", "Descartar" ou "Sair e guardar"; rascunho vence em 7 dias; apagado ao sair do login
+- [x] Testes (47 novos; suíte com 443)
+- [ ] 👤 Validação no app DEV (matar o app no meio da chamada e reabrir) — roteiro em [`ENTREGA-T11`](planos/ENTREGA-T11.md)
+- [ ] PR mesclado
 
 ### T10 — Monitoramento de erros ([plano](planos/PLANO-T10.md))
 
@@ -230,3 +232,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T2, parte de código:** plugin de assinatura com trava (release de produção sem keystore não compila, provado no Gradle), propriedades `SNAKETHAI_RELEASE_*`, DEV sem exigência, alerta de certificado no `menu.bat`, `docs/RELEASE-SIGNING.md` reescrito. Aguarda você gerar a keystore para assinar e publicar. |
 | 2026-09-16 | **T2:** PR #14 mesclado (`9b44140`). Release de produção não compila sem a keystore; falta a keystore (você). |
 | 2026-09-16 | **T5, workflow pronto** (branch `ci/release-android`): `Release Android` por tag e ensaio manual, com travas de assinatura, pacote, versão e banco. Só roda depois que você criar o Environment `release`, os secrets e a variável do certificado. |
+| 2026-09-16 | **T5:** PR #15 mesclado (`c34fd62`); workflow "Release Android" ativo, aguardando Environment, secrets e keystore. |
+| 2026-09-16 | **T11 implementada** (branch `feat/rascunho-chamada`): rascunho cifrado da chamada com recuperação, conflito, validade de 7 dias, 3 botões ao sair e limpeza no logout. 47 testes novos. Falta a validação no celular. Relatório em [`ENTREGA-T11`](planos/ENTREGA-T11.md). |
