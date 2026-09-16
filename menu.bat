@@ -288,6 +288,7 @@ if errorlevel 1 (
     goto MENU
 )
 call :GRADLE_BUILD assembleRelease release
+if "%BUILD_RESULT%"=="0" call :VERIFY_SIGNATURE
 pause
 goto MENU
 
@@ -792,6 +793,7 @@ rem  Uso:  call :GRADLE_BUILD <tarefa_gradle> <variante>
 rem  Ex.:  call :GRADLE_BUILD assembleDebug debug
 rem ===========================================================================
 :GRADLE_BUILD
+set "BUILD_RESULT="
 if not exist "android\gradlew.bat" (
     echo  [!] A pasta nativa 'android' nao existe ainda.
     echo      Rode a opcao [P] Preparar projeto nativo antes de gerar o APK.
@@ -826,6 +828,37 @@ if "%BUILD_RESULT%"=="0" (
 ) else (
     echo  [!] A compilacao falhou. Codigo de saida: %BUILD_RESULT%
     echo      Confira o log acima - JDK/JAVA_HOME, SDK/NDK, etc.
+)
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: mostra quem assinou o APK de release.
+rem  No PROD, chave de debug e erro grave (e publica); no DEV, e o esperado.
+rem  Ver docs\RELEASE-SIGNING.md.
+rem ===========================================================================
+:VERIFY_SIGNATURE
+set "SDK_ANDROID=%ANDROID_HOME%"
+if not defined SDK_ANDROID set "SDK_ANDROID=%LOCALAPPDATA%\Android\Sdk"
+set "BUILD_TOOLS="
+for /f "delims=" %%d in ('dir /b /ad /o-n "%SDK_ANDROID%\build-tools" 2^>nul') do if not defined BUILD_TOOLS set "BUILD_TOOLS=%%d"
+set "APKSIGNER=%SDK_ANDROID%\build-tools\%BUILD_TOOLS%\apksigner.bat"
+if not exist "%APKSIGNER%" (
+    echo  [i] apksigner nao encontrado - confira a assinatura pelo docs\RELEASE-SIGNING.md.
+    goto :eof
+)
+set "CERTIFICADO=%TEMP%\snk_certificado.txt"
+call "%APKSIGNER%" verify --print-certs "%PROOT%\android\app\build\outputs\apk\release\app-release.apk" > "%CERTIFICADO%" 2>&1
+echo.
+findstr /c:"certificate DN" /c:"SHA-256 digest" "%CERTIFICADO%"
+findstr /c:"CN=Android Debug" "%CERTIFICADO%" >nul
+if errorlevel 1 goto :eof
+if /i "%VARIANTE%"=="prod" (
+    echo.
+    echo  ###################################################################
+    echo  [!] ASSINADO COM CHAVE DE DEBUG. NAO PUBLIQUE ESTE APK.
+    echo  ###################################################################
+) else (
+    echo  [i] App DEV assinado com a chave de debug, como esperado.
 )
 goto :eof
 
