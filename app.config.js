@@ -12,6 +12,7 @@
  * .env da variante e define APP_VARIANT. Ver docs/RUNBOOK.md. [#80][#81]
  */
 const { VARIANTE_PADRAO, VARIANTES, problemaDeAmbiente } = require('./src/config/regrasDeAmbiente');
+const { buildVersionName, describeGit } = require('./scripts/version-lib');
 
 /** Mesmo âmbar do token `devBanner` (src/theme/colors.ts): a cor que diz "isto é DEV". */
 const COR_DO_ICONE_DEV = '#F59E0B';
@@ -43,9 +44,17 @@ module.exports = ({ config }) => {
   }
 
   const extra = { ...config.extra, appVariant: variante };
+  // A versão do app.json só muda ao publicar (docs/VERSIONAMENTO.md). Build que
+  // não é publicação ganha sufixo de commit (1.6.0+12.abc1234, 1.6.0+dev.12.abc1234)
+  // para dar para saber de onde veio um APK sem inflar o número.
+  const version = buildVersionName({
+    version: config.version,
+    describe: describeGit(__dirname),
+    variant: variante === 'development' ? 'dev' : 'prod',
+  });
 
   if (variante === 'production') {
-    return { ...config, extra };
+    return { ...config, version, extra };
   }
 
   const { backgroundImage: _imagemDeFundo, ...iconeSemImagemDeFundo } = config.android.adaptiveIcon;
@@ -53,6 +62,7 @@ module.exports = ({ config }) => {
   return {
     ...config,
     name: 'DEV Snake Thai',
+    version,
     scheme: 'snakethai-dev',
     ios: { ...config.ios, bundleIdentifier: PACOTE_DEV },
     android: {

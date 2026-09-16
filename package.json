@@ -54,6 +54,12 @@
     "ci": "npm run typecheck && npm test && npm run check:licenses",
     "supabase:types": "npx --no-install supabase gen types typescript --local > src/types/database.types.ts",
     "env:dev": "node scripts/gerar-env-dev.js",
+    "versao:patch": "node scripts/version.js patch",
+    "versao:minor": "node scripts/version.js minor",
+    "versao:major": "node scripts/version.js major",
+    "versao:tag": "node scripts/version.js tag",
+    "versao:verificar": "node scripts/version.js check",
+    "versao:notas": "node scripts/version.js notes",
     "prepare": "husky || exit 0",
     "audit:report": "npm audit --omit=dev || true"
   },
