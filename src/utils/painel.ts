@@ -3,7 +3,8 @@
  * valores chegam prontos do banco (docs/PAINEL.md); estas funções só dizem
  * como desenhá-los. Dinheiro sempre em centavos inteiros.
  */
-import type { FaixaDeAtraso } from '@/constants/painel';
+import { NOME_DA_ROTINA, type FaixaDeAtraso } from '@/constants/painel';
+import type { SaudeDaRotina } from '@/services/painel.service';
 import { formatCents } from '@/utils/currency';
 import { formatMonthYear } from '@/utils/datetime';
 
@@ -46,4 +47,30 @@ export function faixaDoAtraso(dias: number): FaixaDeAtraso {
 /** "1 aluno" / "N alunos" e afins. */
 export function contagem(n: number, singular: string, plural: string): string {
   return n === 1 ? `1 ${singular}` : `${n} ${plural}`;
+}
+
+/** Uma rotina que precisa de atenção, já com o texto para o admin. */
+export interface RotinaComProblema {
+  rotina: string;
+  nome: string;
+  descricao: string;
+}
+
+/**
+ * Rotinas cuja última execução falhou ou que falharam nas últimas 24 h, com uma
+ * frase curta. Sem a mensagem de erro: ela fica no banco (RUNBOOK).
+ */
+export function rotinasComProblema(rotinas: readonly SaudeDaRotina[]): RotinaComProblema[] {
+  return rotinas
+    .filter((r) => r.ultimoStatus === 'failed' || r.falhas24h > 0)
+    .map((r) => ({
+      rotina: r.rotina,
+      nome: NOME_DA_ROTINA[r.rotina] ?? r.rotina,
+      descricao:
+        r.ultimoStatus === 'failed'
+          ? r.falhas24h > 1
+            ? `A última execução falhou (${r.falhas24h} falhas nas últimas 24 h).`
+            : 'A última execução falhou.'
+          : `${contagem(r.falhas24h, 'falha', 'falhas')} nas últimas 24 h; a última execução deu certo.`,
+    }));
 }

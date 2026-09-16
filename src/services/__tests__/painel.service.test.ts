@@ -14,6 +14,7 @@ import {
   fetchInadimplenciaFaixas,
   fetchPainelResumo,
   fetchRelatorioInadimplencia,
+  fetchSaudeDasRotinas,
 } from '@/services/painel.service';
 
 const RESUMO = {
@@ -167,5 +168,28 @@ describe('fetchRelatorioInadimplencia', () => {
       },
     ]);
     expect(mockRpc).toHaveBeenCalledWith('relatorio_inadimplencia');
+  });
+});
+
+describe('fetchSaudeDasRotinas', () => {
+  it('deveTraduzirAsRotinasAceitandoRotinaQueNuncaRodou', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { rotina: 'generate-monthly-payments', agenda: '10 0 1 * *', ultima_execucao: '2026-09-01T00:10:00Z', ultimo_status: 'failed', falhas_24h: 1 },
+        { rotina: 'push-limpeza', agenda: '30 6 * * *', ultima_execucao: null, ultimo_status: null, falhas_24h: 0 },
+      ],
+      error: null,
+    });
+
+    await expect(fetchSaudeDasRotinas()).resolves.toEqual([
+      { rotina: 'generate-monthly-payments', ultimaExecucao: '2026-09-01T00:10:00Z', ultimoStatus: 'failed', falhas24h: 1 },
+      { rotina: 'push-limpeza', ultimaExecucao: null, ultimoStatus: null, falhas24h: 0 },
+    ]);
+    expect(mockRpc).toHaveBeenCalledWith('saude_das_rotinas');
+  });
+
+  it('devePropagarARecusaDoBanco', async () => {
+    mockRpc.mockResolvedValue(RLS_DENIED);
+    await expect(fetchSaudeDasRotinas()).rejects.toEqual(RLS_DENIED.error);
   });
 });

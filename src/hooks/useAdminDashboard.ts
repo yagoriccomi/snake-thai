@@ -6,10 +6,12 @@ import {
   fetchFaturamentoMensal,
   fetchInadimplenciaFaixas,
   fetchPainelResumo,
+  fetchSaudeDasRotinas,
   type AlunoEmRisco,
   type FaixaDeInadimplencia,
   type MesDeFaturamento,
   type PainelResumo,
+  type SaudeDaRotina,
 } from '@/services/painel.service';
 
 const log = createLogger('useAdminDashboard');
@@ -20,6 +22,8 @@ export interface DadosDoPainel {
   faixas: FaixaDeInadimplencia[];
   faturamento: MesDeFaturamento[];
   emRisco: AlunoEmRisco[];
+  /** `null` quando não deu para ler (não derruba o resto do Painel). */
+  rotinas: SaudeDaRotina[] | null;
 }
 
 interface UseAdminDashboardResult {
@@ -47,13 +51,18 @@ export function useAdminDashboard(): UseAdminDashboardResult {
     setLoading(true);
     setError(null);
     try {
-      const [resumo, faixas, faturamento, emRisco] = await Promise.all([
+      const [resumo, faixas, faturamento, emRisco, rotinas] = await Promise.all([
         fetchPainelResumo(),
         fetchInadimplenciaFaixas(),
         fetchFaturamentoMensal(),
         fetchAlunosEmRisco(),
+        // Secundário: sem ele o Painel segue (ex.: banco ainda sem a função).
+        fetchSaudeDasRotinas().catch((falha: unknown) => {
+          log.warn('Saúde das rotinas indisponível', falha);
+          return null;
+        }),
       ]);
-      setDados({ resumo, faixas, faturamento, emRisco });
+      setDados({ resumo, faixas, faturamento, emRisco, rotinas });
     } catch (falha) {
       // Só o erro: as listas trazem nomes, e o log não mascara nome.
       log.error('Falha ao carregar o painel', falha);

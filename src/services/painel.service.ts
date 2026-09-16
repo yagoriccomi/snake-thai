@@ -226,3 +226,30 @@ export async function fetchRelatorioInadimplencia(): Promise<Devedor[]> {
     vencimentoMaisAntigo: texto(linha.vencimento_mais_antigo, RELATORIO, 'vencimento_mais_antigo'),
   }));
 }
+
+/** Situação de uma rotina agendada no banco. */
+export interface SaudeDaRotina {
+  /** Nome técnico do job (`generate-monthly-payments`). */
+  rotina: string;
+  /** Última execução; `null` se ainda não rodou. */
+  ultimaExecucao: string | null;
+  /** `succeeded`, `failed`, `running`… ou `null` se ainda não rodou. */
+  ultimoStatus: string | null;
+  falhas24h: number;
+}
+
+const SAUDE = 'saude_das_rotinas';
+
+/** Rotinas agendadas (pg_cron) com a última execução e as falhas das últimas 24 h. */
+export async function fetchSaudeDasRotinas(): Promise<SaudeDaRotina[]> {
+  const { data, error } = await supabase.rpc(SAUDE);
+  if (error !== null) {
+    throw error;
+  }
+  return data.map((linha) => ({
+    rotina: texto(linha.rotina, SAUDE, 'rotina'),
+    ultimaExecucao: textoOuNulo(linha.ultima_execucao),
+    ultimoStatus: textoOuNulo(linha.ultimo_status),
+    falhas24h: inteiro(linha.falhas_24h, SAUDE, 'falhas_24h'),
+  }));
+}

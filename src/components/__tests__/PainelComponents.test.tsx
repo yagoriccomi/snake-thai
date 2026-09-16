@@ -4,6 +4,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { OverdueBucketsCard } from '@/components/OverdueBucketsCard';
 import { AtRiskStudentRow, DelinquentStudentRow } from '@/components/PainelStudentRows';
 import { RevenueBarChart } from '@/components/RevenueBarChart';
+import { SaudeDasRotinasCard } from '@/components/SaudeDasRotinasCard';
 import type { MesDeFaturamento } from '@/services/painel.service';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
@@ -96,5 +97,26 @@ describe('linhas de aluno', () => {
     expect(getByText('Turma C · Este mês — · Mês passado 25%')).toBeTruthy();
     fireEvent.press(getByRole('button', { name: /sem aulas suficientes neste mês e 25% no mês passado$/ }));
     expect(onPress).toHaveBeenCalledWith(aluno);
+  });
+});
+
+describe('SaudeDasRotinasCard', () => {
+  it('naoDeveOcuparOPainelSemProblema', () => {
+    const tela = comTema(<SaudeDasRotinasCard rotinas={[]} />);
+    expect(tela.toJSON()).toBeNull();
+  });
+
+  it('deveDizerQualRotinaFalhouComoAlerta', () => {
+    const { getByText, UNSAFE_getByProps, getByLabelText } = comTema(
+      <SaudeDasRotinasCard
+        rotinas={[{ rotina: 'generate-monthly-payments', nome: 'Gerar as mensalidades do mês', descricao: 'A última execução falhou.' }]}
+      />,
+    );
+
+    // Container não focável de propósito (cada rotina é lida em separado): o RNTL
+    // não o acha por papel, então a busca é pela propriedade.
+    expect(UNSAFE_getByProps({ accessibilityRole: 'alert' })).toBeTruthy();
+    expect(getByText('Uma rotina automática falhou')).toBeTruthy();
+    expect(getByLabelText('Gerar as mensalidades do mês: A última execução falhou.')).toBeTruthy();
   });
 });
