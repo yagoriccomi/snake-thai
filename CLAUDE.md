@@ -9,8 +9,9 @@ Você deve atuar como um Engenheiro de Software Sênior especializado em React N
 * **Tipagem Estrita:** Utilize TypeScript ao máximo. Proibido o uso de `any`. Utilize `interfaces` e `types` bem definidos para mapear entidades, props de componentes e rotas de navegação (React Navigation / Expo Router).
 
 ## 2. Gestão de Banco de Dados e Backend (Supabase)
-* **Migrations First:** Nunca altere o banco via Dashboard. Use o CLI: `supabase migration new name`.
-* **Sincronia de Tipos:** Após alterações no esquema, rode `npx supabase gen types typescript --project-id <id>` para alinhar o TypeScript do projeto mobile.
+* **Migrations First:** Nunca altere o banco via Dashboard. Use o CLI: `npx supabase migration new name`.
+* **Local primeiro:** toda migration passa por `scripts\db-dev test` (banco local limpo + `supabase/tests`) e `scripts\db-dev reset` antes do merge. Produção só muda por `scripts\db-push-prod.bat` (backup + confirmação dupla), com aprovação explícita do usuário. A CLI está vinculada à produção: nunca rodar `db push`/`db reset` sem `--local` fora desse script.
+* **Sincronia de Tipos:** Após alterações no esquema, rode `scripts\db-dev types` (gera do banco local) para alinhar o TypeScript do projeto mobile.
 * **Políticas (RLS):** Toda tabela deve ter Row Level Security (RLS) habilitada e configurada rigorosamente.
 * **Persistência de Sessão:** Configure a instância do cliente do Supabase no React Native com um armazenamento persistente adequado (como `@react-native-async-storage/async-storage` ou MMKV) para manter a sessão de autenticação do usuário.
 * **Edge Functions:** Isole lógicas pesadas, integrações de terceiros ou regras de alta segurança em Edge Functions (Deno).
@@ -71,10 +72,13 @@ scripts/                # dev.bat / dev.sh — controle do ambiente local
 
 * **Sem Docker para o app:** Expo/React Native exige SDK do host (Android Studio/JDK/Xcode) — não é containerizável. [#23]
 * **Backend local:** gerenciado pela **Supabase CLI** (que orquestra o próprio Docker); por isso **não** há `docker-compose.yml` próprio, que causaria conflito de portas/stack. [#81]
+* **Duas variantes:** `APP_VARIANT` = `development` ("DEV Snake Thai", `com.snakethai.app.dev`, banco local, `.env.dev`) ou `production` (padrão; `.env.prod`). `app.config.js` aplica a variante sobre o `app.json`; `scripts/with-variant.js` carrega o `.env` certo; `src/config/regrasDeAmbiente.js` recusa DEV com endereço da internet e produção com endereço local, no build e no boot. O `.env` simples não é lido.
+* **Portas do Supabase local:** 553xx (API 55321, DB 55322, Studio 55323, e-mail 55324) — as 543xx são de outro projeto da máquina. No celular, o DEV chega ao banco por `adb reverse tcp:55321` (e `tcp:3000` para o snake-server local).
 * **Comandos:**
+  - Banco local: `scripts\db-dev start` | `stop` | `status` | `reset` | `test` | `types` | `env`
   - Windows: `scripts\dev.bat start` | `stop` | `restart` | `status`
   - Linux/Mac: `./scripts/dev.sh start` | `stop` | `restart` | `status`
-  - Windows (dia a dia): `menu.bat` — Metro, ADB Wi-Fi, APK e instalação.
+  - Windows (dia a dia): `menu.bat` — variante `[V]`, banco local, Metro, ADB Wi-Fi, APK e instalação.
 * **Porta do Metro: 6969** (não 8081, que conflita com outros projetos RN). Vive em
   três pontos que devem permanecer coerentes: `package.json` (`--port`),
   `android/gradle.properties` (`reactNativeDevServerPort`, embutido no APK) e

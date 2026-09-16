@@ -1,5 +1,5 @@
 -- Regressão da Fase 1 da frequência (docs/FREQUENCIA.md). Roda numa transação
--- e termina em ROLLBACK: nenhuma linha sobrevive, pode rodar contra produção.
+-- e termina em ROLLBACK: nenhuma linha sobrevive, mesmo assim, rode só no banco local (scripts\db-dev test).
 \set ON_ERROR_STOP on
 
 begin;
