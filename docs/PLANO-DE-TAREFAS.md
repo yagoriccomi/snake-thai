@@ -37,7 +37,7 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 |---|---|---|---|---|
 | 1 | **T4 · fase 1** — merges do `snake-thai` (sem efeito em produção) | ✅ | — | [PLANO-T4](planos/PLANO-T4.md) |
 | 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | ⬜ | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
-| 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ⬜ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
+| 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ✅ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
 | 4 | **T3** — padronizar número de versão | ⬜ | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
 | 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | ⬜ | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
 | 6 | **T5** — GitHub Actions: build e publicação automática do APK | ⬜ | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
@@ -66,10 +66,10 @@ porque usa regras das outras e depende de contas externas.
 - [x] Ligar "apagar branch automaticamente após o merge"
 
 **Fase 2 — `snake-server`**
-- [ ] Branch única com a P-19 e os 7 PRs seguros do Dependabot (#13, #11, #5, #7, #8, #9, #10), validada com `npm ci` e o gate local
-- [ ] ⚠️ PR e merge na `main` — **dispara deploy na Render**
-- [ ] Fechar os 3 majors que quebram a instalação (#3 vitest 4, #4 TypeScript 7, #6 ESLint 10) e registrar como P-20
-- [ ] Apagar as branches mescladas
+- [x] Branch única com a P-19 e os 7 PRs seguros do Dependabot (#13, #11, #5, #7, #8, #9, #10), validada com `npm ci` e o gate local
+- [x] ⚠️ PR e merge na `main` — **dispara deploy na Render** — PR #15, merge `2500111`, confirmado pelo usuário; API respondendo normalmente
+- [x] Fechar os 3 majors que quebram a instalação (#3 vitest 4, #4 TypeScript 7, #6 ESLint 10) e registrar como P-20
+- [x] Apagar as branches mescladas
 - [ ] 👤 Conferir no painel da Render se o Auto-Deploy está ligado
 - [ ] 👤 Conferir no painel da Supabase se não há integração com o GitHub aplicando migrations
 
@@ -103,7 +103,7 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 
 ### T2 — Tirar a chave de debug do release ([plano](planos/PLANO-T2.md))
 
-- [ ] ⚠️ Apagar o APK assinado com a chave de debug do release `v1.6.0` e deixar aviso nas notas (a cópia local fica guardada; o asset teve 0 downloads)
+- [x] ⚠️ Apagar o APK assinado com a chave de debug do release `v1.6.0` e deixar aviso nas notas (a cópia local fica guardada; o asset teve 0 downloads) — confirmado pelo usuário e feito em 2026-09-16
 - [ ] Build de release **falha** se a chave de produção não estiver configurada (hoje cai na chave de debug sem avisar), com testes
 - [ ] Corrigir a documentação: a keystore fica **fora** da pasta `android/`, que o prebuild apaga
 - [ ] 👤 Gerar a keystore de produção (as senhas são digitadas por você), guardar em 2 lugares e testar a restauração
@@ -214,3 +214,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 |---|---|
 | 2026-09-16 | Planejamento das 11 tarefas (12 agentes somente-leitura + revisão cruzada). Planos gravados em `docs/planos/`. |
 | 2026-09-16 | **T4 fase 1 concluída.** PR #9 (`feat/papel-professor` → `main`) mesclado com merge commit `eca4c42`; conteúdo idêntico ao da `v1.6.0`, tag agora na `main`. 7 branches remotas e 9 locais já mescladas foram apagadas; exclusão automática de branch ligada. |
+| 2026-09-16 | **T4 fase 2 concluída.** PR #15 do `snake-server` (P-19 + 7 atualizações do Dependabot) mesclado com confirmação do usuário (`2500111`); API respondeu `ok` e `401` durante todo o deploy. Majors #3, #4 e #6 fechados e registrados como P-20. Branches mescladas apagadas nos dois repositórios. Relatório em [`ENTREGA-T4`](planos/ENTREGA-T4.md). |
+| 2026-09-16 | **T2, primeiro item:** APK assinado com a chave de debug removido do release `v1.6.0`, com aviso nas notas (confirmado pelo usuário). |
