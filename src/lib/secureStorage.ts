@@ -104,6 +104,19 @@ class LargeSecureStore {
     await AsyncStorage.setItem(key, encrypted);
   }
 
+  /**
+   * Chaves guardadas que começam com `prefix`.
+   *
+   * O SecureStore não enumera o que tem; o ciphertext no AsyncStorage, sim, e
+   * cada entrada tem exatamente um ciphertext — por isso ele serve de índice.
+   * Fica aqui para quem usa o armazenamento não precisar saber onde cada parte
+   * mora (ex.: apagar todos os rascunhos de chamada ao sair do login).
+   */
+  async listKeys(prefix: string): Promise<string[]> {
+    const chaves = await AsyncStorage.getAllKeys();
+    return chaves.filter((chave) => chave.startsWith(prefix));
+  }
+
   /** Remove tanto o ciphertext quanto a chave de criptografia associada. */
   async removeItem(key: string): Promise<void> {
     await AsyncStorage.removeItem(key);
