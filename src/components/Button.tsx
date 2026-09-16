@@ -14,7 +14,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { ColorScheme } from '@/theme/colors';
 
 /** Variantes visuais do botão. */
-export type ButtonVariant = 'primary' | 'secondary';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger';
 
 interface ButtonProps {
   title: string;
@@ -32,6 +32,7 @@ interface StyleParams {
   fonts: Fonts;
   minHitSlop: number;
   isPrimary: boolean;
+  isDanger: boolean;
 }
 
 /**
@@ -40,6 +41,9 @@ interface StyleParams {
  * - `primary`: fundo verde neon, texto preto em negrito e, no toque, um "glow"
  *   sutil (sombra/elevation) que reforça a estética da marca.
  * - `secondary`: fundo transparente com contorno; ao tocar, a borda acende em neon.
+ * - `danger`: contorno e texto na cor de erro — ação destrutiva e irreversível
+ *   (ex.: excluir conta). Contorno, e não fundo cheio, para não competir com a
+ *   ação principal da tela; a cor `error` já passa no contraste de texto.
  *
  * Garante área de toque mínima de 44x44 dp (acessibilidade) e expõe estados
  * corretos para leitores de tela.
@@ -55,17 +59,18 @@ function ButtonComponent({
 }: ButtonProps): React.JSX.Element {
   const { colors, radius, fonts, minHitSlop } = useTheme();
   const isPrimary = variant === 'primary';
+  const isDanger = variant === 'danger';
   const isInactive = disabled || loading;
 
   const styles = useMemo(
-    () => makeStyles({ colors, radius, fonts, minHitSlop, isPrimary }),
-    [colors, radius, fonts, minHitSlop, isPrimary],
+    () => makeStyles({ colors, radius, fonts, minHitSlop, isPrimary, isDanger }),
+    [colors, radius, fonts, minHitSlop, isPrimary, isDanger],
   );
 
   const getContainerStyle = useCallback(
     ({ pressed }: PressableStateCallbackType): StyleProp<ViewStyle> => [
       styles.base,
-      isPrimary ? styles.primary : styles.secondary,
+      isPrimary ? styles.primary : isDanger ? styles.danger : styles.secondary,
       pressed && !isInactive
         ? isPrimary
           ? styles.primaryPressed
@@ -89,7 +94,7 @@ function ButtonComponent({
       accessibilityState={{ disabled: isInactive, busy: loading }}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? colors.onPrimary : colors.textPrimary} />
+        <ActivityIndicator color={isPrimary ? colors.onPrimary : isDanger ? colors.error : colors.textPrimary} />
       ) : (
         <Text style={styles.label} numberOfLines={1}>
           {title}
@@ -100,7 +105,7 @@ function ButtonComponent({
 }
 
 /** Fábrica de estilos memoizável, dependente do tema. */
-function makeStyles({ colors, radius, fonts, minHitSlop, isPrimary }: StyleParams) {
+function makeStyles({ colors, radius, fonts, minHitSlop, isPrimary, isDanger }: StyleParams) {
   return StyleSheet.create({
     base: {
       minHeight: minHitSlop,
@@ -129,6 +134,11 @@ function makeStyles({ colors, radius, fonts, minHitSlop, isPrimary }: StyleParam
       borderWidth: 1,
       borderColor: colors.textPrimary,
     },
+    danger: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: colors.error,
+    },
     secondaryPressed: {
       borderColor: colors.primary,
       shadowColor: colors.primary,
@@ -143,7 +153,7 @@ function makeStyles({ colors, radius, fonts, minHitSlop, isPrimary }: StyleParam
     label: {
       fontFamily: fonts.bodyBold,
       fontSize: 16,
-      color: isPrimary ? colors.onPrimary : colors.textPrimary,
+      color: isPrimary ? colors.onPrimary : isDanger ? colors.error : colors.textPrimary,
     },
   });
 }
