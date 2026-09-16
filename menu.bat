@@ -278,6 +278,15 @@ cls
 echo [5] Gerando APK de RELEASE via Gradle - %VARIANTE_ROTULO%...
 echo.
 call :CHECK_ENV
+rem A pasta android/ guarda versionCode e versionName do ultimo prebuild.
+rem Conferir antes evita 15 minutos de build com a versao errada.
+call node scripts\version.js check --android --variant %VARIANTE%
+if errorlevel 1 (
+    echo.
+    echo  [!] Versao inconsistente - nada foi compilado. Veja a mensagem acima.
+    pause
+    goto MENU
+)
 call :GRADLE_BUILD assembleRelease release
 pause
 goto MENU
@@ -311,8 +320,9 @@ rem colocaria o app no pacote errado, falando com o banco errado.
 call :LE_VARIANTE_ANDROID
 if /i "%VARIANTE_ANDROID%"=="%VARIANTE%" if exist "%DEBUG_APK%" set "APK=%DEBUG_APK%"
 if /i "%VARIANTE_ANDROID%"=="%VARIANTE%" if not defined APK if exist "%RELEASE_APK%" set "APK=%RELEASE_APK%"
-call :LE_VERSAO
-if not defined APK if exist "%CD%\release\%PREFIXO_APK%-v%VERSAO%.apk" set "APK=%CD%\release\%PREFIXO_APK%-v%VERSAO%.apk"
+rem Senao, o release mais recente desta variante ("snake-thai-v*" nao pega
+rem "snake-thai-dev-v*": o -v vem logo depois do prefixo).
+if not defined APK for /f "delims=" %%a in ('dir /b /o-d "%CD%\release\%PREFIXO_APK%-v*.apk" 2^>nul') do if not defined APK set "APK=%CD%\release\%%a"
 if not defined APK (
     echo  [!] Nenhum APK da variante %VARIANTE_ROTULO% encontrado.
     echo      Gere primeiro pela opcao [8] Debug ou [5] Release.
@@ -677,14 +687,6 @@ if exist "android\.variante" set /p VARIANTE_ANDROID=<"android\.variante"
 goto :eof
 
 rem ===========================================================================
-rem  SUB-ROTINA: le a versao do app.json (fonte unica da versao).
-rem ===========================================================================
-:LE_VERSAO
-set "VERSAO="
-for /f "usebackq delims=" %%v in (`node -p "require('./app.json').expo.version"`) do set "VERSAO=%%v"
-goto :eof
-
-rem ===========================================================================
 rem  SUB-ROTINA: avisa se o arquivo de ambiente da variante estiver faltando.
 rem  As variaveis EXPO_PUBLIC_* sao embutidas no bundle em tempo de build; sem
 rem  elas o comando para (scripts\with-variant.js) antes de gerar um app quebrado.
@@ -828,13 +830,16 @@ if "%BUILD_RESULT%"=="0" (
 goto :eof
 
 rem ===========================================================================
-rem  SUB-ROTINA: copia o APK de release para release\<prefixo>-v<versao>.apk.
-rem  O nome ja diz a variante: snake-thai-dev-v... nunca vai para o GitHub.
+rem  SUB-ROTINA: copia o APK de release para release\<prefixo>-v<nome do build>.apk.
+rem  O nome do build vem de scripts\version.js: 1.7.0 so num build exatamente na
+rem  tag; fora dela, 1.7.0+12.abc1234 (ou +dev. no app DEV, que nunca vai para
+rem  o GitHub). Ver docs\VERSIONAMENTO.md.
 rem ===========================================================================
 :COPIA_RELEASE
-call :LE_VERSAO
-if not defined VERSAO goto :eof
+set "NOME_DO_BUILD="
+for /f "usebackq delims=" %%v in (`node "%PROOT%\scripts\version.js" build-name --variant %VARIANTE%`) do set "NOME_DO_BUILD=%%v"
+if not defined NOME_DO_BUILD goto :eof
 if not exist "%PROOT%\release" mkdir "%PROOT%\release"
-copy /y "%PROOT%\android\app\build\outputs\apk\release\app-release.apk" "%PROOT%\release\%PREFIXO_APK%-v%VERSAO%.apk" >nul
-echo       copia: release\%PREFIXO_APK%-v%VERSAO%.apk
+copy /y "%PROOT%\android\app\build\outputs\apk\release\app-release.apk" "%PROOT%\release\%PREFIXO_APK%-v%NOME_DO_BUILD%.apk" >nul
+echo       copia: release\%PREFIXO_APK%-v%NOME_DO_BUILD%.apk
 goto :eof
