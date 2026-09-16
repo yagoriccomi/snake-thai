@@ -15,6 +15,9 @@ Ponto de entrada da documentação técnica e operacional do projeto.
   autorização das funções server-side.
 - **[RUNBOOK.md](RUNBOOK.md)** — operações: migrations, tipos, Metro, APK, chaves.
 - **[VERSIONAMENTO.md](VERSIONAMENTO.md)** — quando a versão muda, versionCode e como publicar um APK.
+- **[PUBLICACAO-1.7.0.md](PUBLICACAO-1.7.0.md)** — roteiro único para levar a 1.7.0 à produção (banco, funções, APK, reinstalação).
+- **[PAINEL.md](PAINEL.md)** — regras dos números do Painel do admin e do relatório de inadimplência.
+- **[NOTIFICACOES.md](NOTIFICACOES.md)** — notificações push: quem recebe o quê, publicação e monitoramento.
 - **[BACKEND.md](BACKEND.md)** — spec do backend próprio do app (Render): arquitetura híbrida com o Supabase, estrutura extensível por módulos, cold start e o módulo de comprovantes (Cloudinary).
 - **[../README.md](../README.md)** — instalar, configurar `.env.dev`/`.env.prod` e rodar.
 - **[../CHANGELOG.md](../CHANGELOG.md)** — o que mudou em cada versão publicada.

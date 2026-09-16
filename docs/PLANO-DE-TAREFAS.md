@@ -200,7 +200,8 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [ ] **L4** — Uma única versão nova da Política de Privacidade cobrindo exclusão e retenção (T7), push (T9) e Sentry (T10), com novo aceite
 - [x] **L5** — Tirar a frase "pode rodar contra produção" dos testes SQL e da documentação (T1)
 - [x] **L6** — Documentar o risco das portas do banco local expostas na rede (firewall do Windows) — `docs/RUNBOOK.md` (T1)
-- [ ] **L7** — Plano de publicação do bloco Produto: migrations antes do APK e, se possível, uma única reinstalação (assinatura nova + 1.7.0 juntas)
+- [x] **L7** — Plano de publicação do bloco Produto: migrations antes do APK e, se possível, uma única reinstalação (assinatura nova + 1.7.0 juntas) — **feito**: roteiro em [`PUBLICACAO-1.7.0.md`](PUBLICACAO-1.7.0.md)
+  - [ ] 👤⚠️ Executar o roteiro (cada passo de produção é seu)
 
 ## Pendências de segurança herdadas
 
@@ -265,3 +266,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **L1 corrigida** (branch `fix/senha-padrao-protegida`): além do literal público nas Edge Functions, a senha de primeiro acesso era legível por qualquer aluno logado. Agora fica em `academy_secrets` (só servidor), admin lê/troca por função, as 3 funções de conta usam o valor configurado, a coluna antiga guarda só a máscara (APK 1.6.0 segue salvando) e o app avisa quantas contas ainda não entraram. 5 casos SQL, 646 Jest; conferido na API local. Nada publicado. Relatório em [`ENTREGA-L1`](planos/ENTREGA-L1.md). |
 | 2026-09-16 | **L1:** PR #22 mesclado (`3b6d96f`), CI verde. |
 | 2026-09-16 | **L3 feita** (branch `feat/saude-das-rotinas`): `saude_das_rotinas()` só admin e aviso no topo do Painel quando uma das 10 rotinas agendadas falha, com nome amigável e sem a mensagem de erro; o Painel não cai se a consulta falhar. 4 casos SQL, Jest verde; conferido na API local com o histórico real do pg_cron. Relatório em [`ENTREGA-L3`](planos/ENTREGA-L3.md). |
+| 2026-09-16 | **L3:** PR #23 mesclado (`e937026`), CI verde. |
+| 2026-09-16 | **L7 feita:** roteiro único de publicação da 1.7.0 ([`PUBLICACAO-1.7.0.md`](PUBLICACAO-1.7.0.md)) — segurança e contas, checagens somente leitura, 9 migrations com backup, Edge Functions logo em seguida, ajustes com o app antigo, versão e APK assinado, reinstalação única, configuração inicial e 48 h de acompanhamento, com volta atrás por passo. |
