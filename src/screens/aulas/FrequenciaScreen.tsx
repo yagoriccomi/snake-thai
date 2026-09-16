@@ -13,10 +13,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { ErrorState } from '@/components/ErrorState';
+import { RollCallDraftNotice } from '@/components/RollCallDraftNotice';
 import { RollCallRow } from '@/components/RollCallRow';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { useAuth } from '@/context/AuthProvider';
 import { useClassAttendance } from '@/hooks/useClassAttendance';
 import { useMonthlyFrequency } from '@/hooks/useMonthlyFrequency';
+import { useRollCallDraft } from '@/hooks/useRollCallDraft';
 import { useRollCallReview } from '@/hooks/useRollCallReview';
 import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
@@ -27,13 +30,7 @@ import {
 } from '@/services/justifications.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatFullDateTime } from '@/utils/datetime';
-import {
-  alternarMarcacao,
-  contarMarcacoes,
-  houveAlteracao,
-  montarEnvioDaChamada,
-  type RascunhoDeChamada,
-} from '@/utils/rollCall';
+import { contarMarcacoes, houveAlteracao, montarEnvioDaChamada } from '@/utils/rollCall';
 
 const SCREEN_EDGES = ['bottom'] as const;
 
@@ -48,12 +45,14 @@ interface Aviso {
  * Chamada de uma aula (docs/FREQUENCIA.md).
  *
  * Uma lista só, em ordem alfabética, com os dois símbolos por aluno. As
- * marcações ficam NA TELA: nada vai ao banco até "Concluir chamada", que grava
- * tudo de uma vez (`salvar_chamada`) e conclui a aula. Antes, cada toque
- * gravava e recarregava a lista, que voltava ao topo.
+ * marcações ficam na tela E num rascunho cifrado no aparelho
+ * (`useRollCallDraft`): nada vai ao banco até "Concluir chamada", que grava
+ * tudo de uma vez (`salvar_chamada`) e conclui a aula. Se o Android fechar o
+ * app no meio, a chamada é recuperada ao reabrir.
  *
- * Quem sai com marcações não salvas é avisado. Aluno sem marcação vai como
- * falta — a tela diz isso antes de enviar.
+ * Quem sai com marcações não salvas escolhe entre continuar, descartar ou
+ * sair e guardar. Aluno sem marcação vai como falta — a tela diz isso antes
+ * de enviar.
  *
  * Sem `canManage` (professor numa aula que não é dele), só leitura.
  */
@@ -62,6 +61,7 @@ export function FrequenciaScreen({
   route,
 }: AulasStackScreenProps<'Frequencia'>): React.JSX.Element {
   const { colors } = useTheme();
+  const { session } = useAuth();
   const { classId, title, groupId, canManage } = route.params;
   const {
     students,
@@ -78,13 +78,6 @@ export function FrequenciaScreen({
   const frequencia = useMonthlyFrequency(idsDosAlunos);
   const recarregarFrequencia = frequencia.reload;
 
-  // Recomeça do que está gravado sempre que a lista é (re)carregada: na
-  // abertura e logo depois de salvar.
-  const [rascunho, setRascunho] = useState<RascunhoDeChamada>({});
-  useEffect(() => {
-    setRascunho(officialByStudent);
-  }, [officialByStudent]);
-
   const [salvando, setSalvando] = useState(false);
   const [revisandoId, setRevisandoId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<Aviso | null>(null);
@@ -93,6 +86,20 @@ export function FrequenciaScreen({
   const concluida = estado !== null && estado.concludedAt !== null;
   const aulaComecou = estado !== null && Date.parse(estado.dateTimeIso) <= Date.now();
   const editavel = canManage && aulaComecou;
+
+  // Recomeça do que está gravado a cada recarga (abertura e depois de salvar)
+  // e recupera o rascunho guardado no aparelho, se houver.
+  const rascunhoDaChamada = useRollCallDraft({
+    userId: session?.user.id ?? null,
+    classId,
+    alunoIds: idsDosAlunos,
+    gravado: officialByStudent,
+    concluidaEm: estado?.concludedAt ?? null,
+    ativo: editavel && !loading && erroDaLista === null,
+  });
+  const { rascunho, descartar, esquecer, usarMeuRascunho } = rascunhoDaChamada;
+  const emConflito = rascunhoDaChamada.aviso?.tipo === 'conflito';
+  const podeMarcar = editavel && !salvando && rascunhoDaChamada.pronto && !emConflito;
 
   const contagem = useMemo(
     () => contarMarcacoes(idsDosAlunos, rascunho),
@@ -103,31 +110,46 @@ export function FrequenciaScreen({
     [idsDosAlunos, rascunho, officialByStudent],
   );
 
-  const marcar = useCallback((userId: string, status: AttendanceStatus) => {
-    setAviso(null);
-    setRascunho((anterior) => ({
-      ...anterior,
-      [userId]: alternarMarcacao(anterior[userId] ?? null, status),
-    }));
-  }, []);
+  const marcarNoRascunho = rascunhoDaChamada.marcar;
+  const marcar = useCallback(
+    (userId: string, status: AttendanceStatus) => {
+      setAviso(null);
+      marcarNoRascunho(userId, status);
+    },
+    [marcarNoRascunho],
+  );
 
   const salvar = useCallback(async () => {
     setSalvando(true);
     setAviso(null);
     try {
       await save(montarEnvioDaChamada(idsDosAlunos, rascunho));
+      // Gravada no banco: o rascunho do aparelho não serve mais.
+      await esquecer();
       await Promise.all([reload(), recarregarFrequencia()]);
       setAviso({ texto: 'Chamada salva.', tipo: 'sucesso' });
     } catch (erro) {
       log.error('Falha ao salvar a chamada', erro, { classId });
       setAviso({
-        texto: 'Não foi possível salvar a chamada. Suas marcações continuam na tela — tente de novo.',
+        texto:
+          'Não foi possível salvar a chamada. Suas marcações continuam na tela e guardadas neste aparelho — tente de novo.',
         tipo: 'erro',
       });
     } finally {
       setSalvando(false);
     }
-  }, [save, idsDosAlunos, rascunho, reload, recarregarFrequencia, classId]);
+  }, [save, idsDosAlunos, rascunho, esquecer, reload, recarregarFrequencia, classId]);
+
+  const confirmarDescarte = useCallback(() => {
+    Alert.alert('Descartar o rascunho?', 'A lista volta para o que está salvo.', [
+      { text: 'Voltar', style: 'cancel' },
+      { text: 'Descartar', style: 'destructive', onPress: () => void descartar() },
+    ]);
+  }, [descartar]);
+
+  const manterSalvo = useCallback(() => {
+    void descartar();
+  }, [descartar]);
 
   const handleConcluir = useCallback(() => {
     const faltas = contagem.ausentes + contagem.semMarcacao;
@@ -145,23 +167,27 @@ export function FrequenciaScreen({
     );
   }, [contagem, concluida, salvar]);
 
-  // Sair com marcações não salvas perderia a chamada em silêncio.
+  // Sair com marcações não salvas: continuar, jogar fora ou guardar para depois
+  // (o rascunho é gravado quando a tela fecha).
   useEffect(() => {
     if (!alterada || salvando) {
       return undefined;
     }
     return navigation.addListener('beforeRemove', (evento) => {
       evento.preventDefault();
-      Alert.alert('Descartar a chamada?', 'As marcações feitas ainda não foram salvas.', [
+      Alert.alert('Chamada não concluída', 'As marcações ainda não foram salvas no sistema.', [
         { text: 'Continuar marcando', style: 'cancel' },
         {
           text: 'Descartar',
           style: 'destructive',
-          onPress: () => navigation.dispatch(evento.data.action),
+          onPress: () => {
+            void descartar().then(() => navigation.dispatch(evento.data.action));
+          },
         },
+        { text: 'Sair e guardar', onPress: () => navigation.dispatch(evento.data.action) },
       ]);
     });
-  }, [navigation, alterada, salvando]);
+  }, [navigation, alterada, salvando, descartar]);
 
   const revisar = useCallback(
     (justificationId: string, status: Exclude<JustificationStatus, 'pending'>) => {
@@ -218,7 +244,7 @@ export function FrequenciaScreen({
           declarado={declaredByStudent[item.id]}
           frequencia={frequencia.byUser[item.id]}
           justificativa={justificativa}
-          editavel={editavel && !salvando}
+          editavel={podeMarcar}
           podeRevisar={canManage}
           revisando={justificativa !== undefined && revisandoId === justificativa.id}
           onMarcar={marcar}
@@ -233,8 +259,7 @@ export function FrequenciaScreen({
       declaredByStudent,
       frequencia.byUser,
       justificationsByUser,
-      editavel,
-      salvando,
+      podeMarcar,
       canManage,
       revisandoId,
       marcar,
@@ -290,6 +315,14 @@ export function FrequenciaScreen({
           Eventos não contam na frequência.
         </AppText>
       ) : null}
+      {rascunhoDaChamada.aviso !== null ? (
+        <RollCallDraftNotice
+          aviso={rascunhoDaChamada.aviso}
+          onDescartar={confirmarDescarte}
+          onUsarMeuRascunho={usarMeuRascunho}
+          onManterSalvo={manterSalvo}
+        />
+      ) : null}
       <AppText variant="caption" color={colors.textSecondary} style={styles.contagem}>
         Presentes {contagem.presentes} · Faltas {contagem.ausentes} · Sem marcação{' '}
         {contagem.semMarcacao}
@@ -329,7 +362,7 @@ export function FrequenciaScreen({
             title={concluida ? 'Salvar alterações' : 'Concluir chamada'}
             onPress={handleConcluir}
             loading={salvando}
-            disabled={concluida && !alterada}
+            disabled={(concluida && !alterada) || !rascunhoDaChamada.pronto || emConflito}
             accessibilityHint="Grava a chamada de todos os alunos de uma vez"
           />
         </View>
