@@ -14,6 +14,9 @@ import { DadosScreen } from '@/screens/dados/DadosScreen';
 import { EditarAlunoScreen } from '@/screens/dados/EditarAlunoScreen';
 import { ExcluirContaScreen } from '@/screens/dados/ExcluirContaScreen';
 import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
+import { GradeTurmaScreen } from '@/screens/dados/GradeTurmaScreen';
+import { HorarioFormScreen } from '@/screens/dados/HorarioFormScreen';
+import { TurmasScreen } from '@/screens/dados/TurmasScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<DadosStackParamList>();
@@ -59,6 +62,9 @@ export function DadosStackNavigator(): React.JSX.Element {
         options={SENHA_OPTIONS}
       />
       <Stack.Screen name="Planos" component={PlanosScreen} options={PLANOS_OPTIONS} />
+      <Stack.Screen name="Turmas" component={TurmasScreen} options={TURMAS_OPTIONS} />
+      <Stack.Screen name="GradeTurma" component={GradeTurmaScreen} options={GRADE_OPTIONS} />
+      <Stack.Screen name="HorarioForm" component={HorarioFormScreen} options={horarioOptions} />
       <Stack.Screen
         name="Configuracoes"
         component={ConfiguracoesScreen}
@@ -78,4 +84,13 @@ const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };
 const EDITAR_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Editar Aluno' };
 const EXCLUIR_CONTA_OPTIONS: NativeStackNavigationOptions = { title: 'Excluir Conta' };
 const PLANOS_OPTIONS: NativeStackNavigationOptions = { title: 'Planos' };
+const TURMAS_OPTIONS: NativeStackNavigationOptions = { title: 'Turmas' };
+const GRADE_OPTIONS: NativeStackNavigationOptions = { title: 'Grade semanal' };
+const horarioOptions = ({
+  route,
+}: {
+  route: { params: DadosStackParamList['HorarioForm'] };
+}): NativeStackNavigationOptions => ({
+  title: route.params.schedule !== undefined ? 'Editar horário' : 'Novo horário',
+});
 const CONFIG_OPTIONS: NativeStackNavigationOptions = { title: 'Configurações' };

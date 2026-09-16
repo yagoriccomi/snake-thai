@@ -4,6 +4,7 @@ import {
   horaValida,
   horarioEstaAtivo,
   nomeDoDia,
+  resumoDoSalvamento,
   rotuloDaTurma,
   validarHorario,
   vigenciaEmTexto,
@@ -79,5 +80,24 @@ describe('utilitários da grade', () => {
   it('deveMarcarATurmaArquivada', () => {
     expect(rotuloDaTurma({ name: 'Turma A', archived_at: null })).toBe('Turma A');
     expect(rotuloDaTurma({ name: 'Turma A', archived_at: '2030-01-01T00:00:00Z' })).toBe('Turma A (arquivada)');
+  });
+});
+
+describe('resumoDoSalvamento', () => {
+  it('deveContarOQueMudouNaAgenda', () => {
+    expect(resumoDoSalvamento({ created: 9, adjusted: 0, removed: 0 }, false)).toBe(
+      'Horário salvo: 9 aulas entraram na agenda.',
+    );
+    expect(resumoDoSalvamento({ created: 1, adjusted: 7, removed: 1 }, true)).toBe(
+      'Horário salvo: 1 aula entrou na agenda, 7 aulas foram atualizadas, 1 aula saiu da agenda.',
+    );
+  });
+
+  it('deveExplicarQuandoNadaMudou', () => {
+    expect(resumoDoSalvamento({ created: 0, adjusted: 0, removed: 0 }, true)).toBe(
+      'Horário salvo. Nenhuma aula futura precisou mudar.',
+    );
+    // Vigência que começa depois do fim do mês seguinte ainda não gera aula.
+    expect(resumoDoSalvamento({ created: 0, adjusted: 0, removed: 0 }, false)).toContain('a partir do início da vigência');
   });
 });

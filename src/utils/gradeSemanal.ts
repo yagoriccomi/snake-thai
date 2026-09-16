@@ -132,3 +132,38 @@ export function horarioEstaAtivo(validUntil: string | null, hojeIso: string): bo
 export function rotuloDaTurma(turma: { name: string; archived_at: string | null }): string {
   return turma.archived_at === null ? turma.name : `${turma.name} (arquivada)`;
 }
+
+/** Contagens devolvidas ao salvar um horário. */
+export interface ResultadoDoSalvamento {
+  adjusted: number;
+  removed: number;
+  created: number;
+}
+
+function quantas(n: number, uma: string, varias: string): string {
+  return n === 1 ? `1 ${uma}` : `${n} ${varias}`;
+}
+
+/**
+ * Frase do que o salvamento fez com a agenda, para a pessoa conferir.
+ *
+ * @param editando `true` na edição de um horário existente.
+ */
+export function resumoDoSalvamento(resultado: ResultadoDoSalvamento, editando: boolean): string {
+  const partes: string[] = [];
+  if (resultado.created > 0) {
+    partes.push(`${quantas(resultado.created, 'aula entrou', 'aulas entraram')} na agenda`);
+  }
+  if (resultado.adjusted > 0) {
+    partes.push(`${quantas(resultado.adjusted, 'aula foi atualizada', 'aulas foram atualizadas')}`);
+  }
+  if (resultado.removed > 0) {
+    partes.push(`${quantas(resultado.removed, 'aula saiu', 'aulas saíram')} da agenda`);
+  }
+  if (partes.length === 0) {
+    return editando
+      ? 'Horário salvo. Nenhuma aula futura precisou mudar.'
+      : 'Horário salvo. As aulas aparecem na agenda a partir do início da vigência, até o fim do mês seguinte.';
+  }
+  return `Horário salvo: ${partes.join(', ')}.`;
+}

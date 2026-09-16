@@ -37,7 +37,7 @@ export function DetalheAulaScreen({
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { isAdmin, isProfessor, profile } = useAuth();
-  const { classId, title, type, dateTimeIso, groupId, groupLabel } = route.params;
+  const { classId, title, type, dateTimeIso, groupId, scheduleId, groupLabel } = route.params;
   const [teachers, setTeachers] = useState<ClassTeacherRef[]>([]);
   const [working, setWorking] = useState(false);
 
@@ -56,8 +56,8 @@ export function DetalheAulaScreen({
   const souProfessorDaAula = teachers.some((teacher) => teacher.id === profile?.id);
 
   const openEdit = useCallback(() => {
-    navigation.navigate('CriarAula', { classId, title, type, dateTimeIso, groupId });
-  }, [navigation, classId, title, type, dateTimeIso, groupId]);
+    navigation.navigate('CriarAula', { classId, title, type, dateTimeIso, groupId, scheduleId });
+  }, [navigation, classId, title, type, dateTimeIso, groupId, scheduleId]);
 
   const openChamada = useCallback(
     (canManage: boolean) => {
@@ -100,7 +100,14 @@ export function DetalheAulaScreen({
     <ScreenWrapper edges={SCREEN_EDGES}>
       <View style={styles.content}>
         <View style={styles.card}>
-          <TypeBadge type={type} />
+          <View style={styles.badges}>
+            <TypeBadge type={type} />
+            {scheduleId !== null ? (
+              <View style={styles.gradeBadge} accessibilityLabel="Aula da grade semanal">
+                <Text style={styles.gradeBadgeText}>Grade semanal</Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.when}>{formatFullDateTime(dateTimeIso)}</Text>
           <View style={styles.divider} />
@@ -188,6 +195,24 @@ function makeStyles(
       borderRadius: 16,
       padding: 18,
       gap: 8,
+    },
+    badges: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+    },
+    gradeBadge: {
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 6,
+      borderWidth: 1,
+      borderColor: colors.textSecondary,
+    },
+    gradeBadgeText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      color: colors.textSecondary,
+      textTransform: 'uppercase',
     },
     title: {
       fontFamily: fonts.headingBold,

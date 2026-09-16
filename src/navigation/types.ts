@@ -16,6 +16,22 @@ export interface ClassNavParams {
   type: ClassType;
   dateTimeIso: string;
   groupId: string | null;
+  /** Horário da grade que gerou a aula; `null` para aula avulsa. */
+  scheduleId: string | null;
+}
+
+/** Horário da grade levado à edição, já no formato do formulário. */
+export interface ScheduleFormParams {
+  id: string;
+  title: string;
+  weekday: number;
+  /** `HH:MM`, hora de São Paulo. */
+  startTime: string;
+  /** `AAAA-MM-DD`. */
+  validFrom: string;
+  /** `AAAA-MM-DD`; `null` = sem fim. */
+  validUntil: string | null;
+  teacherIds: string[];
 }
 
 /** Stack interna da aba "Dados" (perfil + cadastro/gestão de alunos pelo admin). */
@@ -32,6 +48,12 @@ export type DadosStackParamList = {
   EditarAluno: { userId: string };
   /** O titular exclui a própria conta (LGPD art. 18, VI). */
   ExcluirConta: undefined;
+  /** Turmas (admin): criar, renomear, excluir/arquivar e reativar. */
+  Turmas: undefined;
+  /** Grade semanal de uma turma (admin). */
+  GradeTurma: { groupId: string; groupName: string };
+  /** Criar (sem `schedule`) ou editar um horário da grade (admin). */
+  HorarioForm: { groupId: string; groupName: string; schedule?: ScheduleFormParams };
 };
 
 /** Stack interna da aba "Aulas" (lista + detalhe + criação/edição + frequência). */
