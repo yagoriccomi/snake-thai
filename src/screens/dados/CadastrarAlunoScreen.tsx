@@ -8,6 +8,7 @@ import { Input } from '@/components/Input';
 import { PlanPicker } from '@/components/PlanPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
+import { useDefaultStudentPassword } from '@/hooks/useDefaultStudentPassword';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { createStudent } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -25,7 +26,7 @@ export function CadastrarAlunoScreen({
   const { settings } = useAcademySettings();
 
   // Senha inicial definida pelo admin nas configuracoes da academia.
-  const defaultPassword = settings?.default_student_password ?? 'Snake@123';
+  const { password: defaultPassword } = useDefaultStudentPassword();
 
   const [email, setEmail] = useState('');
   const [groupId, setGroupId] = useState<string | null>(null);
@@ -91,11 +92,17 @@ export function CadastrarAlunoScreen({
         <View style={styles.center}>
           <AppText variant="heading">Aluno cadastrado! ✅</AppText>
           <AppText variant="caption" style={styles.message}>
-            A conta foi criada com a senha padrão{' '}
-            <AppText variant="caption" color={colors.primaryText}>
-              {defaultPassword}
-            </AppText>
-            . O aluno deverá trocá-la no primeiro acesso.
+            {defaultPassword !== null ? (
+              <>
+                A conta foi criada com a senha de primeiro acesso{' '}
+                <AppText variant="caption" color={colors.primaryText}>
+                  {defaultPassword}
+                </AppText>
+                . O aluno deverá trocá-la no primeiro acesso.
+              </>
+            ) : (
+              'A conta foi criada com a senha de primeiro acesso definida em Configurações. O aluno deverá trocá-la no primeiro acesso.'
+            )}
           </AppText>
           <Button title="Cadastrar outro" onPress={handleReset} style={styles.button} />
           <Button
@@ -113,11 +120,17 @@ export function CadastrarAlunoScreen({
     <ScreenWrapper avoidKeyboard>
       <View style={styles.form}>
         <AppText variant="caption" style={styles.message}>
-          Informe o e-mail do aluno. A conta será criada com a senha padrão{' '}
-          <AppText variant="caption" color={colors.primaryText}>
-            {defaultPassword}
-          </AppText>
-          , exigindo troca no primeiro acesso.
+          {defaultPassword !== null ? (
+            <>
+              Informe o e-mail do aluno. A conta será criada com a senha de primeiro acesso{' '}
+              <AppText variant="caption" color={colors.primaryText}>
+                {defaultPassword}
+              </AppText>
+              , exigindo troca no primeiro acesso.
+            </>
+          ) : (
+            'Informe o e-mail do aluno. A conta será criada com a senha de primeiro acesso definida em Configurações, exigindo troca no primeiro acesso.'
+          )}
         </AppText>
 
         <Input
