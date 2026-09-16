@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { OverdueBucketsCard } from '@/components/OverdueBucketsCard';
 import { AtRiskStudentRow } from '@/components/PainelStudentRows';
 import { RevenueBarChart } from '@/components/RevenueBarChart';
+import { SaudeDasRotinasCard } from '@/components/SaudeDasRotinasCard';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { StatTile } from '@/components/StatTile';
 import { ALUNOS_EM_RISCO_VISIVEIS, LIMIAR_RISCO_EVASAO_PERCENT, MESES_DO_GRAFICO } from '@/constants/painel';
@@ -20,7 +21,7 @@ import { useTheme } from '@/theme/ThemeProvider';
 import { formatCents } from '@/utils/currency';
 import { formatMonthYear } from '@/utils/datetime';
 import { formatarPercentual } from '@/utils/frequency';
-import { contagem, percentualRecebido } from '@/utils/painel';
+import { contagem, percentualRecebido, rotinasComProblema } from '@/utils/painel';
 
 const SCREEN_EDGES = ['bottom'] as const;
 
@@ -73,7 +74,9 @@ export function PainelScreen({ navigation }: PainelStackScreenProps<'PainelHome'
     );
   }
 
-  const { resumo, faixas, faturamento, emRisco } = dados;
+  const { resumo, faixas, faturamento, emRisco, rotinas } = dados;
+  // Rotina automática com falha vem primeiro: afeta todos os números abaixo.
+  const problemasNasRotinas = rotinas !== null ? rotinasComProblema(rotinas) : [];
   const alunosEmRiscoVisiveis = verTodosEmRisco ? emRisco : emRisco.slice(0, ALUNOS_EM_RISCO_VISIVEIS);
 
   return (
@@ -108,6 +111,8 @@ export function PainelScreen({ navigation }: PainelStackScreenProps<'PainelHome'
             <Button title="Tentar de novo" variant="secondary" onPress={() => void reload()} />
           </View>
         ) : null}
+
+        <SaudeDasRotinasCard rotinas={problemasNasRotinas} />
 
         <Text style={styles.sectionLabel}>ALUNOS</Text>
         <View style={styles.grade}>

@@ -3,6 +3,7 @@ import {
   contagem,
   faixaDoAtraso,
   percentualRecebido,
+  rotinasComProblema,
   rotuloAcessivelDoMes,
 } from '@/utils/painel';
 
@@ -59,5 +60,35 @@ describe('textos', () => {
   it('deveFlexionarAContagem', () => {
     expect(contagem(1, 'aluno', 'alunos')).toBe('1 aluno');
     expect(contagem(3, 'aluno', 'alunos')).toBe('3 alunos');
+  });
+});
+
+describe('rotinasComProblema', () => {
+  it('deveListarSoAsRotinasComFalhaEmLinguagemDeGente', () => {
+    const problemas = rotinasComProblema([
+      { rotina: 'generate-monthly-payments', ultimaExecucao: 'x', ultimoStatus: 'failed', falhas24h: 1 },
+      { rotina: 'mark-overdue-payments', ultimaExecucao: 'x', ultimoStatus: 'succeeded', falhas24h: 2 },
+      { rotina: 'push-despachar', ultimaExecucao: 'x', ultimoStatus: 'succeeded', falhas24h: 0 },
+      { rotina: 'rotina-nova', ultimaExecucao: 'x', ultimoStatus: 'failed', falhas24h: 3 },
+    ]);
+
+    expect(problemas).toEqual([
+      { rotina: 'generate-monthly-payments', nome: 'Gerar as mensalidades do mês', descricao: 'A última execução falhou.' },
+      {
+        rotina: 'mark-overdue-payments',
+        nome: 'Marcar mensalidades vencidas',
+        descricao: '2 falhas nas últimas 24 h; a última execução deu certo.',
+      },
+      { rotina: 'rotina-nova', nome: 'rotina-nova', descricao: 'A última execução falhou (3 falhas nas últimas 24 h).' },
+    ]);
+  });
+
+  it('naoDeveAvisarQuandoTudoDeuCertoOuNuncaRodou', () => {
+    expect(
+      rotinasComProblema([
+        { rotina: 'push-limpeza', ultimaExecucao: null, ultimoStatus: null, falhas24h: 0 },
+        { rotina: 'push-despachar', ultimaExecucao: 'x', ultimoStatus: 'succeeded', falhas24h: 0 },
+      ]),
+    ).toEqual([]);
   });
 });

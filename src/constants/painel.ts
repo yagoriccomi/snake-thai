@@ -26,3 +26,20 @@ export const ROTULO_DA_FAIXA: Readonly<Record<FaixaDeAtraso, string>> = {
   '31-60': '31 a 60 dias',
   '60+': 'Mais de 60 dias',
 };
+
+/**
+ * Nome, para o admin, de cada rotina agendada no banco (pg_cron). Rotina nova
+ * sem entrada aqui aparece pelo nome técnico — melhor que sumir do aviso.
+ */
+export const NOME_DA_ROTINA: Readonly<Record<string, string>> = {
+  'mark-overdue-payments': 'Marcar mensalidades vencidas',
+  'generate-monthly-payments': 'Gerar as mensalidades do mês',
+  'close-monthly-attendance': 'Fechar a frequência do mês',
+  'expire-payment-proofs': 'Prazo de guarda dos comprovantes',
+  'generate-scheduled-classes': 'Gerar as aulas da grade semanal',
+  'push-lembretes-mensalidade': 'Notificações: lembretes de mensalidade',
+  'push-aulas-sem-chamada': 'Notificações: aulas sem chamada',
+  'push-resumo-aulas-sem-chamada': 'Notificações: resumo das aulas sem chamada',
+  'push-despachar': 'Notificações: envio',
+  'push-limpeza': 'Notificações: limpeza do histórico',
+};

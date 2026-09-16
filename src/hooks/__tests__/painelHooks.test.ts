@@ -5,6 +5,7 @@ const mockFaixas = jest.fn();
 const mockFaturamento = jest.fn();
 const mockEmRisco = jest.fn();
 const mockRelatorio = jest.fn();
+const mockRotinas = jest.fn();
 const mockLogError = jest.fn();
 
 jest.mock('@/services/painel.service', () => ({
@@ -13,6 +14,7 @@ jest.mock('@/services/painel.service', () => ({
   fetchFaturamentoMensal: (...args: unknown[]): unknown => mockFaturamento(...args),
   fetchAlunosEmRisco: (...args: unknown[]): unknown => mockEmRisco(...args),
   fetchRelatorioInadimplencia: (...args: unknown[]): unknown => mockRelatorio(...args),
+  fetchSaudeDasRotinas: (...args: unknown[]): unknown => mockRotinas(...args),
 }));
 jest.mock('@/lib/logger', () => ({
   createLogger: () => ({
@@ -40,13 +42,14 @@ function devedor(nome: string, maiorAtrasoDias: number, totalDevidoCents: number
 }
 
 beforeEach(() => {
-  for (const mock of [mockResumo, mockFaixas, mockFaturamento, mockEmRisco, mockRelatorio, mockLogError]) {
+  for (const mock of [mockResumo, mockFaixas, mockFaturamento, mockEmRisco, mockRelatorio, mockRotinas, mockLogError]) {
     mock.mockReset();
   }
   mockResumo.mockResolvedValue({ alunosAtivos: 50 });
   mockFaixas.mockResolvedValue([]);
   mockFaturamento.mockResolvedValue([]);
   mockEmRisco.mockResolvedValue([{ userId: 'a', nome: 'Ana Souza' }]);
+  mockRotinas.mockResolvedValue([]);
 });
 
 describe('useAdminDashboard', () => {
@@ -59,7 +62,7 @@ describe('useAdminDashboard', () => {
       await result.current.reload();
     });
 
-    for (const mock of [mockResumo, mockFaixas, mockFaturamento, mockEmRisco]) {
+    for (const mock of [mockResumo, mockFaixas, mockFaturamento, mockEmRisco, mockRotinas]) {
       expect(mock).toHaveBeenCalledTimes(1);
     }
     expect(result.current.dados?.resumo).toEqual({ alunosAtivos: 50 });
@@ -82,6 +85,21 @@ describe('useAdminDashboard', () => {
     // O log leva só o erro, nunca as listas com nomes.
     expect(mockLogError).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(mockLogError.mock.calls)).not.toContain('Ana Souza');
+  });
+});
+
+describe('useAdminDashboard — rotinas', () => {
+  it('naoDeveDerrubarOPainelQuandoASaudeDasRotinasFalha', async () => {
+    mockRotinas.mockRejectedValue({ code: 'PGRST202', message: 'function not found' });
+    const { result } = renderHook(() => useAdminDashboard());
+
+    await act(async () => {
+      await result.current.reload();
+    });
+
+    expect(result.current.error).toBeNull();
+    expect(result.current.dados?.resumo).toEqual({ alunosAtivos: 50 });
+    expect(result.current.dados?.rotinas).toBeNull();
   });
 });
 
