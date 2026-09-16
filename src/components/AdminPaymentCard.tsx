@@ -59,11 +59,12 @@ function AdminPaymentCardComponent({
   return (
     <Pressable
       onPress={handlePress}
-      disabled={!reviewable}
       style={styles.card}
       accessibilityRole="button"
-      accessibilityState={{ disabled: !reviewable }}
       accessibilityLabel={`Pagamento de ${item.studentName}, ${formatCents(item.amount_cents)}`}
+      accessibilityHint={
+        reviewable ? 'Abre o comprovante para revisar' : 'Abre o histórico de pagamentos do aluno'
+      }
     >
       <View style={styles.avatar}>
         <Text style={styles.avatarText}>{initialsOf(item.studentName)}</Text>

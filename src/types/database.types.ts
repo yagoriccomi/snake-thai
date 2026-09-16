@@ -793,6 +793,14 @@ export type Database = {
         Args: { p_data: string; p_user_id: string }
         Returns: boolean
       }
+      salvar_chamada: {
+        Args: {
+          p_ausentes: string[]
+          p_class_id: string
+          p_presentes: string[]
+        }
+        Returns: string
+      }
       valor_proporcional: {
         Args: { dia_entrada: number; dias_no_mes: number; preco_cents: number }
         Returns: number

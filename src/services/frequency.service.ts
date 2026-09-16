@@ -100,14 +100,32 @@ export async function fetchRollCallState(classId: string): Promise<RollCallState
   };
 }
 
+/** A chamada montada na tela, pronta para ir ao banco de uma vez. */
+export interface RollCallSubmission {
+  presentes: string[];
+  ausentes: string[];
+}
+
 /**
- * Conclui a chamada da aula: é o que efetiva as presenças e faz a aula entrar
- * no cálculo. Professor da aula ou admin; o banco recusa aula que não começou.
+ * Grava a chamada inteira e a conclui — UMA requisição, disparada só quando o
+ * professor toca em "Concluir chamada". Marcar aluno por aluno não toca o
+ * banco: a tela recarregava a cada toque e voltava ao topo.
+ *
+ * Atômico: ou tudo é gravado, ou nada. Aluno fora das duas listas volta a "sem
+ * chamada"; a declaração do aluno é preservada. O banco recusa aula que não
+ * começou e quem não é professor da aula nem admin.
  *
  * @returns O instante da conclusão (o original, se já estava concluída).
  */
-export async function concludeRollCall(classId: string): Promise<string> {
-  const { data, error } = await supabase.rpc('concluir_chamada', { p_class_id: classId });
+export async function saveRollCall(
+  classId: string,
+  chamada: RollCallSubmission,
+): Promise<string> {
+  const { data, error } = await supabase.rpc('salvar_chamada', {
+    p_class_id: classId,
+    p_presentes: chamada.presentes,
+    p_ausentes: chamada.ausentes,
+  });
   if (error !== null) {
     throw error;
   }

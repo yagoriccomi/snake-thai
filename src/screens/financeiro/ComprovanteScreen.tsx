@@ -43,7 +43,7 @@ export function ComprovanteScreen({
   navigation,
 }: FinanceiroStackScreenProps<'Comprovante'>): React.JSX.Element {
   const { colors } = useTheme();
-  const { paymentId, comprovante, studentName } = route.params;
+  const { paymentId, comprovante, studentName, somenteLeitura = false } = route.params;
 
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
   /** Total de páginas do documento e qual está sendo exibida. */
@@ -244,19 +244,23 @@ export function ComprovanteScreen({
           </View>
         ) : null}
 
-        <Button
-          title="Aprovar Pagamento"
-          onPress={handleApprove}
-          loading={working}
-          style={styles.button}
-        />
-        <Button
-          title="Recusar Comprovante"
-          variant="secondary"
-          onPress={handleReject}
-          disabled={working}
-          style={styles.button}
-        />
+        {somenteLeitura ? null : (
+          <>
+            <Button
+              title="Aprovar Pagamento"
+              onPress={handleApprove}
+              loading={working}
+              style={styles.button}
+            />
+            <Button
+              title="Recusar Comprovante"
+              variant="secondary"
+              onPress={handleReject}
+              disabled={working}
+              style={styles.button}
+            />
+          </>
+        )}
       </View>
     </ScreenWrapper>
   );

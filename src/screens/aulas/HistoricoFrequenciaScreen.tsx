@@ -11,19 +11,11 @@ import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import { fetchMonthlyHistory, type MonthlyHistoryRow } from '@/services/frequency.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import { formatMonthYear } from '@/utils/datetime';
 import { formatarPercentual } from '@/utils/frequency';
 
 const SCREEN_EDGES = ['bottom'] as const;
 const log = createLogger('HistoricoFrequenciaScreen');
-
-/** "Agosto de 2026" a partir de `AAAA-MM-DD`. Meio-dia evita virar o dia por fuso. */
-function rotuloDoMes(referenceMonth: string): string {
-  const texto = new Date(`${referenceMonth}T12:00:00`).toLocaleDateString('pt-BR', {
-    month: 'long',
-    year: 'numeric',
-  });
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
-}
 
 /**
  * Frequência de um aluno: o mês corrente, calculado ao vivo, e os meses já
@@ -77,10 +69,10 @@ export function HistoricoFrequenciaScreen({
       <View
         style={styles.linha}
         accessible
-        accessibilityLabel={`${rotuloDoMes(item.reference_month)}: ${item.attended} de ${item.total_classes} aulas, frequência ${formatarPercentual(Number(item.frequency_percent))}`}
+        accessibilityLabel={`${formatMonthYear(item.reference_month)}: ${item.attended} de ${item.total_classes} aulas, frequência ${formatarPercentual(Number(item.frequency_percent))}`}
       >
         <View style={styles.linhaTexto}>
-          <Text style={styles.mes}>{rotuloDoMes(item.reference_month)}</Text>
+          <Text style={styles.mes}>{formatMonthYear(item.reference_month)}</Text>
           <Text style={styles.detalhe}>
             {item.attended}/{item.total_classes} aulas
             {item.justified > 0 ? ` · ${item.justified} justificada(s)` : ''}

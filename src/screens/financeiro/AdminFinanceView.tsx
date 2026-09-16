@@ -9,14 +9,13 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 
-import {
-  ADMIN_PAYMENT_CARD_TOTAL,
-  AdminPaymentCard,
-} from '@/components/AdminPaymentCard';
+import { AdminPaymentCard } from '@/components/AdminPaymentCard';
 import { AppText } from '@/components/AppText';
+import { Button } from '@/components/Button';
 import { EmptyState } from '@/components/EmptyState';
-import { FinanceSummary } from '@/components/FinanceSummary';
 import { ErrorState } from '@/components/ErrorState';
+import { FinanceSummary } from '@/components/FinanceSummary';
+import { MonthSelector, type MonthOption } from '@/components/MonthSelector';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
   SegmentedControl,
@@ -28,30 +27,31 @@ import {
 } from '@/hooks/useAdminPayments';
 import type { FinanceiroStackScreenProps } from '@/navigation/types';
 import { useTheme } from '@/theme/ThemeProvider';
+import { currentMonthIso, formatMonthShort, formatMonthYear } from '@/utils/datetime';
+import { coresDasSituacoes } from '@/utils/payments';
 
 const SCREEN_EDGES = ['bottom'] as const;
 
-type Category = 'pending' | 'open' | 'overdue';
+type Category = 'pending' | 'open' | 'overdue' | 'paid';
 
 interface AdminFinanceViewProps {
   navigation: FinanceiroStackScreenProps<'FinanceiroHome'>['navigation'];
 }
 
 /**
- * Gestão financeira (admin) dividida em três categorias: Aguardando Aprovação,
- * Em Aberto e Vencidos. Tocar num "Aguardando" abre a validação do comprovante.
+ * Financeiro geral (admin) de uma competência escolhida no seletor de meses: o
+ * resumo do mês e as mensalidades em quatro categorias — aguardando aprovação,
+ * em aberto, vencidas e pagas.
+ *
+ * Tocar numa mensalidade em análise abre o comprovante; nas demais, abre o
+ * histórico do aluno, onde o admin pode marcar como paga ou não paga.
  */
 export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
-  const { pending, open, overdue, totals, loading, error, reload } =
-    useAdminPayments();
-
-  // Mês corrente capitalizado ("Agosto") para o cabeçalho gerencial.
-  const monthLabel = useMemo(() => {
-    const raw = new Date().toLocaleDateString('pt-BR', { month: 'long' });
-    return raw.charAt(0).toUpperCase() + raw.slice(1);
-  }, []);
+  const [mes, setMes] = useState(() => currentMonthIso());
   const [category, setCategory] = useState<Category>('pending');
+  const { pending, open, overdue, paid, totals, months, loading, error, reload } =
+    useAdminPayments(mes);
 
   useFocusEffect(
     useCallback(() => {
@@ -59,101 +59,136 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
     }, [reload]),
   );
 
+  const cores = useMemo(() => coresDasSituacoes(colors), [colors]);
+
+  const opcoesDeMes = useMemo<MonthOption[]>(
+    () =>
+      months.map((item) => ({
+        value: item.referenceMonth,
+        label: formatMonthShort(item.referenceMonth),
+        accessibilityLabel: formatMonthYear(item.referenceMonth),
+        ...(item.situacao !== null ? { dotColor: cores[item.situacao] } : {}),
+      })),
+    [months, cores],
+  );
+
   const options = useMemo<ReadonlyArray<SegmentOption<Category>>>(
     () => [
       { value: 'pending', label: `Aprovar (${pending.length})` },
       { value: 'open', label: `Aberto (${open.length})` },
-      { value: 'overdue', label: `Vencidos (${overdue.length})` },
+      { value: 'overdue', label: `Vencidas (${overdue.length})` },
+      { value: 'paid', label: `Pagas (${paid.length})` },
     ],
-    [pending.length, open.length, overdue.length],
+    [pending.length, open.length, overdue.length, paid.length],
   );
 
   const data =
-    category === 'pending' ? pending : category === 'open' ? open : overdue;
+    category === 'pending'
+      ? pending
+      : category === 'open'
+        ? open
+        : category === 'overdue'
+          ? overdue
+          : paid;
 
-  const openComprovante = useCallback(
+  const abrirPagamento = useCallback(
     (item: PaymentWithName) => {
-      navigation.navigate('Comprovante', {
-        paymentId: item.id,
-        comprovante: item,
-        studentName: item.studentName,
+      if (item.status === 'pending_approval') {
+        navigation.navigate('Comprovante', {
+          paymentId: item.id,
+          comprovante: item,
+          studentName: item.studentName,
+        });
+        return;
+      }
+      navigation.navigate('HistoricoPagamentosAluno', {
+        userId: item.user_id,
+        name: item.studentName,
       });
     },
     [navigation],
   );
 
+  const abrirHistorico = useCallback(() => {
+    navigation.navigate('HistoricoPagamentosAlunos');
+  }, [navigation]);
+
   const renderItem = useCallback<ListRenderItem<PaymentWithName>>(
-    ({ item }) => <AdminPaymentCard item={item} onPress={openComprovante} />,
-    [openComprovante],
+    ({ item }) => <AdminPaymentCard item={item} onPress={abrirPagamento} />,
+    [abrirPagamento],
+  );
+
+  const cabecalho = (
+    <View style={styles.headerBlock}>
+      <View>
+        <View style={styles.overlineRow}>
+          <Text style={[styles.overline, { color: colors.textSecondary, fontFamily: fonts.bodySemiBold }]}>
+            FINANCEIRO
+          </Text>
+          <View style={[styles.roleChip, { borderColor: colors.primary }]}>
+            <Text style={[styles.roleChipText, { color: colors.primaryText, fontFamily: fonts.bodyBold }]}>
+              ADMIN
+            </Text>
+          </View>
+        </View>
+        <AppText variant="heading">{formatMonthYear(mes)}</AppText>
+      </View>
+
+      <MonthSelector options={opcoesDeMes} value={mes} onChange={setMes} />
+
+      <FinanceSummary totals={totals} />
+
+      <Button
+        title="Histórico por aluno"
+        variant="secondary"
+        onPress={abrirHistorico}
+        accessibilityHint="Escolha um aluno para ver e ajustar as mensalidades dele"
+      />
+
+      <SegmentedControl options={options} value={category} onChange={setCategory} />
+
+      {loading && data.length > 0 ? (
+        <ActivityIndicator color={colors.primary} accessibilityLabel="Atualizando" />
+      ) : null}
+    </View>
   );
 
   return (
     <ScreenWrapper edges={SCREEN_EDGES}>
-      <View style={styles.headerBlock}>
-        <View>
-          <View style={styles.overlineRow}>
-            <Text style={[styles.overline, { color: colors.textSecondary, fontFamily: fonts.bodySemiBold }]}>
-              FINANCEIRO
-            </Text>
-            <View style={[styles.roleChip, { borderColor: colors.primary }]}>
-              <Text style={[styles.roleChipText, { color: colors.primaryText, fontFamily: fonts.bodyBold }]}>
-                ADMIN
-              </Text>
-            </View>
-          </View>
-          <AppText variant="heading">{monthLabel}</AppText>
-        </View>
-
-        <FinanceSummary totals={totals} />
-
-        <SegmentedControl options={options} value={category} onChange={setCategory} />
-      </View>
-
-      {error !== null && data.length === 0 ? (
-        <ErrorState message={error} onRetry={() => void reload()} />
-      ) : loading && data.length === 0 ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={data}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          getItemLayout={getItemLayout}
-          removeClippedSubviews
-          initialNumToRender={12}
-          windowSize={11}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={
+      <FlatList
+        data={error !== null ? [] : data}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
+        ListHeaderComponent={cabecalho}
+        removeClippedSubviews
+        initialNumToRender={12}
+        windowSize={11}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          error !== null ? (
+            <ErrorState message={error} onRetry={() => void reload()} />
+          ) : loading ? (
+            <ActivityIndicator size="large" color={colors.primary} style={styles.loading} />
+          ) : (
             <EmptyState
               icon="cash-outline"
               title="Nada por aqui"
-              message="Não há pagamentos nesta categoria."
+              message="Não há mensalidades nesta categoria neste mês."
             />
-          }
-        />
-      )}
+          )
+        }
+      />
     </ScreenWrapper>
   );
 }
 
 const keyExtractor = (item: PaymentWithName): string => item.id;
 
-const getItemLayout = (
-  _data: ArrayLike<PaymentWithName> | null | undefined,
-  index: number,
-): { length: number; offset: number; index: number } => ({
-  length: ADMIN_PAYMENT_CARD_TOTAL,
-  offset: ADMIN_PAYMENT_CARD_TOTAL * index,
-  index,
-});
-
 const styles = StyleSheet.create({
   headerBlock: {
     paddingTop: 12,
-    paddingBottom: 8,
+    paddingBottom: 12,
     gap: 16,
   },
   overlineRow: {
@@ -176,13 +211,11 @@ const styles = StyleSheet.create({
     fontSize: 10,
     letterSpacing: 0.5,
   },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  loading: {
+    marginTop: 24,
   },
   content: {
-    paddingTop: 8,
+    paddingBottom: 24,
     flexGrow: 1,
   },
 });

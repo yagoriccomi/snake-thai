@@ -1,8 +1,7 @@
 # Controle de Frequência — especificação e plano
 
-> **Estado:** Fases 0 a 3 entregues em 2026-09-14 (app 1.4.0). O anexo da
-> justificativa depende do deploy do módulo de justificativas do `snake-server`
-> — ver "Entregue nas Fases 2 e 3".
+> **Estado:** Fases 0 a 3 entregues e em produção em 2026-09-14 (app 1.4.0 e
+> módulo de justificativas do `snake-server`, PR #14).
 > Decisões tomadas com o cliente em 2026-09-09; este documento é a fonte da
 > verdade das regras de cálculo.
 
@@ -41,16 +40,32 @@ regressão `supabase/tests/regressao_frequencia_regras.sql` com 18 casos verdes.
   imagem ou PDF). A linha da aula mostra se a justificativa está em análise,
   aprovada ou recusada. Depois da revisão, a folha não reabre: o banco não
   aceita editar justificativa já revisada.
-- **Professor / admin:** na chamada, "Concluir chamada" (com aviso de quantos
-  alunos sem chamada vão contar como falta), frequência do mês por aluno, a
+- **Professor / admin:** na chamada, frequência do mês por aluno, a
   justificativa com "Ver anexo", "Aprovar" e "Recusar", e toque no nome para
   abrir o histórico. Na agenda, o aviso de aulas sem chamada leva direto à aula.
 
-**Dependência de servidor:** o anexo sobe por `POST /v1/justifications/sign-upload`
-e é visto por `/view-url`, do `snake-server` (branch
-`feature/modulo-justificativas`). Enquanto esse módulo não estiver no ar, a
-justificativa **só com mensagem** funciona; com anexo, o envio falha com
-mensagem genérica e nada é gravado.
+### Chamada em lote (2026-09-14, app 1.6.0)
+
+A primeira versão gravava cada toque e recarregava a lista, que voltava ao
+topo. Agora:
+
+- Uma lista só, em ordem alfabética, com ✓ e ✗ por aluno: o marcado fica
+  colorido, o outro cinza. As marcações ficam **no aparelho**.
+- "Concluir chamada" (ou "Salvar alterações", se já concluída) envia tudo em
+  **uma** chamada a `salvar_chamada(aula, presentes[], ausentes[])`, que grava
+  e conclui na mesma transação. Salvar de novo corrige sem reescrever o
+  momento da conclusão.
+- **Aluno sem marcação vai como falta**, e a tela avisa antes. Na conta ele já
+  seria falta (aula concluída sem presença); gravar explícito evita um "sem
+  marcação" enganoso ao reabrir.
+- Sair com marcações não salvas pede confirmação.
+- Regressão: `supabase/tests/regressao_chamada_em_lote.sql`, 12 casos verdes.
+  `concluir_chamada` continua no banco para os APKs 1.4.x e 1.5.x.
+
+**Servidor:** o anexo sobe por `POST /v1/justifications/sign-upload` e é visto
+por `/view-url`, do `snake-server` (no ar desde 2026-09-14, PR #14). Se a API
+estiver fora, a justificativa **só com mensagem** continua funcionando; com
+anexo, o envio falha com mensagem genérica e nada é gravado.
 
 ## Por que este documento existe
 

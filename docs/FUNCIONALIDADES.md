@@ -42,7 +42,7 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [x] Lançar presença pelo admin · OK
 - [x] **P0** Controle de frequência (contador, percentual, histórico mensal,
   conclusão da chamada, aviso de aula sem chamada e justificativa de falta) —
-  regras em [`FREQUENCIA.md`](FREQUENCIA.md) · FEITO (anexo da justificativa aguarda deploy do `snake-server`)
+  regras em [`FREQUENCIA.md`](FREQUENCIA.md) · FEITO
 - [ ] **P0** Renomear / excluir turma — hoje só existe criação · PARCIAL
 - [ ] **P0** Aulas recorrentes (grade semanal fixa em vez de aula a aula) · FALTA
 - [ ] **P1** Capacidade máxima e professor responsável por turma · FALTA
@@ -57,6 +57,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 > QUANDO vence, mas não QUANTO. É mudança de esquema — precede qualquer UI.
 
 - [x] Aprovar / recusar comprovante PIX · OK
+- [x] **P0** Histórico de pagamentos por aluno — lista expansível com anexo, dias de atraso e marcação manual de paga / não paga pelo admin · OK
+- [x] **P0** Financeiro geral por mês — seletor de competência com marcador de pendência e categoria "Pagas" · OK
+- [x] **P0** Comprovante obrigatório para o aluno — garantido no banco, não só na tela · OK
 - [x] **P0** Planos com preço e periodicidade — tela de CRUD em `PlanosScreen` · OK
 - [~] **P0** Campo de valor no pagamento — `payments.amount_cents` + FK real para `plans` · BANCO OK
 - [x] **P0** Dia de vencimento configurável — por plano e padrão da academia · OK

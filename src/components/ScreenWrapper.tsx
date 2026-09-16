@@ -61,8 +61,11 @@ function ScreenWrapperComponent({
     <SafeAreaView style={safeAreaStyle} edges={edges}>
       <StatusBar style={isDark ? 'light' : 'dark'} />
       {avoidKeyboard ? (
-        // No Android o manifesto já usa adjustResize, então basta 'height';
-        // no iOS é preciso reservar o espaço do teclado com 'padding'.
+        // Com edge-to-edge (SDK 57) o Android NÃO redimensiona a janela, apesar
+        // do adjustResize no manifesto: quem encolhe a tela é este componente,
+        // pelos eventos de teclado da janela principal, e o ScrollView rola o
+        // campo em foco para cima. Não funciona dentro de Modal — para folhas
+        // com campo de texto, use BottomSheet (ver Portal.tsx).
         <KeyboardAvoidingView
           style={FLEX_FILL}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

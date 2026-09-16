@@ -1,17 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type ListRenderItem,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
+import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
 import type { Fonts, Radius } from '@/constants/theme';
 import { useGroups } from '@/hooks/useGroups';
@@ -79,9 +71,10 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
     }
   }, [newName, addGroup, select]);
 
-  const renderItem = useCallback<ListRenderItem<GroupRow>>(
-    ({ item }) => (
+  const renderGroup = useCallback(
+    (item: GroupRow) => (
       <Pressable
+        key={item.id}
         style={styles.option}
         onPress={() => select(item.id)}
         accessibilityRole="button"
@@ -93,7 +86,7 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
         ) : null}
       </Pressable>
     ),
-    [styles, select, value, colors.primary],
+    [styles, select, value, colors.primaryText],
   );
 
   return (
@@ -109,61 +102,47 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
         <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
       </Pressable>
 
-      <Modal
-        visible={visible}
-        transparent
-        animationType="slide"
-        onRequestClose={close}
-      >
-        <Pressable style={styles.backdrop} onPress={close} />
-        <View style={styles.sheet}>
-          <AppText variant="subtitle" style={styles.sheetTitle}>
-            Selecionar turma
-          </AppText>
+      {/* BottomSheet, não Modal: o campo "Nova turma" ficava sob o teclado. */}
+      <BottomSheet visible={visible} onClose={close}>
+        <AppText variant="subtitle" style={styles.sheetTitle}>
+          Selecionar turma
+        </AppText>
 
-          <Pressable
-            style={styles.option}
-            onPress={() => select(null)}
-            accessibilityRole="button"
-            accessibilityLabel="Sem turma"
-          >
-            <AppText variant="body">Sem turma</AppText>
-            {value === null ? (
-              <Ionicons name="checkmark" size={18} color={colors.primaryText} />
-            ) : null}
-          </Pressable>
-
-          <FlatList
-            data={groups}
-            keyExtractor={keyExtractor}
-            renderItem={renderItem}
-            style={styles.list}
-            keyboardShouldPersistTaps="handled"
-          />
-
-          <View style={styles.addRow}>
-            <TextInput
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Nova turma"
-              placeholderTextColor={colors.textSecondary}
-              style={styles.addInput}
-              accessibilityLabel="Nome da nova turma"
-            />
-            <Button title="Adicionar" onPress={handleAdd} loading={adding} />
-          </View>
-          {error !== null ? (
-            <AppText variant="caption" color={colors.error}>
-              {error}
-            </AppText>
+        <Pressable
+          style={styles.option}
+          onPress={() => select(null)}
+          accessibilityRole="button"
+          accessibilityLabel="Sem turma"
+        >
+          <AppText variant="body">Sem turma</AppText>
+          {value === null ? (
+            <Ionicons name="checkmark" size={18} color={colors.primaryText} />
           ) : null}
+        </Pressable>
+
+        {/* Poucas turmas: um map simples, sem lista virtualizada dentro do ScrollView da folha. */}
+        {groups.map(renderGroup)}
+
+        <View style={styles.addRow}>
+          <TextInput
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="Nova turma"
+            placeholderTextColor={colors.textSecondary}
+            style={styles.addInput}
+            accessibilityLabel="Nome da nova turma"
+          />
+          <Button title="Adicionar" onPress={handleAdd} loading={adding} />
         </View>
-      </Modal>
+        {error !== null ? (
+          <AppText variant="caption" color={colors.error}>
+            {error}
+          </AppText>
+        ) : null}
+      </BottomSheet>
     </View>
   );
 }
-
-const keyExtractor = (item: GroupRow): string => item.id;
 
 function makeStyles(colors: ColorScheme, radius: Radius, fonts: Fonts) {
   return StyleSheet.create({

@@ -124,9 +124,21 @@ Na aba **Aulas**, como administrador, você:
 
 - **Cria turmas** (ex.: Turma Manhã, Turma Noite) e atribui alunos a elas.
 - **Cria aulas** com data, horário e turma.
-- **Lança a presença**: em cada aula, marca quem esteve presente.
+- **Faz a chamada**: em cada aula, marca quem esteve presente.
 
 Os alunos veem só as aulas da própria turma (e os eventos abertos a todos).
+
+### Fazer a chamada
+
+1. Abra a aula e toque em **Fazer chamada**.
+2. Para cada aluno, toque no **✓** (presente) ou no **✗** (falta). O símbolo
+   escolhido fica colorido e o outro fica cinza; tocar de novo desmarca.
+3. Nada é gravado enquanto você marca — a lista não recarrega nem volta ao
+   topo. Toque em **Concluir chamada** no rodapé para gravar tudo de uma vez.
+4. Antes de gravar, o app mostra quantas presenças e faltas serão
+   registradas. **Aluno sem marcação é registrado como falta.**
+5. Precisa corrigir? Reabra a chamada, ajuste e toque em **Salvar
+   alterações**. Se tentar sair com marcações não salvas, o app avisa.
 
 ---
 
@@ -141,8 +153,32 @@ O fluxo de pagamento é pensado para a realidade do PIX no Brasil:
    - Aprovado, o pagamento vira "pago" e some da lista de pendências.
    - Recusado, o aluno é avisado para reenviar.
 
-Você também vê, separados, os pagamentos **em aberto** (ainda não pagos) e os
-**vencidos** (passaram da data) — o sistema marca o vencimento sozinho.
+### Ver o financeiro de outro mês
+
+No topo da aba **Financeiro**, toque no **mês** que quer ver. A bolinha
+colorida de cada mês já mostra onde há pendência: vermelha tem atraso, azul
+tem comprovante aguardando você, amarela tem mensalidade em aberto, verde está
+tudo pago. O resumo e as listas **Aprovar**, **Aberto**, **Vencidas** e
+**Pagas** passam a mostrar só aquele mês.
+
+Tocar numa mensalidade em análise abre o comprovante; nas demais, abre o
+histórico daquele aluno.
+
+### Averiguar e ajustar o histórico de um aluno
+
+1. Na aba **Financeiro**, toque em **Histórico por aluno** e escolha o aluno
+   (alunos inativos também aparecem).
+2. No topo, veja quantas mensalidades estão pagas, em atraso e em aberto.
+3. Cada mensalidade mostra o mês, a situação e se tem **anexo**. Toque nela
+   para abrir os detalhes: valor, vencimento, quando foi paga e com quantos
+   dias de atraso.
+4. **Abrir anexo** mostra o comprovante enviado pelo aluno.
+5. **Marcar como paga** registra o pagamento na hora, **sem exigir anexo** —
+   para pagamento em dinheiro ou acerto combinado. **Marcar como não paga**
+   desfaz; o anexo, se houver, continua guardado.
+
+> O aluno, por outro lado, **sempre** precisa anexar o comprovante: o sistema
+> não aceita mandar a mensalidade para análise sem o arquivo.
 
 ---
 

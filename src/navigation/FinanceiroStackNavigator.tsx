@@ -7,6 +7,8 @@ import {
 import type { FinanceiroStackParamList } from '@/navigation/types';
 import { ComprovanteScreen } from '@/screens/financeiro/ComprovanteScreen';
 import { FinanceiroHomeScreen } from '@/screens/financeiro/FinanceiroHomeScreen';
+import { HistoricoPagamentosAlunoScreen } from '@/screens/financeiro/HistoricoPagamentosAlunoScreen';
+import { HistoricoPagamentosAlunosScreen } from '@/screens/financeiro/HistoricoPagamentosAlunosScreen';
 import { MeuPlanoScreen } from '@/screens/financeiro/MeuPlanoScreen';
 import { PagamentoScreen } from '@/screens/financeiro/PagamentoScreen';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -50,6 +52,16 @@ export function FinanceiroStackNavigator(): React.JSX.Element {
         component={ComprovanteScreen}
         options={COMPROVANTE_OPTIONS}
       />
+      <Stack.Screen
+        name="HistoricoPagamentosAlunos"
+        component={HistoricoPagamentosAlunosScreen}
+        options={HISTORICO_ALUNOS_OPTIONS}
+      />
+      <Stack.Screen
+        name="HistoricoPagamentosAluno"
+        component={HistoricoPagamentosAlunoScreen}
+        options={HISTORICO_ALUNO_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
@@ -58,3 +70,5 @@ const HOME_OPTIONS: NativeStackNavigationOptions = { title: 'Financeiro' };
 const MEU_PLANO_OPTIONS: NativeStackNavigationOptions = { title: 'Meu Plano' };
 const PAGAMENTO_OPTIONS: NativeStackNavigationOptions = { title: 'Pagamento' };
 const COMPROVANTE_OPTIONS: NativeStackNavigationOptions = { title: 'Comprovante' };
+const HISTORICO_ALUNOS_OPTIONS: NativeStackNavigationOptions = { title: 'Histórico por aluno' };
+const HISTORICO_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Pagamentos' };

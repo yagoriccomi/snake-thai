@@ -2,6 +2,7 @@ import type { ReferenciaDeComprovante } from '@/services/proofs.service';
 import { removerArquivoDoComprovante } from '@/services/proofs.service';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
+import { situacaoSemPagamento } from '@/utils/payments';
 
 export type { ProofUpload, ReferenciaDeComprovante } from '@/services/proofs.service';
 export {
@@ -37,15 +38,53 @@ export async function fetchStudentPayments(
   return data;
 }
 
-/** Pagamentos por status (visão do admin). */
-export async function fetchPaymentsByStatus(
-  status: PaymentStatus,
-): Promise<PaymentRow[]> {
+/**
+ * Histórico completo de mensalidades de um aluno, da competência mais recente
+ * para a mais antiga. Todas as situações, não só as pagas: ao averiguar um mês,
+ * o admin precisa ver também o que ficou em aberto. A RLS limita o aluno ao
+ * próprio histórico.
+ */
+export async function fetchPaymentHistory(userId: string): Promise<PaymentRow[]> {
   const { data, error } = await supabase
     .from('payments')
     .select('*')
-    .eq('status', status)
+    .eq('user_id', userId)
+    .order('reference_month', { ascending: false });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/**
+ * Mensalidades de uma competência (`AAAA-MM-01`), todas as situações — visão
+ * do admin, que escolhe o mês no financeiro geral.
+ */
+export async function fetchPaymentsForMonth(referenceMonth: string): Promise<PaymentRow[]> {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('*')
+    .eq('reference_month', referenceMonth)
     .order('due_date', { ascending: true });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/** Competência e situação de uma mensalidade — o mínimo para o seletor de meses. */
+export type PaymentMonthStatus = Pick<PaymentRow, 'reference_month' | 'status'>;
+
+/**
+ * Competência e situação de TODAS as mensalidades, sem o resto das colunas:
+ * alimenta o seletor de meses (quais existem e onde há atraso) sem trazer
+ * dados de pagamento de meses que ninguém abriu.
+ */
+export async function fetchPaymentMonthsOverview(): Promise<PaymentMonthStatus[]> {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('reference_month, status')
+    .order('reference_month', { ascending: false });
   if (error !== null) {
     throw error;
   }
@@ -100,26 +139,25 @@ export async function rejectPayment(
   }
 }
 
-/** Primeiro instante do mês corrente, em ISO (para filtrar "recebido no mês"). */
-function startOfCurrentMonthIso(): string {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-}
-
 /**
- * Soma, em centavos, das mensalidades quitadas no mês corrente.
+ * Desfaz um pagamento (admin): a mensalidade volta a "em aberto" ou "vencida",
+ * conforme o vencimento, e perde a data de pagamento.
  *
- * Base do indicador "recebido" do painel do admin. Some no cliente em vez de um
- * RPC de SUM: o volume mensal é pequeno e evita uma função extra no banco.
+ * O comprovante, se houver, NÃO é apagado: desmarcar um pagamento lançado por
+ * engano não pode destruir o que o aluno enviou. Apagar o arquivo é o que faz
+ * "Recusar comprovante", e é outra decisão.
+ *
+ * Marcar como paga é `approvePayment` — o mesmo registro, com ou sem anexo.
  */
-export async function fetchReceivedThisMonthCents(): Promise<number> {
-  const { data, error } = await supabase
+export async function markPaymentAsUnpaid(
+  payment: Pick<PaymentRow, 'id' | 'due_date'>,
+  hoje: Date = new Date(),
+): Promise<void> {
+  const { error } = await supabase
     .from('payments')
-    .select('amount_cents')
-    .eq('status', 'paid')
-    .gte('paid_at', startOfCurrentMonthIso());
+    .update({ status: situacaoSemPagamento(payment.due_date, hoje), paid_at: null })
+    .eq('id', payment.id);
   if (error !== null) {
     throw error;
   }
-  return (data ?? []).reduce((sum, row) => sum + (row.amount_cents ?? 0), 0);
 }

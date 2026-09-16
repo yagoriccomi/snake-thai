@@ -226,8 +226,22 @@ psql "$DATABASE_URL" -f supabase/seed/demo_seed.sql
 ```
 
 O script é **idempotente** — rodar de novo apenas completa o que faltar, sem
-duplicar ninguém. Todas as contas criadas usam a senha `Snake@123` e ficam no
-domínio `@demo.snakethai.com`, justamente para serem localizáveis depois.
+duplicar ninguém. As contas criadas ficam num domínio de e-mail próprio de
+demonstração, justamente para serem localizáveis e removíveis depois. As
+credenciais de acesso são combinadas com a equipe, fora do repositório.
+
+Para dar corpo à frequência e ao histórico financeiro, rode em seguida:
+
+```bash
+psql "$DATABASE_URL" -f supabase/seed/demo_seed_historico.sql
+```
+
+Ele cria os **últimos 3 meses**: agenda, chamada concluída em toda aula já
+terminada (inclusive as do mês corrente), justificativas revisadas, meses de
+frequência congelados e mensalidades em dia, com atraso e em aberto. Também é
+idempotente e relativo ao dia em que roda: rodar de novo depois só conclui as
+chamadas das aulas que terminaram nesse meio-tempo. Chamada feita por
+professor de verdade e mensalidade com comprovante nunca são sobrescritas.
 
 > **Antes de operar de verdade**, remova os dados fictícios:
 > `psql "$DATABASE_URL" -f supabase/seed/demo_seed_limpar.sql`. Ele apaga

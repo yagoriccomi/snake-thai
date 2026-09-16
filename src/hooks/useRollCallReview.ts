@@ -2,9 +2,10 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { createLogger } from '@/lib/logger';
 import {
-  concludeRollCall,
   fetchRollCallState,
+  saveRollCall,
   type RollCallState,
+  type RollCallSubmission,
 } from '@/services/frequency.service';
 import {
   fetchJustificationsForClass,
@@ -22,8 +23,8 @@ interface UseRollCallReviewResult {
   justificationsByUser: Readonly<Record<string, JustificationRow>>;
   error: string | null;
   reload: () => Promise<void>;
-  /** Conclui a chamada. Lança se o banco recusar — a tela decide o que dizer. */
-  conclude: () => Promise<void>;
+  /** Grava e conclui a chamada. Lança se o banco recusar — a tela decide o que dizer. */
+  save: (chamada: RollCallSubmission) => Promise<void>;
   /** Aprova ou recusa. Lança se o banco recusar. */
   review: (justificationId: string, status: Exclude<JustificationStatus, 'pending'>) => Promise<void>;
 }
@@ -32,9 +33,9 @@ const SEM_JUSTIFICATIVAS: Readonly<Record<string, JustificationRow>> = {};
 
 /**
  * A parte da chamada que é da FREQUÊNCIA: se a aula já pode ser concluída, se
- * já foi, e as justificativas de falta a revisar. A lista de alunos e a
- * marcação de presença continuam em `useClassAttendance` — são dados de
- * origens diferentes, com falhas independentes.
+ * já foi, e as justificativas de falta a revisar. A lista de alunos continua
+ * em `useClassAttendance` — são dados de origens diferentes, com falhas
+ * independentes.
  */
 export function useRollCallReview(classId: string): UseRollCallReviewResult {
   const [state, setState] = useState<RollCallState | null>(null);
@@ -65,10 +66,13 @@ export function useRollCallReview(classId: string): UseRollCallReviewResult {
     void load();
   }, [load]);
 
-  const conclude = useCallback(async () => {
-    await concludeRollCall(classId);
-    await load();
-  }, [classId, load]);
+  const save = useCallback(
+    async (chamada: RollCallSubmission) => {
+      await saveRollCall(classId, chamada);
+      await load();
+    },
+    [classId, load],
+  );
 
   const review = useCallback(
     async (justificationId: string, status: Exclude<JustificationStatus, 'pending'>) => {
@@ -78,5 +82,5 @@ export function useRollCallReview(classId: string): UseRollCallReviewResult {
     [load],
   );
 
-  return { state, justificationsByUser, error, reload: load, conclude, review };
+  return { state, justificationsByUser, error, reload: load, save, review };
 }
