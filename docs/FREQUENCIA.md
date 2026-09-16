@@ -50,7 +50,8 @@ A primeira versão gravava cada toque e recarregava a lista, que voltava ao
 topo. Agora:
 
 - Uma lista só, em ordem alfabética, com ✓ e ✗ por aluno: o marcado fica
-  colorido, o outro cinza. As marcações ficam **no aparelho**.
+  colorido, o outro cinza. As marcações ficam **no aparelho** (ver "Rascunho da
+  chamada", abaixo).
 - "Concluir chamada" (ou "Salvar alterações", se já concluída) envia tudo em
   **uma** chamada a `salvar_chamada(aula, presentes[], ausentes[])`, que grava
   e conclui na mesma transação. Salvar de novo corrige sem reescrever o
@@ -58,9 +59,45 @@ topo. Agora:
 - **Aluno sem marcação vai como falta**, e a tela avisa antes. Na conta ele já
   seria falta (aula concluída sem presença); gravar explícito evita um "sem
   marcação" enganoso ao reabrir.
-- Sair com marcações não salvas pede confirmação.
+- Sair com marcações não salvas pergunta: **Continuar marcando**, **Descartar**
+  ou **Sair e guardar**.
 - Regressão: `supabase/tests/regressao_chamada_em_lote.sql`, 12 casos verdes.
   `concluir_chamada` continua no banco para os APKs 1.4.x e 1.5.x.
+
+### Rascunho da chamada (2026-09-16, T11)
+
+O Android fecha o app em segundo plano; antes, uma chamada pela metade sumia
+quando o professor atendia o telefone. Agora ela fica guardada até ser salva.
+
+- **Onde:** no aparelho, cifrado (`largeSecureStore`, o mesmo da sessão), um
+  rascunho por **usuário e aula** (`rollcall_draft.<usuário>.<aula>`). Tem id de
+  aluno e presença/falta, sem nome. O backup do Android está desligado.
+- **Quando grava:** meio segundo depois do último toque (toques seguidos viram
+  uma gravação), na hora ao ir para segundo plano e ao sair da tela.
+- **Ao abrir a chamada**, o que está guardado é comparado com o que está no banco:
+  - **vencido** (mais de **7 dias** sem marcação nova) ou **idêntico** ao salvo →
+    apagado em silêncio;
+  - **conflito** → aviso "Chamada alterada por outra pessoa"; a lista mostra o que
+    está salvo e fica travada até escolher **Manter o que está salvo** (apaga o
+    rascunho) ou **Usar meu rascunho** (as marcações voltam; valem só depois de
+    salvar);
+  - senão → **"Rascunho recuperado"**, com as marcações de volta e a opção
+    **Descartar rascunho** (pede confirmação).
+- **Conflito, como é detectado:** o rascunho guarda a foto do que estava salvo
+  quando começou (marcações e momento da conclusão). Se o banco mudou desde
+  então, outra pessoa salvou. Não dá para usar datas: `attendance_taken_at` não
+  muda ao salvar de novo, e `updated_at` da presença muda quando o aluno altera
+  a própria declaração.
+- **Apagado:** ao salvar a chamada com sucesso, ao descartar e ao **sair do
+  login** (todos os rascunhos do aparelho, de qualquer usuário).
+- **Limitações conhecidas:** um toque feito menos de ~0,5 s antes de o app ser
+  encerrado à força, sem passar por segundo plano, pode se perder. Se outra
+  pessoa salvar **enquanto** a tela está aberta, ninguém é avisado e vale quem
+  salvar por último (como antes); fechar isso exige uma versão da chamada no
+  banco.
+- Código: `utils/rollCallDraft.ts` (regras), `services/rollCallDraft.service.ts`
+  (armazenamento), `hooks/useRollCallDraft.ts` (tela) e
+  `components/RollCallDraftNotice.tsx` (aviso).
 
 **Servidor:** o anexo sobe por `POST /v1/justifications/sign-upload` e é visto
 por `/view-url`, do `snake-server` (no ar desde 2026-09-14, PR #14). Se a API

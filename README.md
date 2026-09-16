@@ -24,6 +24,7 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   (congelados no dia 1). Ao avisar falta, pode enviar justificativa com
   mensagem de até 255 caracteres e imagem ou PDF, que o professor da aula ou o
   admin aprova ou recusa. Aulas que passam sem chamada geram aviso na agenda.
+  Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes.
 - **Mensalidades geradas automaticamente**: no dia 1 de cada mês para todo aluno
