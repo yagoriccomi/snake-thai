@@ -88,7 +88,7 @@ com rótulo descritivo e um `SafeAreaProvider` próprio para o conteúdo não so
 
 ## 7. Pendências
 
-- [ ] 👤 Conectar o celular (`menu.bat` → `[2]`) para instalar `release\snake-thai-dev-v1.6.0.apk` ao lado do app de produção
+- [ ] 👤 Conectar o celular (`menu.bat` → `[2]`) para instalar o APK DEV mais recente de `release\` (`snake-thai-dev-v1.6.0+dev.25.9289a3e.apk`, com a T3) ao lado do app de produção
 - [ ] 👤 Criar o ambiente Cloudinary de desenvolvimento e colar as 3 credenciais em `snake-server/.env.dev` (hoje com marcadores `PREENCHER_AMBIENTE_DEV`)
 - [ ] 👤 Checagem somente leitura de produção com o seu token: `npx supabase migration list --linked` e `npx supabase db diff --linked --schema public,storage`
 - [ ] 👤⚠️ **Dados de demonstração em produção — decisão sua.** O plano recomendava trocar agora a senha das contas de demo e de teste. Mas, na publicação da 1.6.0, você disse que não era preciso mudar a senha dos demais, então **nada foi alterado**. Antes do primeiro aluno real: backup e `supabase/seed/demo_seed_limpar.sql`, e informar qual e-mail é a sua conta real de admin

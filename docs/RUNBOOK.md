@@ -183,9 +183,12 @@ adb reverse tcp:55321 tcp:55321 && adb reverse tcp:3000 tcp:3000
 **A porta do Metro é embutida no APK.** Trocar a porta 6969 exige recompilar —
 ela vira um resource do binário (`react_native_dev_server_port`).
 
-**Assinatura:** o release atual usa a chave de debug (ver `android/app/build.gradle`).
-**Antes de publicar em loja, gere uma keystore própria** e configure o
-`signingConfig` — a chave de debug é pública e não serve para produção.
+**Assinatura:** o release de **produção** só compila com a keystore de produção
+configurada (`SNAKETHAI_RELEASE_*` em `%USERPROFILE%\.gradle\gradle.properties`); sem
+ela o build para com "Release sem keystore de producao". O `[5]` em PROD mostra o
+certificado do APK e avisa se saiu com a chave de debug. O app **DEV** assina com a
+chave de debug e não é publicado. Gerar, guardar e cadastrar a chave:
+[`RELEASE-SIGNING.md`](RELEASE-SIGNING.md).
 
 ---
 

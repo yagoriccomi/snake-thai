@@ -25,6 +25,7 @@ describe('app.config.js', () => {
     expect(config.android?.package).toBe('com.snakethai.app');
     expect(config.scheme).toBe(base.scheme);
     expect(config.plugins).toEqual(base.plugins);
+    expect(config.plugins).toContainEqual(['./plugins/withReleaseSigning.js', { exigirChaveDeProducao: true }]);
     expect(config.extra).toMatchObject({ appVariant: 'production' });
     // Mesma versão do app.json; fora da tag, só ganha o sufixo do commit.
     expect(config.version?.startsWith(base.version ?? '')).toBe(true);
@@ -50,6 +51,9 @@ describe('app.config.js', () => {
     expect(config.android?.versionCode).toBe(base.android?.versionCode);
     expect(config.android?.adaptiveIcon?.backgroundImage).toBeUndefined();
     expect(config.plugins).toContain('./plugins/withDevCleartext.js');
+    // DEV assina com a chave de debug e não depende da keystore de produção.
+    expect(config.plugins).toContainEqual(['./plugins/withReleaseSigning.js', { exigirChaveDeProducao: false }]);
+    expect(base.plugins).toContainEqual(['./plugins/withReleaseSigning.js', { exigirChaveDeProducao: true }]);
     // A liberação de HTTP nunca pode vazar para produção.
     expect(base.plugins).not.toContain('./plugins/withDevCleartext.js');
   });

@@ -19,6 +19,20 @@ const COR_DO_ICONE_DEV = '#F59E0B';
 
 const PACOTE_DEV = 'com.snakethai.app.dev';
 
+const PLUGIN_DE_ASSINATURA = './plugins/withReleaseSigning.js';
+
+/**
+ * O app DEV nunca é publicado: assina o release com a chave de debug e não
+ * precisa da keystore de produção (docs/RELEASE-SIGNING.md). Mantém o plugin
+ * na lista e só troca a opção.
+ *
+ * @param {string | [string, object]} plugin
+ */
+const semExigirChaveDeProducao = (plugin) =>
+  Array.isArray(plugin) && plugin[0] === PLUGIN_DE_ASSINATURA
+    ? [PLUGIN_DE_ASSINATURA, { ...plugin[1], exigirChaveDeProducao: false }]
+    : plugin;
+
 module.exports = ({ config }) => {
   // Lido por referência, e não como `process.env.EXPO_PUBLIC_…`: o babel-preset-expo
   // troca essa forma pelo valor na hora de transformar o arquivo, e a trava
@@ -70,7 +84,7 @@ module.exports = ({ config }) => {
       package: PACOTE_DEV,
       adaptiveIcon: { ...iconeSemImagemDeFundo, backgroundColor: COR_DO_ICONE_DEV },
     },
-    plugins: [...config.plugins, './plugins/withDevCleartext.js'],
+    plugins: [...config.plugins.map(semExigirChaveDeProducao), './plugins/withDevCleartext.js'],
     extra,
   };
 };

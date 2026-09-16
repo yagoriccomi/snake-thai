@@ -38,8 +38,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 1 | **T4 · fase 1** — merges do `snake-thai` (sem efeito em produção) | ✅ | — | [PLANO-T4](planos/PLANO-T4.md) |
 | 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | 🟡 #12 mesclado; #16 aguarda você | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
 | 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ✅ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
-| 4 | **T3** — padronizar número de versão | 🟡 PR aberto | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
-| 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | ⬜ | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
+| 4 | **T3** — padronizar número de versão | ✅ PR #13 | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
+| 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | 🟡 código pronto; 👤 keystore | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
 | 6 | **T5** — GitHub Actions: build e publicação automática do APK | ⬜ | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
 | 7 | **T11** — guardar a chamada em andamento no aparelho | ⬜ | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
 | 8 | **T10** — monitoramento de erros no aparelho | ⬜ | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
@@ -81,7 +81,7 @@ porque usa regras das outras e depende de contas externas.
 - [x] Variante do app: `app.config.js` com **"DEV Snake Thai"** (`com.snakethai.app.dev`), instalável ao lado do app de produção
 - [x] `.env.dev` e `.env.prod` separados e trava que impede o app DEV de apontar para produção (e vice-versa); faixa "DEV · banco local" na tela
 - [x] `menu.bat` com escolha de variante e comandos do banco local
-- [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
+- [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0+dev.25.9289a3e.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
 - [x] `snake-server` local ligado ao banco local (verificado com token local); Cloudinary de dev aguarda as credenciais abaixo
 - [x] Fluxo novo: migration **primeiro no local**; produção só por `scripts\db-push-prod.bat` (backup, simulação e dupla confirmação)
 - [x] PR #12 (`snake-thai`) mesclado — `c03dc6d`
@@ -102,17 +102,18 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] `menu.bat` recusa compilar release com versão desatualizada
 - [x] `CHANGELOG.md` com o histórico reconstituído e `docs/VERSIONAMENTO.md`
 - [x] Versão instalada visível no fim do Perfil; política de versão do `snake-server` (vai no PR #16)
-- [ ] PR mesclado
+- [x] PR #13 mesclado — `7578f13`; APK DEV com versão conferido (`versionCode 1006000`, `1.6.0+dev.25.9289a3e`)
 - Próximas versões: com a T1 integrada já há funcionalidade nova, então o próximo APK publicado sugere **1.7.0**; uma 1.6.1 só com a assinatura exige `--forcar`
 
 ### T2 — Tirar a chave de debug do release ([plano](planos/PLANO-T2.md))
 
 - [x] ⚠️ Apagar o APK assinado com a chave de debug do release `v1.6.0` e deixar aviso nas notas (a cópia local fica guardada; o asset teve 0 downloads) — confirmado pelo usuário e feito em 2026-09-16
-- [ ] Build de release **falha** se a chave de produção não estiver configurada (hoje cai na chave de debug sem avisar), com testes
-- [ ] Corrigir a documentação: a keystore fica **fora** da pasta `android/`, que o prebuild apaga
+- [x] Build de release **falha** se a chave de produção não estiver configurada, com testes — provado no Gradle: `assembleRelease` para com a mensagem da trava, `assembleDebug` segue funcionando; o app DEV não exige chave
+- [x] Corrigir a documentação: a keystore fica **fora** da pasta `android/`, que o prebuild apaga (`docs/RELEASE-SIGNING.md`); `menu.bat` `[5]` mostra o certificado e alerta se for a chave de debug
+- [ ] PR da T2 mesclado
 - [ ] 👤 Gerar a keystore de produção (as senhas são digitadas por você), guardar em 2 lugares e testar a restauração
 - [ ] 👤 Configurar as propriedades de assinatura em `%USERPROFILE%\.gradle\gradle.properties`
-- [ ] Publicar o primeiro APK assinado (1.6.1 agora, ou junto da 1.7.0 — ver decisões)
+- [ ] Publicar o primeiro APK assinado — com a T1 e a T3 na `main` já há funcionalidade nova, então o caminho natural é **1.7.0**; 1.6.1 exige `--forcar` (decisão sua)
 - [ ] 👤 Desinstalar a versão com chave de debug nos aparelhos e instalar a nova (só desta vez)
 
 ### T5 — Build automático no GitHub Actions ([plano](planos/PLANO-T5.md))
@@ -223,3 +224,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T1 implementada** (PRs `snake-thai` #12 e `snake-server` #16). Banco local em PG17 nas portas 553xx, `db-dev`, seeds locais com trava, app **DEV Snake Thai** com trava de ambiente e faixa, `menu.bat` por variante, `db-push-prod.bat` com backup e dupla confirmação, servidor de dev no banco local. Faltam: instalar o APK DEV no celular, credenciais Cloudinary de dev e merges. Lacunas L2, L5 e L6 resolvidas. Relatório em [`ENTREGA-T1`](planos/ENTREGA-T1.md). |
 | 2026-09-16 | **T1:** PR #12 mesclado (`c03dc6d`, CI verde). APK DEV gerado e conferido (`com.snakethai.app.dev`, banco local embutido, sem endereço de produção). PR #16 do servidor com CI verde, aguardando confirmação por causa do deploy. |
 | 2026-09-16 | **T3 implementada** (branch `chore/versionamento`). Versão só muda ao publicar; `versionCode` derivado (1006000); CLI `versao:*` com CHANGELOG; sufixo de build no app DEV e em testes; `[5]` do menu confere a versão; versão no Perfil. Política do servidor no PR #16. Relatório em [`ENTREGA-T3`](planos/ENTREGA-T3.md). |
+| 2026-09-16 | **T3 concluída:** PR #13 mesclado (`7578f13`). APK DEV recompilado com a versão (`1.6.0+dev.25.9289a3e`, `versionCode 1006000`). |
+| 2026-09-16 | **T2, parte de código:** plugin de assinatura com trava (release de produção sem keystore não compila, provado no Gradle), propriedades `SNAKETHAI_RELEASE_*`, DEV sem exigência, alerta de certificado no `menu.bat`, `docs/RELEASE-SIGNING.md` reescrito. Aguarda você gerar a keystore para assinar e publicar. |
