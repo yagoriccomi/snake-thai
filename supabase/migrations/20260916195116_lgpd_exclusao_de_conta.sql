@@ -248,6 +248,26 @@ $funcao$;
 revoke execute on function public.email_do_usuario(uuid) from public, anon;
 grant execute on function public.email_do_usuario(uuid) to authenticated;
 
+-- A troca de e-mail pelo admin (Edge Function admin-update-user-email) confere
+-- antes: o Auth responde e-mail duplicado com um 500 genérico, indistinguível
+-- de uma falha real. Só o servidor pergunta — não vira enumeração de e-mails.
+create or replace function public.email_ja_cadastrado(p_email text, p_exceto uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $funcao$
+  select exists (
+    select 1 from auth.users u
+     where lower(u.email) = lower(trim(p_email))
+       and u.id <> p_exceto
+  );
+$funcao$;
+
+revoke execute on function public.email_ja_cadastrado(text, uuid) from public, anon, authenticated;
+grant execute on function public.email_ja_cadastrado(text, uuid) to service_role;
+
 -- ----------------------------------------------------------------------------
 -- 5. Ninguém apaga perfil pelo app
 --

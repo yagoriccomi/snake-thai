@@ -768,6 +768,10 @@ export type Database = {
         Returns: number
       }
       email_do_usuario: { Args: { p_user_id: string }; Returns: string }
+      email_ja_cadastrado: {
+        Args: { p_email: string; p_exceto: string }
+        Returns: boolean
+      }
       enfileirar_comprovantes_expirados: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
       fechar_frequencia_do_mes: {

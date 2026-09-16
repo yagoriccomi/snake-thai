@@ -108,6 +108,17 @@ begin
   end;
 end $$;
 
+-- T12c — a conferência de e-mail em uso é só do servidor
+do $$
+begin
+  begin
+    perform public.email_ja_cadastrado('lgpd-a2@t.invalid', 'f7000000-0000-4000-8000-000000000001');
+    raise exception 'FALHOU T12c: aluno consultou e-mail em uso';
+  exception when insufficient_privilege then
+    raise notice 'OK T12c: e-mail em uso só pelo servidor';
+  end;
+end $$;
+
 -- T12b — aluno não vê e-mail de ninguém
 do $$
 begin
@@ -291,6 +302,17 @@ begin
     raise exception 'FALHOU T9: professor (%)', r;
   end if;
   raise notice 'OK T9: professor sai das aulas futuras, mantém passadas e cor';
+end $$;
+
+-- T12d — e-mail em uso: outra conta sim, a própria não, sem diferença de caixa
+do $$
+begin
+  if not public.email_ja_cadastrado(' LGPD-A2@t.invalid', 'f7000000-0000-4000-8000-000000000003')
+     or public.email_ja_cadastrado('lgpd-a2@t.invalid', 'f7000000-0000-4000-8000-000000000002')
+     or public.email_ja_cadastrado('ninguem@t.invalid', 'f7000000-0000-4000-8000-000000000002') then
+    raise exception 'FALHOU T12d: conferência de e-mail em uso';
+  end if;
+  raise notice 'OK T12d: e-mail em uso conferido';
 end $$;
 
 -- T15 — perfil inexistente
