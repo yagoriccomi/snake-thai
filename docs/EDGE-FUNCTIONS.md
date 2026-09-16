@@ -6,7 +6,8 @@
 >
 > Base URL: `https://<PROJECT_REF>.supabase.co/functions/v1/`
 > Todas exigem os headers `apikey: <anon key>` e `Authorization: Bearer <jwt>`.
-> Deploy: `supabase functions deploy <nome>`.
+> Deploy (só com aprovação, sempre com o projeto explícito):
+> `npx supabase functions deploy <nome> --project-ref <PROJECT_REF>`.
 
 Fonte: [`supabase/functions/`](../supabase/functions/).
 
@@ -89,29 +90,97 @@ devem ser removidas por outro administrador.
 
 ```json
 POST /functions/v1/delete-my-account
-{ "confirmacao": "EXCLUIR MINHA CONTA" }
+{ "confirmacao": "EXCLUIR MINHA CONTA", "senha": "<senha atual>" }
 ```
 
-A `confirmacao` exata é obrigatória — evita exclusão por toque acidental.
+A `confirmacao` exata e a **senha atual** são obrigatórias: a senha é conferida no
+servidor, para um celular desbloqueado na mão de outra pessoa não apagar a conta.
 
 **Respostas**
 
 | Status | Corpo | Quando |
 | --- | --- | --- |
-| `200` | `{ "success": true, "message": "..." }` | conta excluída |
+| `200` | `{ "success": true, "comprovantes": n, "justificativas": n, "message": "..." }` | conta excluída |
 | `400` | `{ "error": "Envie confirmacao: ..." }` | confirmação ausente/errada |
-| `403` | `{ "error": "Contas administrativas devem ser removidas..." }` | chamador é admin |
+| `401` | `{ "error": "Sessão inválida" }` / `{ "error": "Senha incorreta" }` | sem sessão / senha errada |
+| `403` | `{ "error": "Contas de administrador são removidas por outro administrador" }` | chamador é admin |
 | `404` | `{ "error": "Perfil não encontrado" }` | perfil inexistente |
+| `500` | `{ "error": "Não foi possível excluir a conta agora. Tente novamente." }` | falha; repetir é seguro |
 
-**O que a função faz, e por que assim:**
+**O que acontece, e por que assim** (`_shared/anonimizar-conta.ts`):
 
-1. Anonimiza `profiles`: nome, CPF, telefone, nascimento → nulos; marca
-   `anonymized_at`. A linha **permanece** para os pagamentos continuarem íntegros.
-2. **Não** chama `deleteUser`. A cadeia `auth.users → profiles → payments` é toda
-   `ON DELETE CASCADE`: apagar a conta derrubaria o financeiro. Em vez disso,
-   troca o e-mail por um identificador aleatório, redefine a senha e **bane** a
-   conta. Não sobra dado pessoal nem porta de entrada.
-3. Remove `consents` (não têm valor fiscal).
+1. `anonimizar_titular(usuario, solicitante)` — **uma transação no banco**: nome,
+   CPF, telefone, nascimento, turma e plano apagados; `anonymized_at` marcado;
+   imagens de comprovante enfileiradas para eliminação no provedor (o registro do
+   pagamento fica); justificativas de falta apagadas (o anexo vai para a fila);
+   consentimentos apagados; professor sai das aulas **futuras**; auditoria com
+   quem pediu. Chamar de novo devolve `ja_anonimizado` sem refazer nada.
+2. **Não** chama `deleteUser`: `auth.users → profiles → payments` é `ON DELETE
+   CASCADE` e levaria o financeiro. O e-mail vira um identificador aleatório, a
+   senha vira uma que ninguém conhece e a conta é **banida**; as sessões de todos
+   os aparelhos são encerradas.
 
-Verificado de ponta a ponta em `SECURITY.md`: PII apagada, login recusado,
-pagamento preservado.
+Verificado no Supabase local (2026-09-16): login recusado depois, e-mail original
+fora de `auth.users` e `auth.identities`, nenhuma sessão restante, pagamentos
+preservados.
+
+---
+
+## `delete-user-account`
+
+O **administrador** exclui a conta de um aluno ou professor (por exemplo, a pedido
+feito na recepção). Mesma regra da autoexclusão.
+
+**Requisição**
+
+```json
+POST /functions/v1/delete-user-account
+{ "userId": "<uuid>", "confirmacao": "EXCLUIR CONTA" }
+```
+
+**Respostas**
+
+| Status | Corpo | Quando |
+| --- | --- | --- |
+| `200` | `{ "success": true, "ja_anonimizado": false, "comprovantes": n, "justificativas": n }` | conta excluída (ou já estava: `ja_anonimizado: true`) |
+| `400` | `{ "error": "..." }` | confirmação errada, `userId` inválido ou o próprio admin |
+| `401` | `{ "error": "Sessão inválida" }` | sem sessão |
+| `403` | `{ "error": "Acesso restrito a administradores" }` / `{ "error": "Rebaixe o administrador antes de excluir a conta." }` | chamador não é admin / alvo é admin |
+| `404` | `{ "error": "Usuário não encontrado." }` | alvo inexistente |
+| `500` | `{ "error": "Não foi possível excluir a conta agora. Tente novamente." }` | falha; repetir é seguro |
+
+---
+
+## `admin-update-user-email`
+
+O **administrador** corrige o e-mail de login de um aluno ou professor (o e-mail
+vive só no Auth). O e-mail novo já nasce confirmado.
+
+**Requisição**
+
+```json
+POST /functions/v1/admin-update-user-email
+{ "userId": "<uuid>", "email": "novo@exemplo.com" }
+```
+
+**Respostas**
+
+| Status | Corpo | Quando |
+| --- | --- | --- |
+| `200` | `{ "success": true, "email": "novo@exemplo.com" }` | e-mail trocado |
+| `400` | `{ "error": "E-mail inválido" }` / `{ "error": "Identificador de usuário inválido" }` | entrada inválida |
+| `403` | `{ "error": "Acesso restrito a administradores" }` | chamador não é admin |
+| `404` | `{ "error": "Usuário não encontrado" }` | alvo inexistente |
+| `409` | `{ "error": "Este e-mail já está cadastrado em outra conta" }` / `{ "error": "Esta conta foi excluída" }` | e-mail em uso / conta anonimizada |
+
+O e-mail em uso é conferido **antes** por `email_ja_cadastrado()` (só `service_role`):
+o Auth responde duplicata com um 500 genérico que o supabase-js não distingue de uma
+falha real.
+
+---
+
+## `create-staff`
+
+O **administrador** cadastra professor ou administrador já com nome e CPF (e a cor, no
+caso do professor). A pessoa ainda troca a senha padrão e aceita os termos no primeiro
+acesso. Contrato em `supabase/functions/create-staff/index.ts`.

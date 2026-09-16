@@ -104,6 +104,7 @@ Em **Dados → Gerenciar Alunos**, cada aluno tem uma linha com ícones de açã
 
 | Ícone | O que faz |
 | --- | --- |
+| **Lápis** | **Edita os dados** do aluno: nome, CPF, celular, nascimento, turma, plano, situação e o **e-mail de login** (útil quando foi digitado errado no cadastro). Aluno que ainda não fez o primeiro acesso tem nome e CPF travados — ele mesmo informa. |
 | **Escudo** | Promove o aluno a **administrador** (ou rebaixa de volta). Um administrador vê e gerencia tudo — use com critério. |
 | **Pausa** | **Tranca a matrícula** (ou reativa). O aluno trancado sai da lista de ativos e das cobranças, **mas o histórico é preservado**. Use quando alguém suspende o treino sem cancelar de vez. |
 | **Chave** | **Redefine a senha** do aluno para a padrão. Use quando ele esquecer a senha. Ele terá que criar uma nova no acesso seguinte. |
@@ -111,7 +112,15 @@ Em **Dados → Gerenciar Alunos**, cada aluno tem uma linha com ícones de açã
 
 > **Trancar não apaga.** A diferença importa: um aluno trancado pode voltar com
 > todo o histórico de presença e pagamentos. Para apagar de vez os dados
-> pessoais de alguém (a pedido dele, pela LGPD), veja a seção 8.
+> pessoais de alguém (a pedido dele, pela LGPD), use **Excluir conta** no fim da
+> tela de edição (lápis) — veja a seção 8.
+
+**Excluir conta (LGPD).** Na edição do aluno, em *Zona de perigo*. O app mostra o
+que é apagado (dados pessoais, imagens dos comprovantes, justificativas de falta,
+acesso) e o que fica sem identificação (pagamentos e presenças, por obrigação
+legal), avisa se há mensalidades em aberto — excluir **não quita** débito — e pede
+que você digite **EXCLUIR**. Não tem volta. Conta de administrador não é excluída:
+rebaixe antes.
 
 > **Não é possível ficar sem administrador.** Se você tentar rebaixar ou trancar
 > o único administrador ativo, o sistema recusa e avisa. Promova outro antes.
@@ -201,10 +210,11 @@ Gerenciar Alunos → ícone de **chave** no aluno. A senha volta para a padrão 
 ele cria uma nova no próximo acesso.
 
 **Um aluno quer cancelar e apagar os dados dele (LGPD).**
-O próprio aluno faz isso pelo app dele (função de excluir conta). Os dados
-pessoais (nome, CPF, telefone) são apagados; o histórico financeiro é mantido
-sem identificação, por obrigação legal/fiscal. Você, como admin, não precisa
-fazer nada.
+Ele mesmo pode fazer pelo app: **Dados → Excluir minha conta** (pede a senha dele).
+Se ele pedir a você, use **Gerenciar Alunos → lápis → Excluir conta**. Nos dois
+casos os dados pessoais e as imagens de comprovante são apagados, e o histórico
+financeiro fica sem identificação, por obrigação legal/fiscal. Antes, o aluno pode
+baixar uma cópia em **Dados → Exportar meus dados**.
 
 **Mudei a chave PIX. Os alunos já veem a nova?**
 Sim, assim que você salva. Cada cobrança nova usa a chave atual.
