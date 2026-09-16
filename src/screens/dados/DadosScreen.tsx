@@ -9,6 +9,7 @@ import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
 import { ErroDeTelaProposital, useDiagnosticoDeErros } from '@/hooks/useDiagnosticoDeErros';
+import { useExportarMeusDados } from '@/hooks/useExportarMeusDados';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { updateOwnColor, updateProfile } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -198,6 +199,9 @@ export function DadosScreen({
   );
   const handleSignOut = useCallback(() => void signOut(), [signOut]);
   const diagnostico = useDiagnosticoDeErros();
+  const exportacao = useExportarMeusDados();
+  const exportarDados = useCallback(() => void exportacao.exportar(), [exportacao]);
+  const goToExcluirConta = useCallback(() => navigation.navigate('ExcluirConta'), [navigation]);
 
   /**
    * Liga/desliga o desbloqueio biométrico. Ativar dispara a confirmação da
@@ -470,6 +474,22 @@ export function DadosScreen({
         <View style={styles.group}>
           <Text style={styles.sectionLabel}>CONTA</Text>
           <View style={styles.card}>
+            <NavRow
+              icon="download-outline"
+              label={exportacao.exportando ? 'Exportando…' : 'Exportar meus dados'}
+              onPress={exportarDados}
+              styles={styles}
+              colors={colors}
+            />
+            {!isAdmin ? (
+              <NavRow
+                icon="trash-outline"
+                label="Excluir minha conta"
+                onPress={goToExcluirConta}
+                styles={styles}
+                colors={colors}
+              />
+            ) : null}
             <Pressable
               onPress={handleSignOut}
               style={styles.row}
@@ -482,6 +502,16 @@ export function DadosScreen({
               </View>
             </Pressable>
           </View>
+          {exportacao.erro !== null ? (
+            <AppText variant="caption" color={colors.error} style={styles.savedHint}>
+              {exportacao.erro}
+            </AppText>
+          ) : null}
+          {isAdmin ? (
+            <AppText variant="caption" color={colors.textSecondary} style={styles.savedHint}>
+              Contas de administrador são removidas por outro administrador.
+            </AppText>
+          ) : null}
         </View>
 
         <AppVersionFooter />
