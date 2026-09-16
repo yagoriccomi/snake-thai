@@ -18,6 +18,7 @@ import { RollCallRow } from '@/components/RollCallRow';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
 import { useClassAttendance } from '@/hooks/useClassAttendance';
+import { useGroups } from '@/hooks/useGroups';
 import { useMonthlyFrequency } from '@/hooks/useMonthlyFrequency';
 import { useRollCallDraft } from '@/hooks/useRollCallDraft';
 import { useRollCallReview } from '@/hooks/useRollCallReview';
@@ -63,6 +64,11 @@ export function FrequenciaScreen({
   const { colors } = useTheme();
   const { session } = useAuth();
   const { classId, title, groupId, canManage } = route.params;
+  // Turma arquivada congela a chamada: o banco recusa salvar, então a tela
+  // nem oferece (a lista sairia vazia, porque os alunos já foram movidos).
+  const { groups } = useGroups();
+  const turmaArquivada = groupId !== null && groups.some((group) => group.id === groupId && group.archived_at !== null);
+  const podeGerenciar = canManage && !turmaArquivada;
   const {
     students,
     officialByStudent,
@@ -85,7 +91,7 @@ export function FrequenciaScreen({
   const estado = chamada.state;
   const concluida = estado !== null && estado.concludedAt !== null;
   const aulaComecou = estado !== null && Date.parse(estado.dateTimeIso) <= Date.now();
-  const editavel = canManage && aulaComecou;
+  const editavel = podeGerenciar && aulaComecou;
 
   // Recomeça do que está gravado a cada recarga (abertura e depois de salvar)
   // e recupera o rascunho guardado no aparelho, se houver.
@@ -245,7 +251,7 @@ export function FrequenciaScreen({
           frequencia={frequencia.byUser[item.id]}
           justificativa={justificativa}
           editavel={podeMarcar}
-          podeRevisar={canManage}
+          podeRevisar={podeGerenciar}
           revisando={justificativa !== undefined && revisandoId === justificativa.id}
           onMarcar={marcar}
           onAbrirHistorico={abrirHistorico}
@@ -260,7 +266,7 @@ export function FrequenciaScreen({
       frequencia.byUser,
       justificationsByUser,
       podeMarcar,
-      canManage,
+      podeGerenciar,
       revisandoId,
       marcar,
       abrirHistorico,
@@ -292,7 +298,12 @@ export function FrequenciaScreen({
       <AppText variant="heading" style={styles.title} numberOfLines={2}>
         {title}
       </AppText>
-      {!canManage ? (
+      {turmaArquivada ? (
+        <AppText variant="caption" color={colors.warning}>
+          A turma desta aula foi arquivada: a chamada ficou congelada como estava e continua valendo na
+          frequência. Para corrigir, reative a turma em Dados › Turmas e grade semanal.
+        </AppText>
+      ) : !canManage ? (
         <AppText variant="caption" color={colors.textSecondary}>
           Você está vendo esta aula, mas só os professores dela podem fazer a chamada.
         </AppText>
@@ -305,7 +316,7 @@ export function FrequenciaScreen({
           </AppText>
         </View>
       ) : null}
-      {canManage && estado !== null && !aulaComecou ? (
+      {podeGerenciar && estado !== null && !aulaComecou ? (
         <AppText variant="caption" color={colors.textSecondary}>
           As marcações ficam liberadas quando a aula começar.
         </AppText>

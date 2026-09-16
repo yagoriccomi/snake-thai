@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { createLogger } from '@/lib/logger';
 
@@ -7,7 +7,10 @@ import { createGroup, fetchGroups, type GroupRow } from '@/services/groups.servi
 const log = createLogger('useGroups');
 
 interface UseGroupsResult {
+  /** Todas as turmas, inclusive as arquivadas (rótulos de aulas antigas). */
   groups: GroupRow[];
+  /** Só as turmas ativas: as únicas que recebem aluno e aula. */
+  activeGroups: GroupRow[];
   loading: boolean;
   /** Mensagem amigável quando a carga falhou; `null` quando está tudo bem. */
   error: string | null;
@@ -49,5 +52,7 @@ export function useGroups(): UseGroupsResult {
     return created;
   }, []);
 
-  return { groups, loading, error, reload: load, addGroup };
+  const activeGroups = useMemo(() => groups.filter((group) => group.archived_at === null), [groups]);
+
+  return { groups, activeGroups, loading, error, reload: load, addGroup };
 }

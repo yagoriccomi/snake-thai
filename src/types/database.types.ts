@@ -323,6 +323,133 @@ export type Database = {
         }
         Relationships: []
       }
+      class_schedule_skips: {
+        Row: {
+          created_at: string
+          occurrence_date: string
+          schedule_id: string
+        }
+        Insert: {
+          created_at?: string
+          occurrence_date: string
+          schedule_id: string
+        }
+        Update: {
+          created_at?: string
+          occurrence_date?: string
+          schedule_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedule_skips_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_schedule_teachers: {
+        Row: {
+          created_at: string
+          schedule_id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          schedule_id: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          schedule_id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedule_teachers_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedule_teachers_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedule_teachers_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      class_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          group_id: string
+          id: string
+          start_time: string
+          title: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+          weekday: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          group_id: string
+          id?: string
+          start_time: string
+          title: string
+          updated_at?: string
+          valid_from: string
+          valid_until?: string | null
+          weekday: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          group_id?: string
+          id?: string
+          start_time?: string
+          title?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+          weekday?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedules_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "class_schedules_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       class_teachers: {
         Row: {
           class_id: string
@@ -370,6 +497,9 @@ export type Database = {
           date_time: string
           group_id: string | null
           id: string
+          occurrence_date: string | null
+          schedule_detached: boolean
+          schedule_id: string | null
           title: string
           type: Database["public"]["Enums"]["class_type"]
           updated_at: string
@@ -380,6 +510,9 @@ export type Database = {
           date_time: string
           group_id?: string | null
           id?: string
+          occurrence_date?: string | null
+          schedule_detached?: boolean
+          schedule_id?: string | null
           title: string
           type?: Database["public"]["Enums"]["class_type"]
           updated_at?: string
@@ -390,6 +523,9 @@ export type Database = {
           date_time?: string
           group_id?: string | null
           id?: string
+          occurrence_date?: string | null
+          schedule_detached?: boolean
+          schedule_id?: string | null
           title?: string
           type?: Database["public"]["Enums"]["class_type"]
           updated_at?: string
@@ -400,6 +536,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "classes_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "class_schedules"
             referencedColumns: ["id"]
           },
         ]
@@ -435,16 +578,19 @@ export type Database = {
       }
       groups: {
         Row: {
+          archived_at: string | null
           created_at: string
           id: string
           name: string
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           id?: string
           name: string
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -772,7 +918,19 @@ export type Database = {
         Args: { p_email: string; p_exceto: string }
         Returns: boolean
       }
+      encerrar_horario_da_grade: {
+        Args: { p_id: string; p_ultimo_dia: string }
+        Returns: Json
+      }
       enfileirar_comprovantes_expirados: { Args: never; Returns: number }
+      excluir_turma: {
+        Args: {
+          p_deixar_sem_turma?: boolean
+          p_destino?: string
+          p_group_id: string
+        }
+        Returns: Json
+      }
       export_my_data: { Args: never; Returns: Json }
       fechar_frequencia_do_mes: {
         Args: { p_agora?: string; p_mes?: string }
@@ -790,6 +948,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      gerar_aulas_da_grade: {
+        Args: { p_agora?: string; p_schedule_id?: string }
+        Returns: number
+      }
       gerar_mensalidades_do_mes: {
         Args: { p_referencia?: string }
         Returns: number
@@ -797,6 +959,18 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_professor: { Args: never; Returns: boolean }
       mark_overdue_payments: { Args: never; Returns: undefined }
+      ocorrencias_da_grade: {
+        Args: { p_agora: string; p_schedule_id: string }
+        Returns: {
+          date_time: string
+          group_id: string
+          occurrence_date: string
+          schedule_id: string
+          title: string
+        }[]
+      }
+      previa_exclusao_turma: { Args: { p_group_id: string }; Returns: Json }
+      reativar_turma: { Args: { p_group_id: string }; Returns: undefined }
       registrar_fatura_de_entrada: {
         Args: { p_data: string; p_user_id: string }
         Returns: boolean
@@ -808,6 +982,19 @@ export type Database = {
           p_presentes: string[]
         }
         Returns: string
+      }
+      salvar_horario_da_grade: {
+        Args: {
+          p_group_id: string
+          p_id?: string
+          p_start_time: string
+          p_teacher_ids?: string[]
+          p_title: string
+          p_valid_from: string
+          p_valid_until?: string
+          p_weekday: number
+        }
+        Returns: Json
       }
       valor_proporcional: {
         Args: { dia_entrada: number; dias_no_mes: number; preco_cents: number }

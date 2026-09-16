@@ -127,6 +127,27 @@ O `db-push-prod.bat` termina listando as migrations de produção
 > acusar qualquer coluna que a migration criou e o código ainda não conhece —
 > é o que pega o mock de teste desatualizado antes de virar bug.
 
+### Jobs agendados do banco (pg_cron)
+
+Os jobs são criados nas próprias migrations e rodam em UTC.
+
+| Job | Quando (UTC) | O que faz |
+|---|---|---|
+| `mark-overdue-payments` | 00:01 todo dia | Marca mensalidades vencidas |
+| `generate-monthly-payments` | 00:10 do dia 1 | Gera as mensalidades do mês |
+| `expire-payment-proofs` | 02:30 todo dia | Prazo de guarda das imagens de comprovante (desligado sem prazo) |
+| `close-monthly-attendance` | 03:20 do dia 1 | Fecha e congela a frequência do mês anterior |
+| `generate-scheduled-classes` | 03:40 todo dia (00:40 em São Paulo) | Gera as aulas da grade semanal até o fim do mês seguinte |
+
+Um job que falha não avisa ninguém (lacuna L3). Para conferir, no SQL Editor:
+
+```sql
+select j.jobname, d.status, d.return_message, d.start_time
+  from cron.job_run_details d join cron.job j using (jobid)
+ order by d.start_time desc
+ limit 20;
+```
+
 **Ordem das migrations importa.** Uma constraint aplicada antes do backfill dos
 dados existentes falha (aconteceu com `payments.paid_at`). Se a migration mexe
 em dados já gravados, faça o `UPDATE` de compatibilidade **antes** da constraint,

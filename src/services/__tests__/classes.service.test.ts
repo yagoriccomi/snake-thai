@@ -19,6 +19,7 @@ import {
   declareAttendance,
   fetchTeachersForClasses,
   removeClassTeacher,
+  updateClass,
   type NewClassInput,
 } from '@/services/classes.service';
 
@@ -175,3 +176,27 @@ describe('declareAttendance', () => {
   });
 });
 
+
+describe('updateClass', () => {
+  it('deveDesvincularDaGradeQuandoAAulaVeioDela', async () => {
+    const chain = mockQuery({ data: null, error: null });
+
+    await updateClass(CLASS_ID, NOVA_AULA, { isScheduleOccurrence: true });
+
+    // Sem a marca, editar o horário da grade depois sobrescreveria o ajuste.
+    expect(chain.update).toHaveBeenCalledWith(expect.objectContaining({ schedule_detached: true }));
+  });
+
+  it('naoDeveMexerNoVinculoDeAulaAvulsa', async () => {
+    const chain = mockQuery({ data: null, error: null });
+
+    await updateClass(CLASS_ID, NOVA_AULA);
+
+    expect(chain.update).toHaveBeenCalledWith(expect.not.objectContaining({ schedule_detached: expect.anything() }));
+  });
+
+  it('devePropagarARecusaDaRls', async () => {
+    mockQuery(RLS_DENIED);
+    await expect(updateClass(CLASS_ID, NOVA_AULA)).rejects.toEqual(RLS_DENIED.error);
+  });
+});

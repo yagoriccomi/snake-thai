@@ -294,33 +294,33 @@ update public.payments pay
 --
 --    A tela do aluno lista apenas aulas a partir de agora. Uma base cujas
 --    aulas ficaram todas no passado mostra "Nenhuma aula por aqui" para ele —
---    o que aconteceu de fato, com aulas paradas em setembro. Aqui as próximas
---    4 semanas são preenchidas, em dias alternados, no horário de cada turma.
+--    o que aconteceu de fato, com aulas paradas em setembro. Desde a T6 a
+--    agenda sai da GRADE SEMANAL: cada turma ganha segunda, quarta e sexta no
+--    horário deduzido do nome, e o banco gera as aulas até o fim do mês
+--    seguinte — do mesmo jeito que a academia vai usar.
 -- ----------------------------------------------------------------------------
-insert into public.classes (title, type, date_time, group_id)
+insert into public.class_schedules (group_id, title, weekday, start_time, valid_from)
 select
+  g.id,
   'Muay Thai — ' || g.name,
-  'routine',
-  -- O horário é LOCAL: sem o AT TIME ZONE, uma aula "das 19h" viraria 19h UTC,
-  -- ou seja, 16h em São Paulo.
-  ((dia::date + (case
-      when g.name ilike '%manh%' then time '07:00'
-      when g.name ilike '%tarde%' then time '15:00'
-      else time '19:00'
-    end)) at time zone 'America/Sao_Paulo'),
-  g.id
+  dia.weekday,
+  -- Hora LOCAL de São Paulo: a conversão é do banco.
+  case
+    when g.name ilike '%manh%' then time '07:00'
+    when g.name ilike '%tarde%' then time '15:00'
+    else time '19:00'
+  end,
+  (now() at time zone 'America/Sao_Paulo')::date
 from public.groups g
-cross join generate_series(current_date + 1, current_date + 28, interval '1 day') as dia
-where extract(dow from dia) in (1, 3, 5)   -- segunda, quarta e sexta
+cross join (values (1::smallint), (3::smallint), (5::smallint)) as dia (weekday)   -- segunda, quarta e sexta
+where g.archived_at is null
   and not exists (
-    select 1 from public.classes c
-    where c.group_id = g.id
-      and c.date_time = ((dia::date + (case
-            when g.name ilike '%manh%' then time '07:00'
-            when g.name ilike '%tarde%' then time '15:00'
-            else time '19:00'
-          end)) at time zone 'America/Sao_Paulo')
+    select 1 from public.class_schedules s
+    where s.group_id = g.id
+      and s.weekday = dia.weekday
   );
+
+select public.gerar_aulas_da_grade();
 
 -- ----------------------------------------------------------------------------
 -- 9. Professores nas aulas — é o que faz a cor aparecer na agenda

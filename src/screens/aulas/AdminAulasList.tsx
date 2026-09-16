@@ -33,6 +33,7 @@ import type { MissedRollCall } from '@/services/frequency.service';
 import { createLogger } from '@/lib/logger';
 import { useTheme } from '@/theme/ThemeProvider';
 import { buildDayStrip, formatTime, type DayItem } from '@/utils/datetime';
+import { rotuloDaTurma } from '@/utils/gradeSemanal';
 
 const log = createLogger('AdminAulasList');
 
@@ -84,7 +85,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   const groupNameById = useMemo(() => {
     const map = new Map<string, string>();
     for (const group of groups) {
-      map.set(group.id, group.name);
+      map.set(group.id, rotuloDaTurma(group));
     }
     return map;
   }, [groups]);
@@ -110,6 +111,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
         type: item.type,
         dateTimeIso: item.date_time,
         groupId: item.group_id,
+        scheduleId: item.schedule_id,
         groupLabel,
       });
     },
@@ -129,6 +131,9 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
         type: 'routine',
         dateTimeIso: item.dateTimeIso,
         groupId: item.groupId,
+        // O aviso de aula sem chamada não traz o horário; aula passada não é
+        // mexida pela grade, então o vínculo não faz diferença aqui.
+        scheduleId: null,
         groupLabel:
           item.groupId === null ? 'Global' : groupNameById.get(item.groupId) ?? 'Turma',
       });

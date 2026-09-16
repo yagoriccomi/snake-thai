@@ -11,6 +11,7 @@ import {
   type SegmentOption,
 } from '@/components/SegmentedControl';
 import { useAuth } from '@/context/AuthProvider';
+import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import {
   createClass,
@@ -20,6 +21,7 @@ import {
 } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { combineDateTimeToIso } from '@/utils/datetime';
+import { describeError } from '@/utils/errors';
 import { maskDate, maskTime } from '@/utils/masks';
 
 /** Quebra um ISO nas entradas do formulário (DD/MM/AAAA e HH:MM), em hora local. */
@@ -42,6 +44,7 @@ const TYPE_OPTIONS: ReadonlyArray<SegmentOption<ClassType>> = [
 ];
 
 const SCREEN_EDGES = ['bottom'] as const;
+const log = createLogger('CriarAulaScreen');
 
 /**
  * Formulário de criação/edição de aula:
@@ -61,6 +64,8 @@ export function CriarAulaScreen({
   const params = route.params;
   const editingId = params?.classId;
   const isEditing = editingId !== undefined;
+  // Aula gerada pela grade semanal: editar a desvincula do horário.
+  const isScheduleOccurrence = (params?.scheduleId ?? null) !== null;
   const initialDateTime =
     params !== undefined ? isoToInputs(params.dateTimeIso) : null;
 
@@ -103,18 +108,18 @@ export function CriarAulaScreen({
         groupId: isRoutine ? groupId : null,
       };
       if (editingId !== undefined) {
-        await updateClass(editingId, input);
+        await updateClass(editingId, input, { isScheduleOccurrence });
       } else if (isProfessor && profile !== null) {
         await createClassAsProfessor(input, profile.id);
       } else {
         await createClass(input);
       }
       navigation.goBack();
-    } catch {
+    } catch (saveError) {
+      // O motivo real ("A turma está arquivada...") vale mais que um genérico.
+      log.error(isEditing ? 'Falha ao salvar a aula' : 'Falha ao criar a aula', saveError);
       setErrors({
-        form: isEditing
-          ? 'Não foi possível salvar a aula. Tente novamente.'
-          : 'Não foi possível criar a aula. Tente novamente.',
+        form: `${isEditing ? 'Não foi possível salvar a aula.' : 'Não foi possível criar a aula.'} ${describeError(saveError)}`,
       });
     } finally {
       setSaving(false);
@@ -129,6 +134,7 @@ export function CriarAulaScreen({
     navigation,
     editingId,
     isEditing,
+    isScheduleOccurrence,
     isProfessor,
     profile,
   ]);
@@ -142,6 +148,13 @@ export function CriarAulaScreen({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {isEditing && isScheduleOccurrence ? (
+          <AppText variant="caption" color={colors.textSecondary} style={styles.notice}>
+            Esta aula veio da grade semanal. Ao salvar, ela fica independente: mudanças
+            futuras no horário da grade não alteram mais esta data.
+          </AppText>
+        ) : null}
+
         <AppText variant="label" style={styles.label}>
           Tipo
         </AppText>
@@ -212,6 +225,9 @@ function makeStyles(bottomPadding: number) {
     },
     label: {
       marginBottom: 8,
+    },
+    notice: {
+      marginBottom: 16,
     },
     spaced: {
       marginTop: 16,

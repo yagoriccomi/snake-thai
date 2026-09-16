@@ -119,8 +119,23 @@ export async function createClass(input: NewClassInput): Promise<void> {
   }
 }
 
-/** Atualiza uma aula existente (edição pelo admin). */
-export async function updateClass(id: string, input: NewClassInput): Promise<void> {
+/** Opções da edição de uma aula. */
+export interface UpdateClassOptions {
+  /** A aula veio da grade semanal (`schedule_id` preenchido). */
+  isScheduleOccurrence?: boolean;
+}
+
+/**
+ * Atualiza uma aula existente (edição pelo admin).
+ *
+ * Aula da grade editada à mão fica DESVINCULADA: uma edição posterior do
+ * horário não sobrescreve o que o admin ajustou nesta data. [PLANO-T6 P4]
+ */
+export async function updateClass(
+  id: string,
+  input: NewClassInput,
+  options: UpdateClassOptions = {},
+): Promise<void> {
   const { error } = await supabase
     .from('classes')
     .update({
@@ -128,6 +143,7 @@ export async function updateClass(id: string, input: NewClassInput): Promise<voi
       type: input.type,
       date_time: input.dateTimeIso,
       group_id: input.groupId,
+      ...(options.isScheduleOccurrence === true ? { schedule_detached: true } : {}),
     })
     .eq('id', id);
   if (error !== null) {

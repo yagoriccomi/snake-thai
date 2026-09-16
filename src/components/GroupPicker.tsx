@@ -10,6 +10,7 @@ import { useGroups } from '@/hooks/useGroups';
 import type { GroupRow } from '@/services/groups.service';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
+import { rotuloDaTurma } from '@/utils/gradeSemanal';
 
 interface GroupPickerProps {
   label?: string;
@@ -19,12 +20,16 @@ interface GroupPickerProps {
 }
 
 /**
- * Seletor de turma (group_id): abre um modal com as turmas existentes, a opção
+ * Seletor de turma (group_id): abre um modal com as turmas ATIVAS, a opção
  * "Sem turma" e a criação inline de uma nova turma (admin).
+ *
+ * Turma arquivada não é oferecida (o banco recusaria), mas continua visível
+ * quando já é a selecionada — some do seletor, não do cadastro de quem está
+ * nela.
  */
 export function GroupPicker({ label, value, onChange }: GroupPickerProps): React.JSX.Element {
   const { colors, radius, fonts } = useTheme();
-  const { groups, addGroup } = useGroups();
+  const { groups, activeGroups, addGroup } = useGroups();
   const styles = useMemo(() => makeStyles(colors, radius, fonts), [colors, radius, fonts]);
 
   const [visible, setVisible] = useState(false);
@@ -36,8 +41,15 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
     if (value === null) {
       return 'Sem turma';
     }
-    return groups.find((group) => group.id === value)?.name ?? 'Turma selecionada';
+    const selected = groups.find((group) => group.id === value);
+    return selected !== undefined ? rotuloDaTurma(selected) : 'Turma selecionada';
   }, [value, groups]);
+
+  // A arquivada só entra quando já é a selecionada.
+  const options = useMemo(() => {
+    const selectedArchived = groups.find((group) => group.id === value && group.archived_at !== null);
+    return selectedArchived !== undefined ? [selectedArchived, ...activeGroups] : activeGroups;
+  }, [groups, activeGroups, value]);
 
   const open = useCallback(() => setVisible(true), []);
   const close = useCallback(() => {
@@ -78,9 +90,10 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
         style={styles.option}
         onPress={() => select(item.id)}
         accessibilityRole="button"
-        accessibilityLabel={item.name}
+        accessibilityLabel={rotuloDaTurma(item)}
+        accessibilityState={{ selected: item.id === value }}
       >
-        <AppText variant="body">{item.name}</AppText>
+        <AppText variant="body">{rotuloDaTurma(item)}</AppText>
         {item.id === value ? (
           <Ionicons name="checkmark" size={18} color={colors.primaryText} />
         ) : null}
@@ -121,7 +134,7 @@ export function GroupPicker({ label, value, onChange }: GroupPickerProps): React
         </Pressable>
 
         {/* Poucas turmas: um map simples, sem lista virtualizada dentro do ScrollView da folha. */}
-        {groups.map(renderGroup)}
+        {options.map(renderGroup)}
 
         <View style={styles.addRow}>
           <TextInput

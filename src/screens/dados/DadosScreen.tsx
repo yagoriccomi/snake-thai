@@ -192,6 +192,7 @@ export function DadosScreen({
     [navigation],
   );
   const goToPlans = useCallback(() => navigation.navigate('Planos'), [navigation]);
+  const goToGroups = useCallback(() => navigation.navigate('Turmas'), [navigation]);
   const goToSettings = useCallback(() => navigation.navigate('Configuracoes'), [navigation]);
   const goToChangePassword = useCallback(
     () => navigation.navigate('AlterarSenha'),
@@ -269,6 +270,13 @@ export function DadosScreen({
                 icon="people-outline"
                 label="Gerenciar alunos"
                 onPress={goToManageStudents}
+                styles={styles}
+                colors={colors}
+              />
+              <NavRow
+                icon="calendar-outline"
+                label="Turmas e grade semanal"
+                onPress={goToGroups}
                 styles={styles}
                 colors={colors}
               />
