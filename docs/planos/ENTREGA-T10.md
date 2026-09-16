@@ -63,6 +63,7 @@ sem o token do Sentry.
 - [x] Prebuild PROD: `apply sentry.gradle` e a trava de assinatura (T2) convivem no `build.gradle`; `sentry.properties` sem token
 - [x] Prebuild DEV: Sentry presente, sem a trava de assinatura, versão consistente; bundle JS gerado com o Metro do Sentry
 - [x] actionlint do `release.yml` limpo
+- [x] APK DEV compilado com o SDK nativo (`release/snake-thai-dev-v1.6.0+dev.49.d320bf9.apk`, 14 min): a tarefa `SentryUpload` foi **pulada** sem token, como previsto, e o build terminou com sucesso
 - [ ] Evento real chegando ao painel — depende da conta no Sentry e do celular
 
 ## 5. ⚠️ Premissas assumidas (revisar)
