@@ -192,7 +192,8 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 
 ## Lacunas encontradas pelo revisor (tarefas extras)
 
-- [ ] **L1** — A senha padrão de primeiro acesso está fixa no código das Edge Functions (repositório público). Ler da configuração ou gerar senha aleatória, forçar a troca no primeiro acesso e revisar contas que nunca entraram
+- [x] **L1** — A senha padrão de primeiro acesso está fixa no código das Edge Functions (repositório público). Ler da configuração ou gerar senha aleatória, forçar a troca no primeiro acesso e revisar contas que nunca entraram — **feito** ([`ENTREGA-L1`](planos/ENTREGA-L1.md)): além do literal nas funções, qualquer aluno logado lia a senha em `academy_settings`. Agora só o admin a vê; as funções usam a configurada; o app avisa quantas contas ainda não entraram
+  - [ ] 👤⚠️ Publicar: migration → as 3 Edge Functions de conta → APK; e, logo depois, trocar a senha em Configurações e redefinir as contas que ainda não entraram
 - [x] **L2** — Backup (`db dump`) obrigatório antes de todo envio de migration para produção — feito no `db-push-prod.bat` (T1)
 - [ ] **L3** — Monitorar falhas dos jobs agendados do banco (mensalidades, frequência, grade, push)
 - [ ] **L4** — Uma única versão nova da Política de Privacidade cobrindo exclusão e retenção (T7), push (T9) e Sentry (T10), com novo aceite
@@ -204,7 +205,7 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 
 - [ ] 👤 Trocar a senha do banco de produção (foi colada no chat)
 - [ ] 👤 Revogar o token de acesso da Supabase (foi colado no chat)
-- [ ] 👤 Trocar a senha padrão de novos alunos em **Configurações** (ela é pública no repositório)
+- [ ] 👤 Trocar a senha de primeiro acesso em **Configurações** (a atual é pública no repositório) — só surte efeito depois de publicar a L1
 - [ ] 👤 Cadastrar a chave PIX real da academia
 - [ ] 👤 Remover os dados de demonstração antes do primeiro aluno real (ver T1)
 
@@ -259,3 +260,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T8 implementada** (branch `feat/painel-admin`): 5 funções agregadas no banco (só admin, dia de São Paulo, conta excluída só na soma, sem CPF/telefone/e-mail), aba Painel como primeira aba do admin, gráfico de faturamento só com View, relatório de inadimplência por faixa que abre o histórico para dar baixa. 12 casos SQL, 612 testes Jest; números conferidos contra SQL direto na API local; professor e aluno recebem 403. Nada publicado em produção. Relatório em [`ENTREGA-T8`](planos/ENTREGA-T8.md). |
 | 2026-09-16 | **T8:** PR #20 mesclado (`1a94448`), CI verde. |
 | 2026-09-16 | **T9 implementada** (branch `feat/notificacoes-push`): aparelhos com RLS do titular e fila de notificações no banco (gatilhos de comprovante e justificativa, lembretes pelo dia de São Paulo, aula sem chamada, silêncio 22h–7h, deduplicação, retenção de 30 dias, export LGPD), Edge Function `send-push` chamada pelo pg_cron via pg_net, ativação no app (convite + Perfil), registro e remoção do aparelho, toque que abre a aba certa respeitando a digital. 20 casos SQL, 8 testes Deno, 642 Jest; ensaio local completo com Expo falsa. Nada publicado; falta você criar as contas Expo e Firebase. Relatório em [`ENTREGA-T9`](planos/ENTREGA-T9.md). |
+| 2026-09-16 | **T9:** PR #21 mesclado (`32a8652`), CI verde (um job refeito por limite de requisições do GitHub). |
+| 2026-09-16 | **L1 corrigida** (branch `fix/senha-padrao-protegida`): além do literal público nas Edge Functions, a senha de primeiro acesso era legível por qualquer aluno logado. Agora fica em `academy_secrets` (só servidor), admin lê/troca por função, as 3 funções de conta usam o valor configurado, a coluna antiga guarda só a máscara (APK 1.6.0 segue salvando) e o app avisa quantas contas ainda não entraram. 5 casos SQL, 646 Jest; conferido na API local. Nada publicado. Relatório em [`ENTREGA-L1`](planos/ENTREGA-L1.md). |

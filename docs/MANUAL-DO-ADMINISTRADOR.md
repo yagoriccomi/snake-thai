@@ -54,7 +54,7 @@ Academia**. É aqui que o sistema deixa de ser genérico e passa a ser o **seu**
 | **Nome do titular do PIX** | Aparece para o aluno conferir antes de pagar. |
 | **Dia de vencimento padrão** | O dia do mês (1 a 28) usado como sugestão ao criar planos. |
 | **Contato e endereço** | Informações da academia. |
-| **Senha padrão do aluno** | A senha provisória que todo aluno novo recebe. O aluno é obrigado a trocá-la no primeiro acesso. |
+| **Senha de primeiro acesso** | A senha provisória que toda conta nova (aluno, professor ou admin) recebe, e a que volta ao redefinir o acesso. A pessoa é obrigada a trocá-la no primeiro acesso. Só administradores a veem. Ao trocá-la, o app avisa quantas contas ainda não entraram: redefina a senha delas em Gerenciar alunos. |
 
 Toque em **Salvar configurações**. A mudança vale na hora — inclusive a cor,
 que muda o app imediatamente.
@@ -94,8 +94,8 @@ Em **Dados → Planos e Mensalidades** você define quanto custa treinar.
 Em **Dados → Cadastrar Novo Aluno**:
 
 1. Digite o **e-mail** do aluno.
-2. Toque em cadastrar. O sistema cria a conta com a **senha padrão** (a que você
-   definiu nas Configurações) e mostra qual é.
+2. Toque em cadastrar. O sistema cria a conta com a **senha de primeiro acesso**
+   (a que você definiu nas Configurações) e mostra qual é.
 3. Passe essa senha ao aluno. No primeiro acesso, ele é obrigado a trocá-la e a
    completar os próprios dados.
 

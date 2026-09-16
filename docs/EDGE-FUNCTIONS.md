@@ -73,8 +73,10 @@ POST /functions/v1/create-student
 | `401` | `{ "error": "Não autenticado" }` | sem `Authorization` |
 | `403` | `{ "error": "Acesso restrito a administradores" }` | chamador não é admin |
 
-A conta nasce com a **senha padrão** (`academy_settings.default_student_password`)
-e `is_first_login = true`. Se a criação do perfil falhar, a função faz rollback
+A conta nasce com a **senha de primeiro acesso** (`academy_secrets`, que só o
+servidor lê; o admin a troca em Configurações) e `is_first_login = true`. Sem
+senha configurada, responde `500` `{ "error": "Senha de primeiro acesso não configurada. Defina em Configurações." }`
+— nunca usa um valor fixo no código (lacuna L1). Se a criação do perfil falhar, a função faz rollback
 da conta de auth — não deixa usuário órfão.
 
 ---
@@ -103,9 +105,10 @@ POST /functions/v1/reset-student-password
 | `403` | `{ "error": "Acesso restrito a administradores" }` | chamador não é admin |
 | `404` | `{ "error": "Usuário não encontrado" }` | `userId` não existe |
 
-Após o reset, a senha volta a ser a padrão e `is_first_login` fica `true`: o
-aluno é obrigado a definir uma senha própria no próximo acesso. A senha padrão
-nunca se torna definitiva.
+Após o reset, a senha volta a ser a de primeiro acesso (`academy_secrets`) e
+`is_first_login` fica `true`: o aluno é obrigado a definir uma senha própria no
+próximo acesso. Essa senha nunca se torna definitiva. Sem senha configurada,
+responde `500`.
 
 ---
 
