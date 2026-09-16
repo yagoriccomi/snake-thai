@@ -140,7 +140,8 @@ Os jobs são criados nas próprias migrations e rodam em UTC.
 | `generate-scheduled-classes` | 03:40 todo dia (00:40 em São Paulo) | Gera as aulas da grade semanal até o fim do mês seguinte |
 | `push-*` (5 jobs) | ver [`NOTIFICACOES.md`](NOTIFICACOES.md) | Lembretes, avisos de chamada, despacho (a cada minuto) e limpeza |
 
-Um job que falha não avisa ninguém (lacuna L3). Para conferir, no SQL Editor:
+Falha de job aparece como aviso no **Painel** do admin (L3, `saude_das_rotinas()`),
+sem a mensagem de erro. Para ver o detalhe, no SQL Editor:
 
 ```sql
 select j.jobname, d.status, d.return_message, d.start_time

@@ -58,6 +58,15 @@ o banco é.
    para quem não teve aula contada; incluir essas pessoas inflaria a média. A tela
    mostra "média de N alunos".
 
+## Rotinas automáticas (L3)
+
+No topo do Painel aparece um aviso quando alguma rotina agendada no banco
+(`pg_cron`) falhou na última execução ou nas últimas 24 horas: mensalidades,
+vencidas, frequência, guarda de comprovantes, grade semanal e notificações. Sem
+problema, nada aparece. O aviso traz o nome da rotina e a contagem, nunca a
+mensagem de erro (o detalhe fica no banco; consulta no RUNBOOK). A função é
+`saude_das_rotinas()` (só admin); se ela falhar, o resto do Painel carrega igual.
+
 ## LGPD: o que sai do banco
 
 - Resumo, faixas e faturamento: só números agregados.
