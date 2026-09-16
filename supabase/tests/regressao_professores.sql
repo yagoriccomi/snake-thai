@@ -25,7 +25,7 @@ values
   ('a0000000-0000-4000-8000-000000000005','user','Aluno Dois','55555555555', false, null);
 
 insert into public.classes (id, title, type, date_time)
-values ('c0000000-0000-4000-8000-000000000001', 'Aula do Prof 1', 'routine', now() + interval '1 day');
+values ('c0000000-0000-4000-8000-000000000001', 'Aula do Prof 1', 'event', now() + interval '1 day');
 insert into public.class_teachers (class_id, teacher_id)
 values ('c0000000-0000-4000-8000-000000000001', 'a0000000-0000-4000-8000-000000000001');
 
@@ -36,7 +36,7 @@ set local role authenticated;
 set local request.jwt.claims = '{"sub":"a0000000-0000-4000-8000-000000000002","role":"authenticated"}';
 
 insert into public.classes (id, title, type, date_time)
-values ('c0000000-0000-4000-8000-000000000002', 'Aula do Prof 2', 'routine', now() + interval '2 day');
+values ('c0000000-0000-4000-8000-000000000002', 'Aula do Prof 2', 'event', now() + interval '2 day');
 insert into public.class_teachers (class_id, teacher_id)
 values ('c0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000002');
 
@@ -100,7 +100,7 @@ end $$;
 -- TESTE 5 — professor NÃO gerencia aula onde não é professor
 -- ---------------------------------------------------------------------
 insert into public.classes (id, title, type, date_time)
-values ('c0000000-0000-4000-8000-000000000099', 'Aula sem este professor', 'routine', now() + interval '3 day');
+values ('c0000000-0000-4000-8000-000000000099', 'Aula sem este professor', 'event', now() + interval '3 day');
 -- (inserida pelo mesmo professor de propósito só para existir; agora ele
 --  se remove para simular "aula onde ele nao e professor")
 delete from public.class_teachers
