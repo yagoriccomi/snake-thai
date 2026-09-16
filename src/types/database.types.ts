@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -132,6 +127,7 @@ export type Database = {
           pix_holder_name: string | null
           pix_key: string | null
           primary_color: string
+          proof_retention_days: number | null
           updated_at: string
         }
         Insert: {
@@ -148,6 +144,7 @@ export type Database = {
           pix_holder_name?: string | null
           pix_key?: string | null
           primary_color?: string
+          proof_retention_days?: number | null
           updated_at?: string
         }
         Update: {
@@ -164,6 +161,7 @@ export type Database = {
           pix_holder_name?: string | null
           pix_key?: string | null
           primary_color?: string
+          proof_retention_days?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -751,6 +749,10 @@ export type Database = {
       }
     }
     Functions: {
+      anonimizar_titular: {
+        Args: { p_solicitante: string; p_user_id: string }
+        Returns: Json
+      }
       aulas_sem_chamada: {
         Args: { p_referencia?: string }
         Returns: {
@@ -765,6 +767,8 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      email_do_usuario: { Args: { p_user_id: string }; Returns: string }
+      enfileirar_comprovantes_expirados: { Args: never; Returns: number }
       export_my_data: { Args: never; Returns: Json }
       fechar_frequencia_do_mes: {
         Args: { p_agora?: string; p_mes?: string }
@@ -842,7 +846,6 @@ export type Database = {
           public: boolean | null
           type: Database["storage"]["Enums"]["buckettype"]
           updated_at: string | null
-          versioning_status: string
         }
         Insert: {
           allowed_mime_types?: string[] | null
@@ -856,7 +859,6 @@ export type Database = {
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
-          versioning_status?: string
         }
         Update: {
           allowed_mime_types?: string[] | null
@@ -870,7 +872,6 @@ export type Database = {
           public?: boolean | null
           type?: Database["storage"]["Enums"]["buckettype"]
           updated_at?: string | null
-          versioning_status?: string
         }
         Relationships: []
       }
@@ -925,6 +926,101 @@ export type Database = {
         }
         Relationships: []
       }
+      iceberg_namespaces: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          metadata: Json
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_namespaces_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      iceberg_tables: {
+        Row: {
+          bucket_name: string
+          catalog_id: string
+          created_at: string
+          id: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id: string | null
+          shard_id: string | null
+          shard_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          bucket_name: string
+          catalog_id: string
+          created_at?: string
+          id?: string
+          location: string
+          name: string
+          namespace_id: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bucket_name?: string
+          catalog_id?: string
+          created_at?: string
+          id?: string
+          location?: string
+          name?: string
+          namespace_id?: string
+          remote_table_id?: string | null
+          shard_id?: string | null
+          shard_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "iceberg_tables_catalog_id_fkey"
+            columns: ["catalog_id"]
+            isOneToOne: false
+            referencedRelation: "buckets_analytics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "iceberg_tables_namespace_id_fkey"
+            columns: ["namespace_id"]
+            isOneToOne: false
+            referencedRelation: "iceberg_namespaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       migrations: {
         Row: {
           executed_at: string | null
@@ -948,12 +1044,9 @@ export type Database = {
       }
       objects: {
         Row: {
-          archived_at: string | null
           bucket_id: string | null
           created_at: string | null
           id: string
-          is_delete_marker: boolean
-          is_versioned: boolean
           last_accessed_at: string | null
           metadata: Json | null
           name: string | null
@@ -965,12 +1058,9 @@ export type Database = {
           version: string | null
         }
         Insert: {
-          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
-          is_delete_marker?: boolean
-          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -982,12 +1072,9 @@ export type Database = {
           version?: string | null
         }
         Update: {
-          archived_at?: string | null
           bucket_id?: string | null
           created_at?: string | null
           id?: string
-          is_delete_marker?: boolean
-          is_versioned?: boolean
           last_accessed_at?: string | null
           metadata?: Json | null
           name?: string | null
@@ -1438,3 +1525,4 @@ export const Constants = {
     },
   },
 } as const
+
