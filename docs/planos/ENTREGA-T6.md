@@ -68,7 +68,7 @@ novo (gerado a partir desta branch) e login com a conta de admin local.
 
 ## 4. Verificações executadas
 
-- [x] 31 migrations aplicam do zero; suíte SQL completa verde (9 arquivos), incluindo as 7 regressões antigas depois da reescrita de `salvar_chamada`, `concluir_chamada` e `aulas_sem_chamada`
+- [x] 30 migrations aplicam do zero; suíte SQL completa verde (9 arquivos), incluindo as 7 regressões antigas depois da reescrita de `salvar_chamada`, `concluir_chamada` e `aulas_sem_chamada`
 - [x] `regressao_turmas.sql` (13 casos): permissões de aluno e professor; renomear com nome repetido e em branco; DELETE direto barrado; rotina sem turma recusada; prévia; destino obrigatório, mover e "sem turma"; arquivar preserva o passado e tira o futuro; turma arquivada recusa aluno, aula, horário e destino; chamada congelada; aviso de aula sem chamada; apagar a nunca usada; reativar; anexo de justificativa na fila LGPD
 - [x] `regressao_grade_semanal.sql` (16 casos): só admin escreve e aluno nem lê; segundas às 19:00 de São Paulo; idempotência; horizonte e instante de referência; vigência; professores copiados e rebaixado ignorado; avulsa adotada; frequência do dia 1 com 4/4 aulas e 100%; editar hora (chamada, remarcada e passada intactas); troca de professores por diferença; encerrar sem gerar exceção; apagada à mão não volta; reabrir a vigência gera de novo; validações; professor excluído (LGPD) sai da grade
 - [x] Seed de demonstração rodada duas vezes: 9 horários e 58 aulas nas duas

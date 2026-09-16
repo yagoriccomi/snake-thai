@@ -4,6 +4,16 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const mockPreview = jest.fn();
 const mockRemove = jest.fn();
+const mockLogError = jest.fn();
+
+jest.mock('@/lib/logger', () => ({
+  createLogger: () => ({
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: (...args: unknown[]): unknown => mockLogError(...args),
+  }),
+}));
 
 jest.mock('@/services/groups.service', () => ({
   previewGroupRemoval: (...args: unknown[]): unknown => mockPreview(...args),
@@ -47,6 +57,7 @@ function renderFolha(onExcluida = jest.fn()) {
 beforeEach(() => {
   mockPreview.mockReset();
   mockRemove.mockReset();
+  mockLogError.mockReset();
 });
 
 describe('ExcluirTurmaSheet', () => {
@@ -103,6 +114,8 @@ describe('ExcluirTurmaSheet', () => {
 
     expect(await findByText('A turma já está arquivada.')).toBeTruthy();
     expect(onExcluida).not.toHaveBeenCalled();
+    // Na tela e no log: falha nunca é silenciosa.
+    expect(mockLogError).toHaveBeenCalledWith('Falha ao excluir a turma', expect.any(Error));
   });
 
   it('deveOferecerNovaTentativaQuandoAPreviaFalha', async () => {
@@ -112,5 +125,6 @@ describe('ExcluirTurmaSheet', () => {
     fireEvent.press(await findByRole('button', { name: 'Tentar de novo' }));
 
     expect(await findByText(/será arquivada/)).toBeTruthy();
+    expect(mockLogError).toHaveBeenCalledTimes(1);
   });
 });
