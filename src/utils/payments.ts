@@ -37,6 +37,14 @@ export function temComprovante(
  * passou, em aberto se não. Mesmo critério do `mark_overdue_payments`
  * (`due_date < current_date`) — o vencimento do próprio dia ainda é "em aberto".
  */
+/**
+ * Mensalidades que ainda cobram a pessoa: em aberto ou vencidas. As em análise
+ * (comprovante enviado) não entram — o pagamento já foi feito, falta aprovar.
+ */
+export function contarMensalidadesEmAberto(pagamentos: ReadonlyArray<{ status: PaymentStatus }>): number {
+  return pagamentos.filter((pagamento) => pagamento.status === 'open' || pagamento.status === 'overdue').length;
+}
+
 export function situacaoSemPagamento(
   dueDate: string,
   hoje: Date = new Date(),

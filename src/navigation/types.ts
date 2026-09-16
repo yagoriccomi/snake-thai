@@ -28,6 +28,10 @@ export type DadosStackParamList = {
   Planos: undefined;
   Configuracoes: undefined;
   GerenciarAlunos: undefined;
+  /** Edição dos dados de um aluno pelo admin (e exclusão da conta, LGPD). */
+  EditarAluno: { userId: string };
+  /** O titular exclui a própria conta (LGPD art. 18, VI). */
+  ExcluirConta: undefined;
 };
 
 /** Stack interna da aba "Aulas" (lista + detalhe + criação/edição + frequência). */

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -11,6 +11,7 @@ import {
   type ListRenderItem,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 
 import { AppText } from '@/components/AppText';
 import { EmptyState } from '@/components/EmptyState';
@@ -18,8 +19,10 @@ import { GroupPicker } from '@/components/GroupPicker';
 import { PlanPicker } from '@/components/PlanPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
+import { createLogger } from '@/lib/logger';
+import type { DadosStackScreenProps } from '@/navigation/types';
 import {
-  fetchAllStudents,
+  fetchManagedProfiles,
   resetStudentPassword,
   setStudentActive,
   updateStudentGroup,
@@ -30,6 +33,8 @@ import { useTheme } from '@/theme/ThemeProvider';
 import type { Profile } from '@/types/models';
 
 const SCREEN_EDGES = ['bottom'] as const;
+
+const log = createLogger('GerenciarAlunosScreen');
 
 /** Filtro ativo da lista — atalhos para os recortes mais comuns. */
 type StudentFilter = 'active' | 'inactive' | 'admin';
@@ -59,9 +64,12 @@ function initialsFrom(name: string | null): string {
  * administradores). Permite atribuir/alterar a turma (via GroupPicker, com
  * atualização otimista), promover/rebaixar papel, trancar/reativar a matrícula e
  * redefinir a senha de quem esqueceu — devolvendo a conta à senha padrão e ao
- * onboarding.
+ * onboarding. O lápis abre a edição completa (dados pessoais, e-mail, exclusão).
+ * Contas excluídas (LGPD) não aparecem.
  */
-export function GerenciarAlunosScreen(): React.JSX.Element {
+export function GerenciarAlunosScreen({
+  navigation,
+}: DadosStackScreenProps<'GerenciarAlunos'>): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { settings } = useAcademySettings();
@@ -78,17 +86,26 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setStudents(await fetchAllStudents());
-    } catch {
+      setStudents(await fetchManagedProfiles());
+    } catch (erro) {
+      log.error('Falha ao carregar a lista de alunos', erro);
       setStudents([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  // Recarrega ao voltar da edição: nome, situação ou exclusão podem ter mudado.
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+    }, [load]),
+  );
+
+  const handleEdit = useCallback(
+    (student: Profile) => navigation.navigate('EditarAluno', { userId: student.id }),
+    [navigation],
+  );
 
   // Recorte da lista pelo filtro ativo e pela busca por nome (tudo em memória).
   const filteredStudents = useMemo(() => {
@@ -270,6 +287,15 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
             </View>
             <View style={styles.actions}>
               <Pressable
+                onPress={() => handleEdit(item)}
+                hitSlop={HIT_SLOP}
+                style={styles.action}
+                accessibilityRole="button"
+                accessibilityLabel={`Editar dados de ${item.name ?? 'aluno pendente'}`}
+              >
+                <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
+              </Pressable>
+              <Pressable
                 onPress={() => handleToggleRole(item)}
                 hitSlop={HIT_SLOP}
                 style={styles.action}
@@ -342,6 +368,7 @@ export function GerenciarAlunosScreen(): React.JSX.Element {
       colors.warning,
       handleChangeGroup,
       handleChangePlan,
+      handleEdit,
       handleResetPassword,
       handleToggleActive,
       handleToggleRole,

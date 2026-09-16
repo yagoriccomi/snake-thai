@@ -25,9 +25,9 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [x] Cadastrar aluno (Edge Function `create-student`) · OK
 - [x] Listar alunos e trocar turma · OK
 - [x] Redefinir senha do aluno para a padrão (Edge Function `reset-student-password`) · OK
-- [ ] **P0** Editar dados do aluno pelo admin · FALTA
+- [x] **P0** Editar dados do aluno pelo admin (inclui o e-mail de login) · OK
 - [x] **P0** Desativar / reativar aluno — trancar matrícula preservando histórico · OK
-- [ ] **P0** Excluir aluno com apagamento LGPD · FALTA
+- [x] **P0** Excluir aluno com apagamento LGPD · OK
 - [x] **P0** Promover / rebaixar admin — botão na lista de alunos, com trava do último admin · OK
 - [ ] **P1** Busca, filtro e ordenação na lista de alunos · FALTA
 - [ ] **P1** Ficha do aluno (histórico de presença + financeiro consolidado) · FALTA
@@ -85,8 +85,8 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 ## G. Governança, LGPD e continuidade
 
-- [x] **P0** Exportar dados do titular — função `export_my_data()` respeitando RLS · OK
-- [ ] **P0** Excluir conta — direito ao esquecimento · FALTA
+- [x] **P0** Exportar dados do titular — `export_my_data()` respeitando RLS, com botão em Dados · OK
+- [x] **P0** Excluir conta — direito ao esquecimento: pelo titular (com senha) e pelo admin, numa transação no banco · OK
 - [x] **P0** Log de auditoria — `audit_log` + trigger em profiles/payments/plans/settings · OK
 - [~] **P1** Consentimento versionado — tabela `consents` por versão de documento · BANCO OK
 - [ ] **P1** Backup testado periodicamente (não basta agendar) · FALTA

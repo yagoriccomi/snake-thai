@@ -1,4 +1,4 @@
-import { descreverPagamento, diasDeAtraso, resumirPagamentos } from '@/utils/payments';
+import { contarMensalidadesEmAberto, descreverPagamento, diasDeAtraso, resumirPagamentos } from '@/utils/payments';
 
 /** Instante local — os testes não dependem do fuso da máquina. */
 function local(ano: number, mes: number, dia: number, hora = 10): string {
@@ -64,5 +64,19 @@ describe('resumirPagamentos', () => {
         { status: 'pending_approval' },
       ]),
     ).toEqual({ pagas: 2, emAtraso: 1, emAberto: 1, emAnalise: 1 });
+  });
+});
+
+describe('contarMensalidadesEmAberto', () => {
+  it('deveContarSoAsEmAbertoEAsVencidas', () => {
+    const pagamentos = [
+      { status: 'open' as const },
+      { status: 'overdue' as const },
+      { status: 'pending_approval' as const },
+      { status: 'paid' as const },
+      { status: 'open' as const },
+    ];
+    expect(contarMensalidadesEmAberto(pagamentos)).toBe(3);
+    expect(contarMensalidadesEmAberto([])).toBe(0);
   });
 });

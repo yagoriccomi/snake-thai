@@ -136,11 +136,23 @@ na mesma migration.
 
 ## Edge Functions: deploy
 
+Só com aprovação, **sempre com o projeto explícito** (a CLI está vinculada à
+produção):
+
 ```bash
-supabase functions deploy create-student
-supabase functions deploy reset-student-password
-supabase functions deploy delete-my-account
+npx supabase functions deploy create-student --project-ref <PROJECT_REF>
+npx supabase functions deploy create-staff --project-ref <PROJECT_REF>
+npx supabase functions deploy reset-student-password --project-ref <PROJECT_REF>
+npx supabase functions deploy delete-my-account --project-ref <PROJECT_REF>
+npx supabase functions deploy delete-user-account --project-ref <PROJECT_REF>
+npx supabase functions deploy admin-update-user-email --project-ref <PROJECT_REF>
 ```
+
+As de conta (`delete-*`, `admin-update-user-email`) dependem das funções SQL da
+migration `lgpd_exclusao_de_conta`: aplique a migration **antes** de publicá-las.
+
+No banco local, uma função **nova** só aparece depois de `scripts\db-dev stop` e
+`start` (a lista de funções é fixada quando o contêiner nasce).
 
 Os segredos (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`)
 são injetados automaticamente pelo runtime das Edge Functions — não precisam ser

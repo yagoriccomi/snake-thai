@@ -11,6 +11,8 @@ import { CadastrarEquipeScreen } from '@/screens/dados/CadastrarEquipeScreen';
 import { ConfiguracoesScreen } from '@/screens/dados/ConfiguracoesScreen';
 import { PlanosScreen } from '@/screens/dados/PlanosScreen';
 import { DadosScreen } from '@/screens/dados/DadosScreen';
+import { EditarAlunoScreen } from '@/screens/dados/EditarAlunoScreen';
+import { ExcluirContaScreen } from '@/screens/dados/ExcluirContaScreen';
 import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -49,6 +51,8 @@ export function DadosStackNavigator(): React.JSX.Element {
         component={GerenciarAlunosScreen}
         options={GERENCIAR_OPTIONS}
       />
+      <Stack.Screen name="EditarAluno" component={EditarAlunoScreen} options={EDITAR_ALUNO_OPTIONS} />
+      <Stack.Screen name="ExcluirConta" component={ExcluirContaScreen} options={EXCLUIR_CONTA_OPTIONS} />
       <Stack.Screen
         name="AlterarSenha"
         component={AlterarSenhaScreen}
@@ -71,5 +75,7 @@ const CADASTRO_EQUIPE_OPTIONS: NativeStackNavigationOptions = {
 };
 const GERENCIAR_OPTIONS: NativeStackNavigationOptions = { title: 'Gerenciar Alunos' };
 const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };
+const EDITAR_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Editar Aluno' };
+const EXCLUIR_CONTA_OPTIONS: NativeStackNavigationOptions = { title: 'Excluir Conta' };
 const PLANOS_OPTIONS: NativeStackNavigationOptions = { title: 'Planos' };
 const CONFIG_OPTIONS: NativeStackNavigationOptions = { title: 'Configurações' };

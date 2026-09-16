@@ -131,6 +131,13 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         setProfile(null);
         return;
       }
+      if (loaded.anonymized_at !== null) {
+        // Conta excluída (LGPD): se a etapa do Auth falhou e a sessão sobreviveu,
+        // o app não pode seguir com um perfil anonimizado.
+        await authService.signOut();
+        setProfile(null);
+        return;
+      }
       setProfile(loaded);
       // Monitoramento: só o papel e um id aleatório da instalação, nunca e-mail ou nome.
       void setMonitoringUser(loaded.role);

@@ -24,6 +24,7 @@ export interface QueryChainMock {
   delete: jest.Mock;
   eq: jest.Mock;
   in: jest.Mock;
+  is: jest.Mock;
   order: jest.Mock;
   limit: jest.Mock;
   single: jest.Mock;
@@ -51,6 +52,7 @@ export function createQueryChain(result: SupabaseResult): QueryChainMock {
   chain.delete = jest.fn(passthrough);
   chain.eq = jest.fn(passthrough);
   chain.in = jest.fn(passthrough);
+  chain.is = jest.fn(passthrough);
   chain.order = jest.fn(passthrough);
   chain.limit = jest.fn(passthrough);
   chain.single = jest.fn(async () => result);
