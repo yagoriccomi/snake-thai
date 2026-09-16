@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,9 @@ import { PlanPicker } from '@/components/PlanPicker';
 import { usePlans } from '@/hooks/usePlans';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
+import { useDefaultStudentPassword } from '@/hooks/useDefaultStudentPassword';
+import { createLogger } from '@/lib/logger';
+import { countAccountsWithoutFirstAccess, updateDefaultStudentPassword } from '@/services/settings.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { describeError } from '@/utils/errors';
 import { maskPhone, onlyDigits } from '@/utils/masks';
@@ -25,6 +29,26 @@ import { isValidEmail } from '@/utils/validation';
 type SettingsErrors = Partial<
   Record<'name' | 'color' | 'dueDay' | 'password' | 'email' | 'form', string>
 >;
+
+const log = createLogger('ConfiguracoesScreen');
+
+/**
+ * Depois de trocar a senha: contas que ainda não entraram continuam com a
+ * anterior (quem a conhece pode entrar nelas). Avisa quantas são.
+ */
+function avisarContasSemPrimeiroAcesso(): void {
+  countAccountsWithoutFirstAccess()
+    .then((quantidade) => {
+      if (quantidade === 0) return;
+      const contas = quantidade === 1 ? '1 conta ainda não fez' : `${quantidade} contas ainda não fizeram`;
+      const continuam = quantidade === 1 ? 'continua' : 'continuam';
+      Alert.alert(
+        'Senha trocada',
+        `${contas} o primeiro acesso e ${continuam} com a senha anterior. Em Gerenciar alunos, redefina a senha dessas contas para a nova.`,
+      );
+    })
+    .catch((falha: unknown) => log.warn('Contagem de contas sem primeiro acesso falhou', falha));
+}
 
 const SCREEN_EDGES = ['bottom'] as const;
 
@@ -64,6 +88,7 @@ export function ConfiguracoesScreen(): React.JSX.Element {
   const [address, setAddress] = useState('');
   const [dueDay, setDueDay] = useState('');
   const [studentPassword, setStudentPassword] = useState('');
+  const senhaPadrao = useDefaultStudentPassword();
   const [defaultPlanId, setDefaultPlanId] = useState<string | null>(null);
 
   // Só para exibir o NOME no modo leitura — o PlanPicker cuida da edição.
@@ -94,9 +119,9 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     );
     setAddress(settings.address ?? '');
     setDueDay(String(settings.default_due_day));
-    setStudentPassword(settings.default_student_password);
+    setStudentPassword(senhaPadrao.password ?? '');
     setDefaultPlanId(settings.default_plan_id);
-  }, [settings]);
+  }, [settings, senhaPadrao.password]);
 
   // Espelha a configuração carregada nos campos, uma única vez por carga.
   useEffect(() => {
@@ -160,9 +185,13 @@ export function ConfiguracoesScreen(): React.JSX.Element {
           contactPhone.trim() === '' ? null : onlyDigits(contactPhone),
         address: emptyToNull(address),
         default_due_day: parsedDueDay,
-        default_student_password: studentPassword,
         default_plan_id: defaultPlanId,
       });
+      if (studentPassword !== senhaPadrao.password) {
+        await updateDefaultStudentPassword(studentPassword);
+        await senhaPadrao.reload();
+        avisarContasSemPrimeiroAcesso();
+      }
       setSaved(true);
       setEditing(false);
     } catch (saveError) {
@@ -182,6 +211,7 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     studentPassword,
     defaultPlanId,
     save,
+    senhaPadrao,
   ]);
 
   const handlePress = useCallback(() => void handleSave(), [handleSave]);
@@ -293,15 +323,16 @@ export function ConfiguracoesScreen(): React.JSX.Element {
 
             <Text style={styles.sectionLabel}>OPERAÇÃO</Text>
             <Input
-              label="Senha padrão do aluno"
+              label="Senha de primeiro acesso"
               autoCapitalize="none"
               value={studentPassword}
               onChangeText={setStudentPassword}
-              error={errors.password}
+              error={errors.password ?? senhaPadrao.error ?? undefined}
             />
             <AppText variant="caption" style={styles.hint}>
-              É a senha usada ao cadastrar um aluno novo e ao redefinir o acesso
-              de quem esqueceu. O aluno é obrigado a trocá-la no primeiro acesso.
+              Usada ao cadastrar aluno ou equipe e ao redefinir o acesso de quem esqueceu;
+              a pessoa é obrigada a trocá-la no primeiro acesso. Só administradores a veem.
+              Não use uma senha que já tenha circulado.
             </AppText>
 
             {errors.form !== undefined ? (
@@ -371,15 +402,15 @@ export function ConfiguracoesScreen(): React.JSX.Element {
             <Text style={styles.sectionLabel}>OPERAÇÃO</Text>
             <View style={styles.card}>
               <ValueRow
-                label="Senha padrão do aluno"
-                value={dash(studentPassword)}
+                label="Senha de primeiro acesso"
+                value={senhaPadrao.error !== null ? 'Indisponível' : dash(studentPassword)}
                 styles={styles}
                 last
               />
             </View>
             <AppText variant="caption" style={styles.hint}>
-              A senha padrão é usada ao cadastrar um aluno novo e ao redefinir o
-              acesso de quem esqueceu. O aluno troca-a no primeiro acesso.
+              Usada ao cadastrar aluno ou equipe e ao redefinir o acesso de quem
+              esqueceu; a pessoa troca-a no primeiro acesso. Só administradores a veem.
             </AppText>
 
             {saved ? (

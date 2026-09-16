@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { GroupPicker } from '@/components/GroupPicker';
 import { PlanPicker } from '@/components/PlanPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { useAcademySettings } from '@/hooks/useAcademySettings';
+import { useDefaultStudentPassword } from '@/hooks/useDefaultStudentPassword';
 import { createLogger } from '@/lib/logger';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import {
@@ -72,10 +72,9 @@ export function GerenciarAlunosScreen({
 }: DadosStackScreenProps<'GerenciarAlunos'>): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
-  const { settings } = useAcademySettings();
-
-  // Senha inicial definida pelo admin nas configuracoes da academia.
-  const defaultPassword = settings?.default_student_password ?? 'Snake@123';
+  // Senha de primeiro acesso definida pelo admin (só admin a lê).
+  const { password: defaultPassword } = useDefaultStudentPassword();
+  const senhaEmTexto = defaultPassword !== null ? ` (${defaultPassword})` : '';
 
   const [students, setStudents] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +160,7 @@ export function GerenciarAlunosScreen({
     const label = student.name ?? 'este aluno';
     Alert.alert(
       'Redefinir senha?',
-      `A senha de ${label} voltará para a padrão (${defaultPassword}) e ele precisará criar uma nova no próximo acesso.`,
+      `A senha de ${label} voltará para a de primeiro acesso${senhaEmTexto} e ele precisará criar uma nova no próximo acesso.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -173,7 +172,7 @@ export function GerenciarAlunosScreen({
               .then(() => {
                 Alert.alert(
                   'Senha redefinida',
-                  `Informe a senha padrão ${defaultPassword} para ${label}.`,
+                  `Informe a senha de primeiro acesso${senhaEmTexto} para ${label}.`,
                 );
               })
               .catch(() => {
@@ -189,7 +188,7 @@ export function GerenciarAlunosScreen({
         },
       ],
     );
-  }, [defaultPassword]);
+  }, [senhaEmTexto]);
 
   /**
    * Tranca ou reativa a matricula. Trancar preserva historico de presenca e

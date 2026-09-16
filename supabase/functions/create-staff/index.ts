@@ -16,15 +16,8 @@
 // ============================================================================
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-/**
- * Senha inicial padrão. Mesmo valor literal usado em `create-student` — não
- * é lida de `academy_settings.default_student_password` porque aquela
- * função também não a lê (inconsistência pré-existente: o campo configurável
- * na tela de Configurações nunca foi conectado à criação de conta de
- * verdade). Replicar aqui mantém as duas funções coerentes ENTRE SI; corrigir
- * a leitura de `academy_settings` é uma mudança à parte, não pedida agora.
- */
-const DEFAULT_PASSWORD = 'Snake@123';
+import { ERRO_SENHA_NAO_CONFIGURADA, lerSenhaPadrao } from '../_shared/senha-padrao.ts';
+
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -140,9 +133,14 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'Administrador não tem cor — remova o campo' }, 400);
   }
 
+  // Mesma senha de primeiro acesso dos alunos, configurada pelo admin.
+  const senhaPadrao = await lerSenhaPadrao(adminClient);
+  if (senhaPadrao === null) {
+    return json({ error: ERRO_SENHA_NAO_CONFIGURADA }, 500);
+  }
   const { data: created, error: createError } = await adminClient.auth.admin.createUser({
     email,
-    password: DEFAULT_PASSWORD,
+    password: senhaPadrao,
     email_confirm: true,
   });
   if (createError !== null || created.user === null) {
@@ -152,9 +150,9 @@ Deno.serve(async (req: Request): Promise<Response> => {
   // Nome e CPF já entram preenchidos (o admin os informou) — o funcionário
   // não redigita cadastro. Mas `is_first_login` continua TRUE de propósito:
   // é o único gatilho do onboarding, e o onboarding é o que força trocar a
-  // senha padrão (pública, literal neste arquivo) e registrar o aceite LGPD.
-  // Marcá-lo false aqui deixaria um admin permanentemente acessível por
-  // `Snake@123` e sem termo aceito. Com os dados já preenchidos, o app pula
+  // senha de primeiro acesso (compartilhada por todas as contas novas) e
+  // registrar o aceite LGPD. Marcá-lo false aqui deixaria um admin
+  // permanentemente acessível pela senha de primeiro acesso e sem termo aceito. Com os dados já preenchidos, o app pula
   // a etapa de Dados e pede só senha + termos. [#54][#55]
   const { error: insertError } = await adminClient.from('profiles').insert({
     id: created.user.id,

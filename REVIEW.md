@@ -225,9 +225,10 @@ Existem 125 testes e um `pre-commit` com typecheck, mas o gate é **local**: um
 
 ## 💡 Risco Baixo (Clean Code e Dívida Técnica)
 
-* **Constantes órfãs mantidas por compatibilidade.** `DEFAULT_STUDENT_PASSWORD`
-  e `ACADEMY_PIX_KEY` seguem no código como fallback de boot, já marcadas
-  `@deprecated` com o motivo documentado. Recomendação: remover quando o
+* **Constantes órfãs mantidas por compatibilidade.** `ACADEMY_PIX_KEY` segue no
+  código como fallback de boot, já marcada `@deprecated` com o motivo documentado
+  (`DEFAULT_STUDENT_PASSWORD` saiu na lacuna L1: a senha de primeiro acesso não tem
+  mais valor de reserva no app). Recomendação: remover quando o
   carregamento das configurações virar bloqueante no boot [#12].
 
 * ~~**Ausência de índice em `payments.due_date`.**~~ *Desatualizado (T8,

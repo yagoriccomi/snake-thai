@@ -112,6 +112,24 @@ export type Database = {
           },
         ]
       }
+      academy_secrets: {
+        Row: {
+          default_student_password: string
+          id: boolean
+          updated_at: string
+        }
+        Insert: {
+          default_student_password: string
+          id?: boolean
+          updated_at?: string
+        }
+        Update: {
+          default_student_password?: string
+          id?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       academy_settings: {
         Row: {
           academy_name: string
@@ -1095,6 +1113,11 @@ export type Database = {
         }[]
       }
       concluir_chamada: { Args: { p_class_id: string }; Returns: string }
+      contas_sem_primeiro_acesso: { Args: never; Returns: number }
+      definir_senha_padrao_da_academia: {
+        Args: { p_senha: string }
+        Returns: undefined
+      }
       disparar_envio_de_push: { Args: never; Returns: undefined }
       eliminar_comprovantes_do_titular: {
         Args: { p_user_id: string }
@@ -1328,6 +1351,7 @@ export type Database = {
         }
         Returns: Json
       }
+      senha_padrao_da_academia: { Args: never; Returns: string }
       valor_proporcional: {
         Args: { dia_entrada: number; dias_no_mes: number; preco_cents: number }
         Returns: number

@@ -149,6 +149,24 @@ select j.jobname, d.status, d.return_message, d.start_time
  limit 20;
 ```
 
+### Senha de primeiro acesso
+
+Vive em `academy_secrets` (só `service_role`); o admin lê e troca em
+Configurações, e as Edge Functions de conta usam esse valor. A coluna
+`academy_settings.default_student_password` é obsoleta e guarda só `********`
+(o APK 1.6.0 ainda a lê e grava; um gatilho leva o que ele gravar para a tabela
+protegida). Contas que ainda não fizeram o primeiro acesso — continuam com a
+senha vigente quando foram criadas:
+
+```sql
+select p.id, p.role, p.created_at
+  from public.profiles p
+ where p.is_first_login and p.anonymized_at is null and p.status = 'active'
+ order by p.created_at;
+```
+
+Depois de trocar a senha, redefina essas contas pelo app (Gerenciar alunos → chave).
+
 **Ordem das migrations importa.** Uma constraint aplicada antes do backfill dos
 dados existentes falha (aconteceu com `payments.paid_at`). Se a migration mexe
 em dados já gravados, faça o `UPDATE` de compatibilidade **antes** da constraint,

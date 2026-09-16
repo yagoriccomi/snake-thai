@@ -1,3 +1,4 @@
+import { lerErroDoBanco } from '@/lib/functionsError';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
 
@@ -28,7 +29,6 @@ export type AcademySettingsInput = Pick<
   | 'pix_key'
   | 'pix_holder_name'
   | 'default_due_day'
-  | 'default_student_password'
   | 'default_plan_id'
 >;
 
@@ -72,4 +72,37 @@ export async function updateAcademySettings(
     throw error;
   }
   return data;
+}
+
+/**
+ * Senha de primeiro acesso (só admin). Não vive mais em `academy_settings`,
+ * que todo usuário logado lê: fica numa tabela que só o servidor acessa, e as
+ * Edge Functions de conta usam exatamente este valor.
+ */
+export async function fetchDefaultStudentPassword(): Promise<string | null> {
+  const { data, error } = await supabase.rpc('senha_padrao_da_academia');
+  if (error !== null) {
+    throw error;
+  }
+  return typeof data === 'string' ? data : null;
+}
+
+/** Troca a senha de primeiro acesso (só admin; mínimo de 8 caracteres). */
+export async function updateDefaultStudentPassword(password: string): Promise<void> {
+  const { error } = await supabase.rpc('definir_senha_padrao_da_academia', { p_senha: password });
+  if (error !== null) {
+    throw lerErroDoBanco(error, ['23514']);
+  }
+}
+
+/**
+ * Quantas contas ainda não fizeram o primeiro acesso — seguem com a senha
+ * anterior depois de uma troca, e vale redefinir a delas.
+ */
+export async function countAccountsWithoutFirstAccess(): Promise<number> {
+  const { data, error } = await supabase.rpc('contas_sem_primeiro_acesso');
+  if (error !== null) {
+    throw error;
+  }
+  return typeof data === 'number' ? data : 0;
 }

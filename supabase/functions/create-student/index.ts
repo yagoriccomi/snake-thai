@@ -15,8 +15,7 @@
 // ============================================================================
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-/** Senha inicial padrão — o aluno é obrigado a trocá-la no onboarding. */
-const DEFAULT_STUDENT_PASSWORD = 'Snake@123';
+import { ERRO_SENHA_NAO_CONFIGURADA, lerSenhaPadrao } from '../_shared/senha-padrao.ts';
 
 const CORS_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Origin': '*',
@@ -101,10 +100,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'E-mail inválido' }, 400);
   }
 
-  // Cria o usuário de autenticação com a senha padrão.
+  // Cria o usuário de autenticação com a senha de primeiro acesso configurada
+  // (o aluno é obrigado a trocá-la no onboarding).
+  const senhaPadrao = await lerSenhaPadrao(adminClient);
+  if (senhaPadrao === null) {
+    return json({ error: ERRO_SENHA_NAO_CONFIGURADA }, 500);
+  }
   const { data: created, error: createError } = await adminClient.auth.admin.createUser({
     email,
-    password: DEFAULT_STUDENT_PASSWORD,
+    password: senhaPadrao,
     email_confirm: true,
   });
   if (createError !== null || created.user === null) {
