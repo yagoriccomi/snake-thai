@@ -36,7 +36,7 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | # | Tarefa | Estado | Depende de | Plano |
 |---|---|---|---|---|
 | 1 | **T4 · fase 1** — merges do `snake-thai` (sem efeito em produção) | ✅ | — | [PLANO-T4](planos/PLANO-T4.md) |
-| 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | ⬜ | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
+| 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | 🟡 PRs #12 e #16 | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
 | 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ✅ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
 | 4 | **T3** — padronizar número de versão | ⬜ | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
 | 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | ⬜ | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
@@ -75,18 +75,19 @@ porque usa regras das outras e depende de contas externas.
 
 ### T1 — Separar dev de produção ([plano](planos/PLANO-T1.md))
 
-- [ ] Supabase local em Docker nas portas 553xx (convive com o radar-tributario), Postgres 17 como produção
-- [ ] Corrigir o teste SQL desatualizado que deixa o CI vermelho; scripts `db-dev` (subir, resetar, testar, gerar tipos, gerar `.env.dev`)
-- [ ] Seed base local (planos, turmas, contas de teste) e travas para as seeds de demonstração nunca rodarem num banco com gente real
-- [ ] Variante do app: `app.config.js` com **"DEV Snake Thai"** (`com.snakethai.app.dev`), instalável ao lado do app de produção
-- [ ] `.env.dev` e `.env.prod` separados e trava que impede o app DEV de apontar para produção (e vice-versa); faixa "DEV · banco local" na tela
-- [ ] `menu.bat` com escolha de variante e comandos do banco local
-- [ ] APK DEV gerado e instalado no seu celular ao lado do de produção
-- [ ] `snake-server` local ligado ao banco local, com Cloudinary separada
-- [ ] Fluxo novo: migration **primeiro no local**; produção só por script com dupla confirmação e backup antes
+- [x] Supabase local em Docker nas portas 553xx (convive com o radar-tributario), Postgres 17 como produção
+- [x] Corrigir o teste SQL desatualizado que deixa o CI vermelho; scripts `db-dev` (subir, resetar, testar, gerar tipos, gerar `.env.dev`)
+- [x] Seed base local (planos, turmas, contas de teste) e travas para as seeds de demonstração nunca rodarem num banco com gente real
+- [x] Variante do app: `app.config.js` com **"DEV Snake Thai"** (`com.snakethai.app.dev`), instalável ao lado do app de produção
+- [x] `.env.dev` e `.env.prod` separados e trava que impede o app DEV de apontar para produção (e vice-versa); faixa "DEV · banco local" na tela
+- [x] `menu.bat` com escolha de variante e comandos do banco local
+- [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
+- [x] `snake-server` local ligado ao banco local (verificado com token local); Cloudinary de dev aguarda as credenciais abaixo
+- [x] Fluxo novo: migration **primeiro no local**; produção só por `scripts\db-push-prod.bat` (backup, simulação e dupla confirmação)
+- [ ] PRs #12 (`snake-thai`) e #16 (`snake-server`, ⚠️ merge dispara deploy) mesclados
 - [ ] 👤 Rodar, com o seu token, a checagem **somente leitura** de produção (`migration list` e `db diff`)
 - [ ] 👤 Criar o ambiente Cloudinary de desenvolvimento e colar as credenciais no `.env.dev` do servidor
-- [ ] 👤⚠️ Dados de demonstração em produção: **agora** trocar a senha das contas de demo e de teste; **antes do primeiro aluno real** fazer backup e limpar. Informar qual e-mail é a sua conta real de admin
+- [ ] 👤⚠️ Dados de demonstração em produção: o plano recomendava trocar agora a senha das contas de demo e de teste, mas você já tinha decidido não mudar senhas — **nada foi alterado; a decisão é sua**. **Antes do primeiro aluno real**: backup e limpeza. Informar qual e-mail é a sua conta real de admin
 
 ### T3 — Número de versão ([plano](planos/PLANO-T3.md))
 
@@ -169,11 +170,11 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 ## Lacunas encontradas pelo revisor (tarefas extras)
 
 - [ ] **L1** — A senha padrão de primeiro acesso está fixa no código das Edge Functions (repositório público). Ler da configuração ou gerar senha aleatória, forçar a troca no primeiro acesso e revisar contas que nunca entraram
-- [ ] **L2** — Backup (`db dump`) obrigatório antes de todo envio de migration para produção (entra no script da T1)
+- [x] **L2** — Backup (`db dump`) obrigatório antes de todo envio de migration para produção — feito no `db-push-prod.bat` (T1)
 - [ ] **L3** — Monitorar falhas dos jobs agendados do banco (mensalidades, frequência, grade, push)
 - [ ] **L4** — Uma única versão nova da Política de Privacidade cobrindo exclusão e retenção (T7), push (T9) e Sentry (T10), com novo aceite
-- [ ] **L5** — Tirar a frase "pode rodar contra produção" dos testes SQL e da documentação
-- [ ] **L6** — Documentar o risco das portas do banco local expostas na rede (firewall do Windows)
+- [x] **L5** — Tirar a frase "pode rodar contra produção" dos testes SQL e da documentação (T1)
+- [x] **L6** — Documentar o risco das portas do banco local expostas na rede (firewall do Windows) — `docs/RUNBOOK.md` (T1)
 - [ ] **L7** — Plano de publicação do bloco Produto: migrations antes do APK e, se possível, uma única reinstalação (assinatura nova + 1.7.0 juntas)
 
 ## Pendências de segurança herdadas
@@ -194,7 +195,7 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | Tarefa | Decisão | Recomendação adotada |
 |---|---|---|
 | T4 | Estratégia de merge | Merge commit sempre (nunca squash), para as tags ficarem na `main` |
-| T1 | Dados de demo em produção | Trocar as senhas agora; backup e limpeza antes do primeiro aluno real |
+| T1 | Dados de demo em produção | Backup e limpeza antes do primeiro aluno real. Troca de senha agora **não** feita: conflita com a sua decisão da 1.6.0 |
 | T1 | Acesso do celular ao banco local | `adb reverse` (nada exposto na rede, nada fixo no APK) |
 | T2/T3 | Primeiro APK assinado | Se todos aceitarem desinstalar uma vez agora: 1.6.1. Senão: sai junto com a 1.7.0 |
 | T3 | Fórmula do `versionCode` | MAJOR×1.000.000 + MINOR×1.000 + PATCH |
@@ -216,3 +217,4 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T4 fase 1 concluída.** PR #9 (`feat/papel-professor` → `main`) mesclado com merge commit `eca4c42`; conteúdo idêntico ao da `v1.6.0`, tag agora na `main`. 7 branches remotas e 9 locais já mescladas foram apagadas; exclusão automática de branch ligada. |
 | 2026-09-16 | **T4 fase 2 concluída.** PR #15 do `snake-server` (P-19 + 7 atualizações do Dependabot) mesclado com confirmação do usuário (`2500111`); API respondeu `ok` e `401` durante todo o deploy. Majors #3, #4 e #6 fechados e registrados como P-20. Branches mescladas apagadas nos dois repositórios. Relatório em [`ENTREGA-T4`](planos/ENTREGA-T4.md). |
 | 2026-09-16 | **T2, primeiro item:** APK assinado com a chave de debug removido do release `v1.6.0`, com aviso nas notas (confirmado pelo usuário). |
+| 2026-09-16 | **T1 implementada** (PRs `snake-thai` #12 e `snake-server` #16). Banco local em PG17 nas portas 553xx, `db-dev`, seeds locais com trava, app **DEV Snake Thai** com trava de ambiente e faixa, `menu.bat` por variante, `db-push-prod.bat` com backup e dupla confirmação, servidor de dev no banco local. Faltam: instalar o APK DEV no celular, credenciais Cloudinary de dev e merges. Lacunas L2, L5 e L6 resolvidas. Relatório em [`ENTREGA-T1`](planos/ENTREGA-T1.md). |
