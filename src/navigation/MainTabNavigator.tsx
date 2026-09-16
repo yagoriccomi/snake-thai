@@ -11,6 +11,7 @@ import { useAuth } from '@/context/AuthProvider';
 import { AulasStackNavigator } from '@/navigation/AulasStackNavigator';
 import { DadosStackNavigator } from '@/navigation/DadosStackNavigator';
 import { FinanceiroStackNavigator } from '@/navigation/FinanceiroStackNavigator';
+import { PainelStackNavigator } from '@/navigation/PainelStackNavigator';
 import type { MainTabParamList } from '@/navigation/types';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -21,6 +22,7 @@ type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 /** Ícone de cada aba (mapa constante — sem magic strings soltas). */
 const TAB_ICONS: Record<keyof MainTabParamList, IoniconName> = {
+  Painel: 'stats-chart-outline',
   Aulas: 'calendar-outline',
   Financeiro: 'card-outline',
   Dados: 'person-outline',
@@ -52,10 +54,10 @@ function makeScreenOptions(colors: ColorScheme, fonts: Fonts) {
   });
 }
 
-/** Navegador de abas do painel logado: Aulas, Financeiro e Dados. */
+/** Navegador de abas do app logado: Painel (admin), Aulas, Financeiro e Dados. */
 export function MainTabNavigator(): React.JSX.Element {
   const { colors, fonts } = useTheme();
-  const { isProfessor } = useAuth();
+  const { isAdmin, isProfessor } = useAuth();
 
   const screenOptions = useMemo(
     () => makeScreenOptions(colors, fonts),
@@ -64,6 +66,18 @@ export function MainTabNavigator(): React.JSX.Element {
 
   return (
     <Tab.Navigator screenOptions={screenOptions}>
+      {/*
+        Painel só para o admin, e como PRIMEIRA aba: é onde ele abre o app. Para
+        professor e aluno a rota nem existe — as funções do banco também recusam,
+        mas a navegação não oferece o caminho. [#55]
+      */}
+      {isAdmin && (
+        <Tab.Screen
+          name="Painel"
+          component={PainelStackNavigator}
+          options={NESTED_STACK_TAB_OPTIONS}
+        />
+      )}
       <Tab.Screen
         name="Aulas"
         component={AulasStackNavigator}

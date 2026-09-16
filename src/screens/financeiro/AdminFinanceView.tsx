@@ -113,6 +113,10 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
     navigation.navigate('HistoricoPagamentosAlunos');
   }, [navigation]);
 
+  const abrirInadimplencia = useCallback(() => {
+    navigation.navigate('RelatorioInadimplencia');
+  }, [navigation]);
+
   const renderItem = useCallback<ListRenderItem<PaymentWithName>>(
     ({ item }) => <AdminPaymentCard item={item} onPress={abrirPagamento} />,
     [abrirPagamento],
@@ -138,12 +142,22 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
 
       <FinanceSummary totals={totals} />
 
-      <Button
-        title="Histórico por aluno"
-        variant="secondary"
-        onPress={abrirHistorico}
-        accessibilityHint="Escolha um aluno para ver e ajustar as mensalidades dele"
-      />
+      <View style={styles.acoes}>
+        <Button
+          title="Histórico por aluno"
+          variant="secondary"
+          onPress={abrirHistorico}
+          style={styles.acao}
+          accessibilityHint="Escolha um aluno para ver e ajustar as mensalidades dele"
+        />
+        <Button
+          title="Inadimplência"
+          variant="secondary"
+          onPress={abrirInadimplencia}
+          style={styles.acao}
+          accessibilityHint="Lista quem está com mensalidade atrasada, por faixa de atraso"
+        />
+      </View>
 
       <SegmentedControl options={options} value={category} onChange={setCategory} />
 
@@ -186,6 +200,13 @@ export function AdminFinanceView({ navigation }: AdminFinanceViewProps): React.J
 const keyExtractor = (item: PaymentWithName): string => item.id;
 
 const styles = StyleSheet.create({
+  acoes: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  acao: {
+    flex: 1,
+  },
   headerBlock: {
     paddingTop: 12,
     paddingBottom: 12,
