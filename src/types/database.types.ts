@@ -1351,6 +1351,16 @@ export type Database = {
         }
         Returns: Json
       }
+      saude_das_rotinas: {
+        Args: { p_referencia?: string }
+        Returns: {
+          agenda: string
+          falhas_24h: number
+          rotina: string
+          ultima_execucao: string
+          ultimo_status: string
+        }[]
+      }
       senha_padrao_da_academia: { Args: never; Returns: string }
       valor_proporcional: {
         Args: { dia_entrada: number; dias_no_mes: number; preco_cents: number }
