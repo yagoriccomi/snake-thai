@@ -35,6 +35,10 @@ rem     respeita ANDROID_SERIAL, entao "more than one device" nao acontece.
 set "ANDROID_SERIAL="
 set "DEV_COUNT=0"
 
+rem --- Sentry: guarda o que ja veio do ambiente, para cada build partir dele.
+set "SENTRY_UPLOAD_ORIGINAL=%SENTRY_DISABLE_AUTO_UPLOAD%"
+set "SENTRY_NATIVO_ORIGINAL=%SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD%"
+
 rem --- Modo diagnostico nao-interativo:  menu.bat --device
 rem     Imprime qual aparelho seria eleito, sem abrir o menu.
 if /i "%~1"=="--device" goto DIAG_DEVICE
@@ -809,6 +813,7 @@ if /i not "%VARIANTE_ANDROID%"=="%VARIANTE%" (
 )
 call :SET_JDK
 call :ENSURE_PORT_PROP
+call :PREPARA_SENTRY %2
 echo  [i] JAVA_HOME: %JAVA_HOME%
 set "PROOT=%CD%"
 echo  [^>] Compilando %VARIANTE_ROTULO% (tarefa: %1)... na 1a vez demora varios minutos.
@@ -829,6 +834,27 @@ if "%BUILD_RESULT%"=="0" (
     echo  [!] A compilacao falhou. Codigo de saida: %BUILD_RESULT%
     echo      Confira o log acima - JDK/JAVA_HOME, SDK/NDK, etc.
 )
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: envio dos source maps ao Sentry durante o build.
+rem  Sem token, a sentry-cli derrubaria o build: nesse caso o envio e desligado
+rem  (o APK sai, mas o stack trace fica ilegivel no painel). Debug nunca envia.
+rem  Uso: call :PREPARA_SENTRY <debug|release>
+rem ===========================================================================
+:PREPARA_SENTRY
+set "SENTRY_DISABLE_AUTO_UPLOAD=%SENTRY_UPLOAD_ORIGINAL%"
+set "SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD=%SENTRY_NATIVO_ORIGINAL%"
+if /i "%1"=="debug" (
+    set "SENTRY_DISABLE_AUTO_UPLOAD=true"
+    set "SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD=true"
+    goto :eof
+)
+if defined SENTRY_AUTH_TOKEN goto :eof
+if exist "%CD%\.env.sentry-build-plugin" goto :eof
+set "SENTRY_DISABLE_AUTO_UPLOAD=true"
+set "SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD=true"
+echo  [!] Sem token do Sentry: o stack trace deste APK fica ilegivel no painel.
 goto :eof
 
 rem ===========================================================================

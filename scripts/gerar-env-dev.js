@@ -4,9 +4,9 @@
  * (`npx supabase status`). Não imprime a chave: ela vai direto para o arquivo,
  * que o .gitignore bloqueia.
  *
- * Preserva o EXPO_PUBLIC_API_URL de um .env.dev existente — é o único valor
- * escolhido à mão (o snake-server local só é usado com a Cloudinary de dev
- * configurada).
+ * Preserva o que é escolhido à mão num .env.dev existente: EXPO_PUBLIC_API_URL
+ * (o snake-server local só é usado com a Cloudinary de dev configurada) e
+ * EXPO_PUBLIC_SENTRY_DSN (monitoramento de erros, opcional).
  */
 'use strict';
 
@@ -38,6 +38,7 @@ function principal() {
   const { url, chave } = lerStatus();
   const anterior = fs.existsSync(ARQUIVO) ? lerEnv(fs.readFileSync(ARQUIVO, 'utf8')) : {};
   const apiUrl = anterior.EXPO_PUBLIC_API_URL ?? '';
+  const sentryDsn = anterior.EXPO_PUBLIC_SENTRY_DSN ?? '';
 
   const conteudo = [
     '# Gerado por scripts/gerar-env-dev.js — app "DEV Snake Thai" contra o banco LOCAL.',
@@ -47,6 +48,8 @@ function principal() {
     '# snake-server local (ex.: http://127.0.0.1:3000). Vazio: comprovante vai para o Storage local',
     '# e o anexo de justificativa fica indisponível.',
     `EXPO_PUBLIC_API_URL=${apiUrl}`,
+    '# Monitoramento de erros (Sentry). Vazio: desligado. Ver docs/RUNBOOK.md.',
+    `EXPO_PUBLIC_SENTRY_DSN=${sentryDsn}`,
     '',
   ].join('\n');
 

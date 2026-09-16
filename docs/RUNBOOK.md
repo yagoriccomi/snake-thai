@@ -11,6 +11,7 @@
 - [Banco de dados: migrations e tipos](#banco-de-dados-migrations-e-tipos)
 - [Edge Functions: deploy](#edge-functions-deploy)
 - [APK: gerar e instalar](#apk-gerar-e-instalar)
+- [Monitoramento de erros](#monitoramento-de-erros)
 - [Qualidade: o que o CI roda](#qualidade-o-que-o-ci-roda)
 - [Rotação de chaves e segredos](#rotacao-de-chaves-e-segredos)
 
@@ -193,6 +194,54 @@ chave de debug e não é publicado. Gerar, guardar e cadastrar a chave:
 
 ---
 
+## Monitoramento de erros
+
+Erros e travamentos do app vão para o **Sentry** (plano gratuito: 5 mil erros por
+mês, 30 dias de retenção). Código em `src/lib/monitoring` — o único lugar que
+importa o SDK.
+
+**Desligado** sem `EXPO_PUBLIC_SENTRY_DSN` e no Metro em modo debug. Um `.env` sem
+DSN gera um app que funciona normalmente, só sem monitoramento.
+
+**O que sai do aparelho:** o erro (tipo, mensagem filtrada e stack), a versão do app,
+o modelo e o sistema do aparelho, um **id aleatório da instalação** e o **papel**
+(admin/professor/aluno). **Não sai:** nome, e-mail, CPF, telefone, IP, token, query
+string de URL, captura de tela, logs do console. Os filtros estão em
+`src/lib/monitoring/scrub.ts`; falha de rede (aparelho sem internet) não vira evento.
+
+**O que vira evento:** `log.error` (via o logger), erro de renderização
+(`AppErrorBoundary`) e travamento nativo. `log.warn` e `log.info` só viram trilha
+anexada ao próximo erro. DEV e produção ficam separados pelo `environment`.
+
+**Configurar (uma vez):**
+
+1. No Sentry: organização (a região, UE ou EUA, não muda depois), projeto React
+   Native, e em *Settings → Security & Privacy* ligar "Prevent Storing of IP
+   Addresses" e os *Data Scrubbers*.
+2. DSN do projeto em `EXPO_PUBLIC_SENTRY_DSN` no `.env.dev` e no `.env.prod`.
+3. Token de organização (*Settings → Developer Settings → Organization Tokens*) só
+   na máquina de build, junto com os slugs: arquivo `.env.sentry-build-plugin` na
+   raiz (ignorado pelo Git) com `SENTRY_AUTH_TOKEN`, `SENTRY_ORG` e `SENTRY_PROJECT`.
+   No GitHub Actions: secret `SENTRY_AUTH_TOKEN` e variáveis `SENTRY_ORG` e
+   `SENTRY_PROJECT` no Environment `release`, e o DSN no secret `EXPO_PUBLIC_SENTRY_DSN`.
+4. Uma regra de alerta por e-mail para *issue* nova em `environment:production`.
+
+**Sem o token**, o build não quebra: o `menu.bat` e o workflow desligam o envio de
+source maps e avisam — o erro chega ao painel, mas com o stack ilegível
+(`index.android.bundle:1:NNNN`).
+
+**Testar:** no app **DEV**, Perfil → *Diagnóstico de erros* → "Enviar erro de
+teste", "Erro de tela" ou "Travamento nativo" (o travamento só é enviado na próxima
+abertura). A linha não existe no app de produção. No painel, o evento deve mostrar
+frames em `src/…`, `environment: development` e nenhum dado pessoal.
+
+**Se a cota estourar:** procure a *issue* que mais cresceu (costuma ser um erro em
+laço), corrija, e enquanto isso use *Spike Protection*/rate limit da Client Key no
+painel. **Rotação:** um token vazado é revogado em *Organization Tokens*; o DSN
+exposto pode ser trocado criando outra Client Key (exige novo APK).
+
+---
+
 ## Qualidade: o que o CI roda
 
 A cada push e PR (`.github/workflows/ci.yml`):
@@ -221,6 +270,8 @@ Nenhum segredo vive no repositório (`.env.*` está no `.gitignore`). Os que exi
 | `EXPO_PUBLIC_SUPABASE_URL` | `.env.prod` / `.env.dev` (app) | nunca — é público |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | `.env.prod` / `.env.dev` (app) | se comprometida; é pública, protegida pela RLS |
 | `SUPABASE_ACCESS_TOKEN` | ambiente do dev (CLI) | se vazar; **nunca** commitar |
+| `EXPO_PUBLIC_SENTRY_DSN` | `.env.prod` / `.env.dev` (app) | se for abusado (eventos falsos); vai no APK |
+| `SENTRY_AUTH_TOKEN` | `.env.sentry-build-plugin` (máquina de build) e secret do Actions | se vazar; **nunca** no app nem no Git |
 | `service_role key` | só no runtime das Edge Functions | se vazar — dá acesso total, ignora RLS |
 
 **Se a `service_role` vazar**, rotacione **imediatamente** no painel do Supabase

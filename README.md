@@ -40,6 +40,7 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
 - **Mobile:** React Native + Expo (SDK 57) + TypeScript (modo estrito)
 - **Backend/BaaS:** Supabase (Auth, Postgres com RLS, Storage)
 - **Sessão segura:** Expo SecureStore + AsyncStorage cifrado (AES-256)
+- **Monitoramento de erros:** Sentry (opcional), sem dado pessoal — ver [Runbook](docs/RUNBOOK.md#monitoramento-de-erros)
 
 ## 🚀 Rodando localmente
 
@@ -158,6 +159,7 @@ versionado. Modelo e exemplos de cada um em [`.env.example`](.env.example).
 | --- | --- |
 | `EXPO_PUBLIC_SUPABASE_URL` | URL do projeto Supabase (ex.: `https://xxxx.supabase.co`). |
 | `EXPO_PUBLIC_SUPABASE_ANON_KEY` | Chave pública `anon` do Supabase (segura no cliente; proteção real vem das políticas de RLS). |
+| `EXPO_PUBLIC_SENTRY_DSN` | DSN do Sentry. **Opcional**: vazio, o monitoramento de erros fica desligado. O token de envio de source maps (`SENTRY_AUTH_TOKEN`) fica só na máquina de build, nunca aqui. |
 | `EXPO_PUBLIC_API_URL` | URL do backend na Render. **Opcional**: sem ela o app envia comprovante pelo Supabase Storage, como sempre fez — nada quebra. Ver [`docs/BACKEND.md`](docs/BACKEND.md). |
 
 > **Obsoletas, removidas em 2026-08-31:** `EXPO_PUBLIC_CLOUDINARY_CLOUD_NAME` e

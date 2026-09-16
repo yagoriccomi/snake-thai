@@ -10,6 +10,7 @@ import React, {
 import { AppState, type AppStateStatus } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 
+import { clearMonitoringUser, setMonitoringUser } from '@/lib/monitoring';
 import { supabase } from '@/lib/supabase';
 import * as authService from '@/services/auth.service';
 import {
@@ -131,6 +132,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         return;
       }
       setProfile(loaded);
+      // Monitoramento: só o papel e um id aleatório da instalação, nunca e-mail ou nome.
+      void setMonitoringUser(loaded.role);
 
       // O bloqueio biométrico é OPT-IN: só trava quem escolheu ativá-lo. Nunca
       // é sugerido proativamente — o usuário ativa pela aba Perfil, se quiser.
@@ -160,6 +163,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     if (userId === undefined) {
       setProfile(null);
       setAdminLocked(false);
+      clearMonitoringUser();
       return;
     }
     void loadProfile(userId);

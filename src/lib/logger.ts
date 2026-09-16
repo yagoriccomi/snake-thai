@@ -12,7 +12,13 @@
  *
  * A *stack trace* fica aqui, no log — jamais na tela. O usuário recebe uma
  * mensagem limpa e acionável; o detalhe técnico é para quem vai depurar [#93].
+ *
+ * Um coletor remoto (o monitoramento de erros, `src/lib/monitoring`) entra por
+ * `setLogSink`: o logger não conhece o Sentry, só entrega os eventos já
+ * mascarados.
  */
+
+import { scrubText } from '@/lib/monitoring/scrub';
 
 /** Níveis de severidade, do mais verboso ao mais grave [#92]. */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -34,6 +40,10 @@ const SENSITIVE_KEYS = [
   'apikey',
   'authorization',
   'pix_key',
+  'name',
+  'nome',
+  'dob',
+  'nascimento',
 ];
 
 /** Quantos caracteres do fim do valor permanecem visíveis ao mascarar. */
@@ -104,37 +114,86 @@ function safeJson(value: unknown): string {
  * lugar do erro caem aqui — em ambos os casos é melhor ter o conteúdo.
  */
 function describeError(error: unknown): LogContext {
+  // O texto da mensagem também é filtrado: o PostgREST devolve o valor que
+  // violou a regra (ex.: o CPF duplicado) dentro dela.
   if (error instanceof Error) {
-    return { errorName: error.name, errorMessage: error.message, stack: error.stack };
+    return { errorName: error.name, errorMessage: scrubText(error.message), stack: error.stack };
   }
   if (typeof error === 'object' && error !== null) {
-    return { errorMessage: safeJson(error) };
+    return { errorMessage: scrubText(safeJson(error)) };
   }
-  return { errorMessage: String(error) };
+  return { errorMessage: scrubText(String(error)) };
+}
+
+/** Evento entregue ao coletor remoto; o contexto já vem mascarado. */
+export interface LogSinkEvent {
+  level: LogLevel;
+  scope: string;
+  message: string;
+  context: LogContext;
+}
+
+/**
+ * Coletor remoto de eventos. `error` recebe o erro ORIGINAL (a stack que o
+ * coletor simboliza); `breadcrumb` recebe warn/info como trilha, sem stack.
+ */
+export interface LogSink {
+  error(evento: LogSinkEvent & { error?: unknown }): void;
+  breadcrumb(evento: LogSinkEvent): void;
+}
+
+let sink: LogSink | null = null;
+
+/** Liga (ou desliga, com `null`) o coletor remoto. */
+export function setLogSink(novo: LogSink | null): void {
+  sink = novo;
+}
+
+/** Entrega ao coletor sem nunca deixar uma falha dele derrubar o log. */
+function entregarAoSink(level: LogLevel, scope: string, message: string, context: LogContext, error: unknown): void {
+  if (sink === null || level === 'debug') {
+    return;
+  }
+  try {
+    // A stack vai no próprio erro; repetida no contexto só pesaria.
+    const { stack: _stack, ...semStack } = context;
+    const evento = { level, scope, message, context: semStack };
+    if (level === 'error') {
+      sink.error({ ...evento, error });
+    } else {
+      sink.breadcrumb(evento);
+    }
+  } catch {
+    // O coletor é acessório: o app e o log seguem sem ele.
+  }
 }
 
 /** Emite o evento já formatado no transporte disponível. */
-function emit(level: LogLevel, scope: string, message: string, context: LogContext): void {
+function emit(
+  level: LogLevel,
+  scope: string,
+  message: string,
+  context: LogContext,
+  error?: unknown,
+): void {
+  const safeContext = sanitize(context);
   const entry = {
     level,
     scope,
     message,
     at: new Date().toISOString(),
-    ...sanitize(context),
+    ...safeContext,
   };
 
-  // Em produção este é o ponto único a trocar por um coletor remoto; a
-  // interface de chamada permanece a mesma em todo o app.
   const serialized = JSON.stringify(entry);
   if (level === 'error') {
     console.error(serialized);
-    return;
-  }
-  if (level === 'warn') {
+  } else if (level === 'warn') {
     console.warn(serialized);
-    return;
+  } else {
+    console.log(serialized);
   }
-  console.log(serialized);
+  entregarAoSink(level, scope, message, safeContext, error);
 }
 
 /**
@@ -154,17 +213,23 @@ export function createLogger(scope: string) {
 
     /** Situação inesperada, porém contornável — o app segue funcionando [#92]. */
     warn: (message: string, error?: unknown, context: LogContext = {}): void =>
-      emit('warn', scope, message, {
-        ...context,
-        ...(error === undefined ? {} : describeError(error)),
-      }),
+      emit(
+        'warn',
+        scope,
+        message,
+        { ...context, ...(error === undefined ? {} : describeError(error)) },
+        error,
+      ),
 
     /** Falha grave: a operação que o usuário pediu não aconteceu [#92]. */
     error: (message: string, error?: unknown, context: LogContext = {}): void =>
-      emit('error', scope, message, {
-        ...context,
-        ...(error === undefined ? {} : describeError(error)),
-      }),
+      emit(
+        'error',
+        scope,
+        message,
+        { ...context, ...(error === undefined ? {} : describeError(error)) },
+        error,
+      ),
   };
 }
 

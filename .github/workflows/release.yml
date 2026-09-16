@@ -94,12 +94,13 @@ jobs:
           EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
           EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_SENTRY_DSN: ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
         run: |
           : "${EXPO_PUBLIC_SUPABASE_URL:?secret EXPO_PUBLIC_SUPABASE_URL ausente no environment release}"
           : "${EXPO_PUBLIC_SUPABASE_ANON_KEY:?secret EXPO_PUBLIC_SUPABASE_ANON_KEY ausente no environment release}"
           umask 077
-          printf 'EXPO_PUBLIC_SUPABASE_URL=%s\nEXPO_PUBLIC_SUPABASE_ANON_KEY=%s\nEXPO_PUBLIC_API_URL=%s\n' \
-            "$EXPO_PUBLIC_SUPABASE_URL" "$EXPO_PUBLIC_SUPABASE_ANON_KEY" "${EXPO_PUBLIC_API_URL:-}" > .env.prod
+          printf 'EXPO_PUBLIC_SUPABASE_URL=%s\nEXPO_PUBLIC_SUPABASE_ANON_KEY=%s\nEXPO_PUBLIC_API_URL=%s\nEXPO_PUBLIC_SENTRY_DSN=%s\n' \
+            "$EXPO_PUBLIC_SUPABASE_URL" "$EXPO_PUBLIC_SUPABASE_ANON_KEY" "${EXPO_PUBLIC_API_URL:-}" "${EXPO_PUBLIC_SENTRY_DSN:-}" > .env.prod
 
       - name: Keystore de produção
         env:
@@ -125,10 +126,18 @@ jobs:
           ORG_GRADLE_PROJECT_SNAKETHAI_RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           ORG_GRADLE_PROJECT_SNAKETHAI_RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
           ORG_GRADLE_PROJECT_SNAKETHAI_RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+          # Opcionais: sem o token, o APK sai com o stack trace ilegível no Sentry.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
         run: |
           : "${ORG_GRADLE_PROJECT_SNAKETHAI_RELEASE_STORE_PASSWORD:?secret RELEASE_STORE_PASSWORD ausente}"
           : "${ORG_GRADLE_PROJECT_SNAKETHAI_RELEASE_KEY_ALIAS:?secret RELEASE_KEY_ALIAS ausente}"
           : "${ORG_GRADLE_PROJECT_SNAKETHAI_RELEASE_KEY_PASSWORD:?secret RELEASE_KEY_PASSWORD ausente}"
+          if [ -z "${SENTRY_AUTH_TOKEN:-}" ]; then
+            export SENTRY_DISABLE_AUTO_UPLOAD=true SENTRY_DISABLE_NATIVE_DEBUG_UPLOAD=true
+            echo "::warning::Sem SENTRY_AUTH_TOKEN: source maps não enviados ao Sentry."
+          fi
           node ../scripts/with-variant.js prod -- ./gradlew assembleRelease bundleRelease \
             -PreactNativeArchitectures="$ABIS" \
             -PreactNativeDevServerPort=6969 \

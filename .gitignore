@@ -67,3 +67,6 @@ output-metadata.json
 .vscode/
 .DS_Store
 *.log
+
+# Sentry: credenciais da sentry-cli (o .env.sentry-build-plugin já cai em .env.*)
+.sentryclirc
