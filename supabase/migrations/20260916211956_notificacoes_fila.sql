@@ -529,6 +529,8 @@ end;
 $funcao$;
 
 -- Envios com ticket aceito há mais de 15 minutos, cujo recibo ainda não foi visto.
+-- A Expo guarda recibos por ~24 h: depois disso não adianta perguntar (e o
+-- despachante acordaria a cada minuto por um recibo que nunca vem).
 create or replace function public.pendencias_de_recibo_push(p_limite integer)
 returns table (delivery_id uuid, ticket_id text)
 language sql
@@ -541,7 +543,7 @@ as $funcao$
    where d.ticket_status = 'ok'
      and d.receipt_checked_at is null
      and d.expo_ticket_id is not null
-     and d.created_at < now() - interval '15 minutes'
+     and d.created_at between now() - interval '1 day' and now() - interval '15 minutes'
    order by d.created_at
    limit greatest(coalesce(p_limite, 0), 0);
 $funcao$;
@@ -585,7 +587,8 @@ begin
   if not exists (select 1 from public.notification_outbox o where o.status = 'pending' and o.send_after <= now())
      and not exists (
        select 1 from public.notification_deliveries d
-        where d.ticket_status = 'ok' and d.receipt_checked_at is null and d.created_at < now() - interval '15 minutes'
+        where d.ticket_status = 'ok' and d.receipt_checked_at is null
+          and d.created_at between now() - interval '1 day' and now() - interval '15 minutes'
      ) then
     return;
   end if;

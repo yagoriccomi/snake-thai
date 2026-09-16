@@ -75,7 +75,8 @@
     },
     "testPathIgnorePatterns": [
       "/node_modules/",
-      "/dist/"
+      "/dist/",
+      "/supabase/functions/"
     ]
   },
   "private": true
