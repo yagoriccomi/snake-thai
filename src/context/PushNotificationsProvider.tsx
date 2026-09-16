@@ -3,6 +3,7 @@ import { Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
 import { useAuth } from '@/context/AuthProvider';
+import { useLegalConsent } from '@/context/LegalConsentProvider';
 import { createLogger } from '@/lib/logger';
 import { navigationRef } from '@/navigation/navigationRef';
 import {
@@ -63,7 +64,9 @@ const PushNotificationsContext = createContext<PushNotificationsContextValue | u
 export function PushNotificationsProvider({ children }: { children: React.ReactNode }): React.JSX.Element {
   const { session, profile, adminLocked, isProfessor } = useAuth();
   const userId = session?.user.id ?? null;
-  const dentroDoApp = userId !== null && profile !== null && !profile.is_first_login && !adminLocked;
+  const { precisaAceitar } = useLegalConsent();
+  const dentroDoApp =
+    userId !== null && profile !== null && !profile.is_first_login && !adminLocked && !precisaAceitar;
 
   const [status, setStatus] = useState<PushStatus>('carregando');
   const [escolha, setEscolha] = useState<PushChoice>('indefinido');
@@ -159,7 +162,7 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
     return () => assinatura.remove();
   }, []);
 
-  // Só navega com a pessoa dentro do app: a digital continua sendo respeitada.
+  // Só navega com a pessoa dentro do app: a digital e o aceite de termos novos continuam sendo respeitados.
   useEffect(() => {
     if (destinoPendente === null || !dentroDoApp) return undefined;
     // Professor não tem a aba Financeiro: um aviso financeiro não o leva a lugar nenhum.

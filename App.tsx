@@ -7,6 +7,7 @@ import { DevEnvironmentFrame } from '@/components/DevBanner';
 import { PortalProvider } from '@/components/Portal';
 import { env } from '@/config/env';
 import { AuthProvider } from '@/context/AuthProvider';
+import { LegalConsentProvider } from '@/context/LegalConsentProvider';
 import { PushNotificationsProvider } from '@/context/PushNotificationsProvider';
 import { useAppFonts } from '@/hooks/useAppFonts';
 import { wrapRoot } from '@/lib/monitoring';
@@ -42,13 +43,16 @@ function App(): React.JSX.Element | null {
           {/* Só no "DEV Snake Thai": faixa que separa o app de testes do de produção. */}
           <DevEnvironmentFrame ativo={env.appVariant === 'development'}>
             <AuthProvider>
-              {/* Registro do aparelho e toque na notificação dependem da sessão. */}
-              <PushNotificationsProvider>
-                {/* Folhas com campo de texto vivem aqui, e não em Modal: ver Portal.tsx. */}
-                <PortalProvider>
-                  <RootNavigator onReady={handleNavigationReady} />
-                </PortalProvider>
-              </PushNotificationsProvider>
+              {/* Novo aceite da Política de Privacidade e dos Termos (L4). */}
+              <LegalConsentProvider>
+                {/* Registro do aparelho e toque na notificação dependem da sessão. */}
+                <PushNotificationsProvider>
+                  {/* Folhas com campo de texto vivem aqui, e não em Modal: ver Portal.tsx. */}
+                  <PortalProvider>
+                    <RootNavigator onReady={handleNavigationReady} />
+                  </PortalProvider>
+                </PushNotificationsProvider>
+              </LegalConsentProvider>
             </AuthProvider>
           </DevEnvironmentFrame>
         </AppErrorBoundary>

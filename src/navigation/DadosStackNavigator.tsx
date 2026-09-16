@@ -17,6 +17,7 @@ import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
 import { GradeTurmaScreen } from '@/screens/dados/GradeTurmaScreen';
 import { HorarioFormScreen } from '@/screens/dados/HorarioFormScreen';
 import { TurmasScreen } from '@/screens/dados/TurmasScreen';
+import { DocumentosLegaisScreen } from '@/screens/legal/DocumentosLegaisScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<DadosStackParamList>();
@@ -56,6 +57,7 @@ export function DadosStackNavigator(): React.JSX.Element {
       />
       <Stack.Screen name="EditarAluno" component={EditarAlunoScreen} options={EDITAR_ALUNO_OPTIONS} />
       <Stack.Screen name="ExcluirConta" component={ExcluirContaScreen} options={EXCLUIR_CONTA_OPTIONS} />
+      <Stack.Screen name="DocumentosLegais" component={DocumentosLegaisScreen} options={DOCUMENTOS_LEGAIS_OPTIONS} />
       <Stack.Screen
         name="AlterarSenha"
         component={AlterarSenhaScreen}
@@ -83,6 +85,7 @@ const GERENCIAR_OPTIONS: NativeStackNavigationOptions = { title: 'Gerenciar Alun
 const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };
 const EDITAR_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Editar Aluno' };
 const EXCLUIR_CONTA_OPTIONS: NativeStackNavigationOptions = { title: 'Excluir Conta' };
+const DOCUMENTOS_LEGAIS_OPTIONS: NativeStackNavigationOptions = { title: 'Termos e privacidade' };
 const PLANOS_OPTIONS: NativeStackNavigationOptions = { title: 'Planos' };
 const TURMAS_OPTIONS: NativeStackNavigationOptions = { title: 'Turmas' };
 const GRADE_OPTIONS: NativeStackNavigationOptions = { title: 'Grade semanal' };

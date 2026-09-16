@@ -205,6 +205,7 @@ export function DadosScreen({
   const exportacao = useExportarMeusDados();
   const exportarDados = useCallback(() => void exportacao.exportar(), [exportacao]);
   const goToExcluirConta = useCallback(() => navigation.navigate('ExcluirConta'), [navigation]);
+  const goToDocumentosLegais = useCallback(() => navigation.navigate('DocumentosLegais'), [navigation]);
 
   /**
    * Liga/desliga o desbloqueio biométrico. Ativar dispara a confirmação da
@@ -523,6 +524,13 @@ export function DadosScreen({
         <View style={styles.group}>
           <Text style={styles.sectionLabel}>CONTA</Text>
           <View style={styles.card}>
+            <NavRow
+              icon="document-text-outline"
+              label="Termos e privacidade"
+              onPress={goToDocumentosLegais}
+              styles={styles}
+              colors={colors}
+            />
             <NavRow
               icon="download-outline"
               label={exportacao.exportando ? 'Exportando…' : 'Exportar meus dados'}

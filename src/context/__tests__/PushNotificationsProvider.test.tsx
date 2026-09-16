@@ -13,8 +13,12 @@ const mockPedirPermissao = jest.fn();
 const mockLerPermissao = jest.fn();
 const mockObterToken = jest.fn();
 const mockRegistrar = jest.fn();
+const mockPrecisaAceitar = jest.fn();
 
 jest.mock('@/context/AuthProvider', () => ({ useAuth: (): unknown => mockUseAuth() }));
+jest.mock('@/context/LegalConsentProvider', () => ({
+  useLegalConsent: () => ({ precisaAceitar: mockPrecisaAceitar() }),
+}));
 jest.mock('@/navigation/navigationRef', () => ({
   navigationRef: {
     isReady: (): unknown => mockPronto(),
@@ -75,6 +79,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockListeners.length = 0;
   mockPronto.mockReturnValue(true);
+  mockPrecisaAceitar.mockReturnValue(false);
   mockGetChoice.mockResolvedValue('indefinido');
   mockSetChoice.mockResolvedValue(undefined);
   mockLerPermissao.mockResolvedValue({ concedida: true, podePerguntar: true });
@@ -147,6 +152,35 @@ describe('PushNotificationsProvider', () => {
     expect(mockNavegar).not.toHaveBeenCalled();
 
     mockUseAuth.mockReturnValue(sessao('professor', false));
+    rerender(
+      <PushNotificationsProvider>
+        <Estado />
+      </PushNotificationsProvider>,
+    );
+
+    await waitFor(() =>
+      expect(mockNavegar).toHaveBeenCalledWith('Main', { screen: 'Aulas', params: { screen: 'AulasHome' } }),
+    );
+  });
+
+  it('naoDeveAbrirATelaDaNotificacaoAntesDoAceiteDosTermosNovos', async () => {
+    notificacoes.getLastNotificationResponse.mockReturnValue({
+      notification: { request: { content: { data: { tipo: 'aula_sem_chamada', classId: '8b4284f0-8048-458d-a1d8-6980967e1b55' } } } },
+    } as never);
+    mockUseAuth.mockReturnValue(sessao('professor'));
+    mockPrecisaAceitar.mockReturnValue(true);
+    const { rerender } = render(
+      <PushNotificationsProvider>
+        <Estado />
+      </PushNotificationsProvider>,
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(mockNavegar).not.toHaveBeenCalled();
+
+    mockPrecisaAceitar.mockReturnValue(false);
     rerender(
       <PushNotificationsProvider>
         <Estado />

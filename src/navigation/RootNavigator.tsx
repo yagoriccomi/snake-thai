@@ -8,12 +8,14 @@ import {
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '@/context/AuthProvider';
+import { useLegalConsent } from '@/context/LegalConsentProvider';
 import { MainTabNavigator } from '@/navigation/MainTabNavigator';
 import { navigationRef } from '@/navigation/navigationRef';
 import type { RootStackParamList } from '@/navigation/types';
 import { LoadingScreen } from '@/screens/LoadingScreen';
 import { BiometricLockScreen } from '@/screens/auth/BiometricLockScreen';
 import { LoginScreen } from '@/screens/auth/LoginScreen';
+import { AceiteDocumentosScreen } from '@/screens/legal/AceiteDocumentosScreen';
 import { OnboardingScreen } from '@/screens/onboarding/OnboardingScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -29,6 +31,7 @@ interface RootNavigatorProps {
  *   sem sessão               → Login
  *   primeiro login           → Onboarding (bloqueante)
  *   lock biométrico ativo    → BiometricLock
+ *   documento legal novo     → AceiteDocumentos (bloqueante; ver LegalConsentProvider)
  *   caso contrário           → Main (abas)
  *
  * A biometria é 100% opt-in: nunca é sugerida proativamente. O usuário a ativa,
@@ -46,6 +49,7 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
     profile,
     adminLocked,
   } = useAuth();
+  const { precisaAceitar } = useLegalConsent();
 
   const navigationTheme = useMemo<NavigationTheme>(() => {
     const base = isDark ? DarkTheme : DefaultTheme;
@@ -78,6 +82,9 @@ export function RootNavigator({ onReady }: RootNavigatorProps): React.JSX.Elemen
     }
     if (adminLocked) {
       return <Stack.Screen name="BiometricLock" component={BiometricLockScreen} />;
+    }
+    if (precisaAceitar) {
+      return <Stack.Screen name="AceiteDocumentos" component={AceiteDocumentosScreen} />;
     }
     return <Stack.Screen name="Main" component={MainTabNavigator} />;
   };
