@@ -168,6 +168,16 @@ select p.id, p.role, p.created_at
 
 Depois de trocar a senha, redefina essas contas pelo app (Gerenciar alunos → chave).
 
+### Política de Privacidade e Termos de Uso
+
+- **Publicação:** só por migration gerada a partir do texto aprovado
+  (`npm run legal:publicar -- politica 1.0`).
+- **Imutável:** documento publicado não muda; para corrigir, publica-se outra versão, e
+  todos aceitam de novo.
+- **Recusa:** `publicar_documento_legal` recusa texto com `[PREENCHER`.
+- **Consultas:** quem ainda não aceitou e a prova de aceite de uma pessoa estão em
+  [`legal/README.md`](legal/README.md).
+
 **Ordem das migrations importa.** Uma constraint aplicada antes do backfill dos
 dados existentes falha (aconteceu com `payments.paid_at`). Se a migration mexe
 em dados já gravados, faça o `UPDATE` de compatibilidade **antes** da constraint,

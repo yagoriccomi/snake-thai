@@ -186,7 +186,7 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [ ] 👤 Conta Expo (`EAS_PROJECT_ID`), projeto Firebase com os 2 apps (produção e DEV), arquivo `google-services.json`, chave FCM V1 enviada à Expo — passo a passo em [`NOTIFICACOES.md`](NOTIFICACOES.md)
 - [ ] 👤⚠️ Publicar em produção: migrations → segredos da função e do Vault → deploy da `send-push` → APK novo
 - [ ] 👤 Testar no celular (ativar, receber, tocar com o app fechado e aberto)
-- [ ] 👤 Aprovar o texto da Política de Privacidade (L4) e decidir se o build no GitHub Actions (T5) recebe o `google-services.json` como secret
+- [ ] 👤 Aprovar a Política de Privacidade (rascunho pronto na L4) e decidir se o build no GitHub Actions (T5) recebe o `google-services.json` como secret
 
 ---
 
@@ -197,7 +197,9 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] **L2** — Backup (`db dump`) obrigatório antes de todo envio de migration para produção — feito no `db-push-prod.bat` (T1)
 - [x] **L3** — Monitorar falhas dos jobs agendados do banco (mensalidades, frequência, grade, push) — **feito** ([`ENTREGA-L3`](planos/ENTREGA-L3.md)): aviso no Painel quando uma rotina falha
   - [ ] 👤⚠️ Publicar a migration junto das demais (sem ela o Painel só não mostra o aviso)
-- [ ] **L4** — Uma única versão nova da Política de Privacidade cobrindo exclusão e retenção (T7), push (T9) e Sentry (T10), com novo aceite
+- [x] **L4** — Uma única versão nova da Política de Privacidade cobrindo exclusão e retenção (T7), push (T9) e Sentry (T10), com novo aceite — **feito** ([`ENTREGA-L4`](planos/ENTREGA-L4.md)): rascunhos da política e dos termos em [`legal/`](legal/README.md) com os fatos do app; aceite registrado por versão no primeiro acesso; tela de novo aceite a cada versão; Perfil → Termos e privacidade. Nada publicado: o banco recusa texto com `[PREENCHER`
+  - [ ] 👤⚠️ Preencher os campos, aprovar com apoio jurídico e publicar (`npm run legal:publicar`, depois a migration como as demais)
+  - [ ] 👤 Decidir como cadastrar alunos menores de idade (consentimento do responsável)
 - [x] **L5** — Tirar a frase "pode rodar contra produção" dos testes SQL e da documentação (T1)
 - [x] **L6** — Documentar o risco das portas do banco local expostas na rede (firewall do Windows) — `docs/RUNBOOK.md` (T1)
 - [x] **L7** — Plano de publicação do bloco Produto: migrations antes do APK e, se possível, uma única reinstalação (assinatura nova + 1.7.0 juntas) — **feito**: roteiro em [`PUBLICACAO-1.7.0.md`](PUBLICACAO-1.7.0.md)
@@ -268,3 +270,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **L3 feita** (branch `feat/saude-das-rotinas`): `saude_das_rotinas()` só admin e aviso no topo do Painel quando uma das 10 rotinas agendadas falha, com nome amigável e sem a mensagem de erro; o Painel não cai se a consulta falhar. 4 casos SQL, Jest verde; conferido na API local com o histórico real do pg_cron. Relatório em [`ENTREGA-L3`](planos/ENTREGA-L3.md). |
 | 2026-09-16 | **L3:** PR #23 mesclado (`e937026`), CI verde. |
 | 2026-09-16 | **L7 feita:** roteiro único de publicação da 1.7.0 ([`PUBLICACAO-1.7.0.md`](PUBLICACAO-1.7.0.md)) — segurança e contas, checagens somente leitura, 9 migrations com backup, Edge Functions logo em seguida, ajustes com o app antigo, versão e APK assinado, reinstalação única, configuração inicial e 48 h de acompanhamento, com volta atrás por passo. |
+| 2026-09-16 | **L7:** PR #24 mesclado (`8804390`), CI verde. |
+| 2026-09-16 | **L4 feita** (branch `feat/politica-de-privacidade`): rascunhos da Política de Privacidade e dos Termos de Uso em `docs/legal/` com os fatos do app e campos `[PREENCHER]`; aceite registrado por versão no primeiro acesso; tela "Termos atualizados" a cada versão (sem travar sem rede); Perfil → Termos e privacidade; texto publicado imutável e publicação por migration gerada por script, que o banco recusa com campo em aberto. 9 grupos de casos SQL, 698 Jest; ensaio completo na API local. Nada publicado. Relatório em [`ENTREGA-L4`](planos/ENTREGA-L4.md). |

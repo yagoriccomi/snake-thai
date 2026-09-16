@@ -24,6 +24,7 @@ Ponto de entrada da documentação técnica e operacional do projeto.
 
 ## Auditorias e conformidade
 
+- **[legal/](legal/README.md)** — rascunhos da Política de Privacidade e dos Termos de Uso, e como publicar uma versão.
 - **[../REVIEW.md](../REVIEW.md)** — auditoria de código, segurança e LGPD.
 - **[../SECURITY.md](../SECURITY.md)** — pentest com exploração real.
 - **[../LICENSE_AUDIT.md](../LICENSE_AUDIT.md)** — risco jurídico das licenças.
