@@ -16,7 +16,7 @@
 Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 
 - [x] **P0** Nome, cor e contato da academia — tela `ConfiguracoesScreen` · OK (logo: falta upload)
-- [~] **P0** Textos legais versionados — `legal_documents` + `consents` com prova de aceite · BANCO OK
+- [~] **P0** Textos legais versionados — aceite por versão no primeiro acesso, novo aceite a cada versão e leitura em Perfil → Termos e privacidade · APP OK · falta aprovar e publicar os textos ([`legal/`](legal/README.md))
 - [x] **P0** Chave PIX configurável — editável e já consumida na tela de pagamento · OK
 - [ ] **P1** Dados de contato, endereço e redes sociais · FALTA
 

@@ -238,6 +238,7 @@ snake-thai/
 | `npm run typecheck` | Checagem de tipos estrita (`tsc --noEmit`). |
 | `npm test` | Executa os testes (Jest + React Native Testing Library). |
 | `npm run supabase:types` | Gera os tipos a partir do banco local. |
+| `npm run legal:publicar -- politica 1.0` | Gera a migration que publica a Política de Privacidade (ou `termos`) aprovada em `docs/legal/`. |
 
 ## 🏷️ Versões e publicação
 

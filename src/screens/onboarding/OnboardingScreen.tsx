@@ -5,16 +5,21 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Checkbox } from '@/components/Checkbox';
 import { Input } from '@/components/Input';
+import { LegalDocumentLinks } from '@/components/LegalDocumentLinks';
+import { LegalDocumentModal } from '@/components/LegalDocumentModal';
 import { PasswordRequirements } from '@/components/PasswordRequirements';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
+import { useLegalDocuments } from '@/hooks/useLegalDocuments';
 import { updatePassword } from '@/services/auth.service';
+import { acceptLegalDocuments, type DocumentoLegalVigente } from '@/services/legalDocuments.service';
 import {
   completeProfileOnboarding,
   finishStaffOnboarding,
 } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { describeError } from '@/utils/errors';
+import { rotuloDoAceite } from '@/utils/legalText';
 import { dateBrToIso, maskCpf, maskDate, maskPhone, onlyDigits } from '@/utils/masks';
 import {
   describeMissingPasswordRules,
@@ -56,7 +61,7 @@ const STEP_HEADINGS: Record<OnboardingStep, { title: string; subtitle: string }>
  * Onboarding obrigatório (primeiro login):
  *   1) dados pessoais (nome, celular, CPF, nascimento);
  *   2) troca da senha padrão por uma forte;
- *   3) aceite do termo LGPD.
+ *   3) leitura e aceite da Política de Privacidade e dos Termos de Uso.
  *
  * A etapa de dados é PULADA para quem já nasce cadastrado — professor e admin
  * criados pelo admin via `create-staff` chegam aqui com nome e CPF prontos, e
@@ -68,6 +73,10 @@ const STEP_HEADINGS: Record<OnboardingStep, { title: string; subtitle: string }>
  * novo no envio. Ao concluir, atualiza a senha em `auth.users` e o perfil
  * (is_first_login=false). A UI mostra valores mascarados; só dígitos sanitizados
  * vão ao backend.
+ *
+ * O aceite fica registrado por versão (`consents`) quando há documento
+ * publicado. Sem publicação, ou se a carga falhar, a caixa continua valendo como
+ * antes e a tela de novo aceite pede o registro depois (LegalConsentProvider).
  */
 export function OnboardingScreen(): React.JSX.Element {
   const { colors, fonts } = useTheme();
@@ -94,6 +103,9 @@ export function OnboardingScreen(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [lgpdAccepted, setLgpdAccepted] = useState(false);
+  const documentosLegais = useLegalDocuments();
+  const [documentoAberto, setDocumentoAberto] = useState<DocumentoLegalVigente | null>(null);
+  const fecharDocumento = useCallback(() => setDocumentoAberto(null), []);
   const [errors, setErrors] = useState<OnboardingErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -169,6 +181,10 @@ export function OnboardingScreen(): React.JSX.Element {
 
     setSubmitting(true);
     try {
+      // O aceite vem primeiro: se falhar, nada mais mudou; repetir não duplica.
+      if (documentosLegais.documentos.length > 0) {
+        await acceptLegalDocuments(documentosLegais.documentos.map((documento) => documento.id));
+      }
       // Conclui o PERFIL antes de trocar a senha. `updatePassword` emite o evento
       // USER_UPDATED, que dispara um reload do perfil no AuthProvider; se a senha
       // viesse primeiro, esse reload poderia reler is_first_login=true (cadastro
@@ -187,6 +203,8 @@ export function OnboardingScreen(): React.JSX.Element {
       await refreshProfile();
     } catch (submitError) {
       setErrors({ form: describeError(submitError) });
+      // A versão pode ter mudado durante a leitura: a lista nova aparece para ler.
+      void documentosLegais.recarregar();
     } finally {
       setSubmitting(false);
     }
@@ -197,6 +215,8 @@ export function OnboardingScreen(): React.JSX.Element {
     validateStep1,
     validateStep2,
     lgpdAccepted,
+    documentosLegais.documentos,
+    documentosLegais.recarregar,
     dob,
     password,
     name,
@@ -317,19 +337,37 @@ export function OnboardingScreen(): React.JSX.Element {
 
           {stepAtual === 'termos' ? (
             <View style={styles.terms}>
+              {documentosLegais.carregando ? (
+                <AppText variant="caption">Carregando os documentos…</AppText>
+              ) : null}
+              {!documentosLegais.carregando && documentosLegais.erro !== null ? (
+                <View style={styles.legalWarning}>
+                  <AppText variant="caption" color={colors.warning} accessibilityLiveRegion="polite">
+                    Não foi possível carregar os documentos agora. Você poderá lê-los e aceitá-los ao entrar no app.
+                  </AppText>
+                  <Button
+                    title="Tentar de novo"
+                    variant="secondary"
+                    onPress={() => void documentosLegais.recarregar()}
+                  />
+                </View>
+              ) : null}
+              {documentosLegais.documentos.length > 0 ? (
+                <LegalDocumentLinks documentos={documentosLegais.documentos} onLer={setDocumentoAberto} />
+              ) : null}
               <Checkbox
                 checked={lgpdAccepted}
                 onChange={handleLgpdChange}
-                accessibilityLabel="Concordo com os Termos de Uso e a Política de Privacidade"
+                accessibilityLabel={rotuloDoAceite(documentosLegais.documentos)}
               >
                 <AppText variant="caption" color={colors.textPrimary}>
-                  Concordo com os Termos de Uso e a Política de Privacidade (LGPD).
+                  {rotuloDoAceite(documentosLegais.documentos)}
                 </AppText>
               </Checkbox>
               <AppText variant="caption" style={styles.lgpdHint}>
-                Seus dados são armazenados de forma criptografada e usados apenas
-                para fins gerenciais e financeiros da academia. Você pode solicitar
-                a exclusão a qualquer momento.
+                Seus dados são usados apenas para a gestão das aulas e das
+                mensalidades da academia. Você pode exportá-los ou excluir a conta
+                a qualquer momento, em Perfil.
               </AppText>
               {errors.lgpd !== undefined ? (
                 <AppText variant="caption" color={colors.error}>
@@ -367,6 +405,7 @@ export function OnboardingScreen(): React.JSX.Element {
           )}
         </View>
       </View>
+      <LegalDocumentModal documento={documentoAberto} onClose={fecharDocumento} />
     </ScreenWrapper>
   );
 }
@@ -423,6 +462,9 @@ function makeStyles(
     },
     lgpdHint: {
       marginLeft: 36,
+    },
+    legalWarning: {
+      gap: 8,
     },
     footer: {
       flexDirection: 'row',

@@ -57,6 +57,7 @@
     "ci": "npm run typecheck && npm test && npm run check:licenses",
     "supabase:types": "npx --no-install supabase gen types typescript --local > src/types/database.types.ts",
     "env:dev": "node scripts/gerar-env-dev.js",
+    "legal:publicar": "node scripts/publicar-documento-legal.js",
     "versao:patch": "node scripts/version.js patch",
     "versao:minor": "node scripts/version.js minor",
     "versao:major": "node scripts/version.js major",

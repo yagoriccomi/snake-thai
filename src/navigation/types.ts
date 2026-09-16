@@ -54,6 +54,8 @@ export type DadosStackParamList = {
   GradeTurma: { groupId: string; groupName: string };
   /** Criar (sem `schedule`) ou editar um horário da grade (admin). */
   HorarioForm: { groupId: string; groupName: string; schedule?: ScheduleFormParams };
+  /** Política de Privacidade e Termos de Uso vigentes, com a data do aceite. */
+  DocumentosLegais: undefined;
 };
 
 /** Stack interna da aba "Aulas" (lista + detalhe + criação/edição + frequência). */
@@ -134,6 +136,8 @@ export type RootStackParamList = {
   Login: undefined;
   Onboarding: undefined;
   BiometricLock: undefined;
+  /** Aceite de nova versão da Política de Privacidade ou dos Termos de Uso (bloqueante). */
+  AceiteDocumentos: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
 };
 

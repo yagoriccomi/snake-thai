@@ -1,6 +1,6 @@
 # Publicação da 1.7.0 — roteiro único (lacuna L7)
 
-> Tudo o que foi feito em 2026-09-16 (T6, T7, T8, T9, T10, T11, L1, L3) está na `main`,
+> Tudo o que foi feito em 2026-09-16 (T6, T7, T8, T9, T10, T11, L1, L3, L4) está na `main`,
 > mas **nada disso está em produção**. Este é o caminho para publicar numa ordem que não
 > quebra quem está usando o app, com **uma única reinstalação** nos celulares (a troca da
 > chave de assinatura e a versão 1.7.0 juntas).
@@ -39,8 +39,12 @@
   - Sentry (T10): DSN e token.
   - Expo e Firebase (T9): `EAS_PROJECT_ID` e `google-services.json`; sem eles as
     notificações ficam "indisponíveis".
-- [ ] **Política de Privacidade (L4):** aprovar o texto. Pode ir numa versão seguinte, mas
-  push e Sentry não devem ser ligados antes dela.
+- [ ] **Política de Privacidade e Termos de Uso (L4):**
+  - Preencher os `[PREENCHER: …]` dos rascunhos em [`legal/`](legal/README.md).
+  - Aprovar o texto com apoio jurídico.
+  - Gerar as migrations de publicação com `npm run legal:publicar`.
+  - Os textos podem ir numa publicação seguinte, mas push e Sentry não devem ser ligados
+    antes deles.
 
 ## 1. Checagens somente leitura em produção
 
@@ -51,7 +55,7 @@ npx supabase migration list --linked
 ```
 
 O esperado é que a última migration aplicada seja a de **2026-09-14**
-(`20260914190000_chamada_em_lote`) e que as nove abaixo apareçam só no local. Se faltar
+(`20260914190000_chamada_em_lote`) e que as dez abaixo apareçam só no local. Se faltar
 alguma anterior, **pare** e resolva primeiro.
 
 No SQL Editor de produção (só `select`):
@@ -85,6 +89,11 @@ O script mostra o projeto, pede `PRODUCAO`, faz o backup em
 | `20260916211956_notificacoes_fila` | T9 | Fila e rotinas de push (sem os segredos do Vault, nada é enviado) |
 | `20260916220151_senha_padrao_protegida` | L1 | Tira a senha de primeiro acesso do alcance dos alunos |
 | `20260916221418_saude_das_rotinas` | L3 | Aviso de rotina com falha no Painel |
+| `20260916223510_documentos_legais_aceite` | L4 | Aceite registrado por versão; nada muda até um texto ser publicado |
+
+Se os textos aprovados já estiverem prontos, as migrations `…_publicar_privacy_policy_…`
+e `…_publicar_terms_of_use_…` entram por último. Com elas, todos precisam aceitar na
+próxima abertura do app 1.7.0 (o 1.6.0 não pede).
 
 Depois (só `select`):
 
@@ -92,6 +101,7 @@ Depois (só `select`):
 select jobname, schedule from cron.job order by jobname;           -- 10 rotinas
 select default_student_password from public.academy_settings;      -- ********
 select count(*) from public.academy_secrets;                       -- 1
+select kind, version from public.legal_documents where is_current; -- vazio, ou os textos aprovados
 ```
 
 **Volta atrás:** o backup do passo 2 (restaurar é destrutivo e apaga o que entrou depois).
@@ -172,7 +182,7 @@ desinstalação.
   aprovação: `update public.academy_settings set proof_retention_days = 90;`
 - [ ] **Cron Job de limpeza de mídia na Render:** conferir se existe (sem ele, nenhum
   arquivo é apagado de fato).
-- [ ] **Push e Sentry:** ligar só depois da Política de Privacidade (L4).
+- [ ] **Push e Sentry:** ligar só depois de publicar a Política de Privacidade (L4).
 
 ## 8. Acompanhamento de 48 horas
 
@@ -189,6 +199,8 @@ desinstalação.
   e, no dia 1, `generate-monthly-payments`.
 - **Sentry** (se ligado): erros novos da 1.7.0.
 - **Exclusão de conta:** testar com uma conta de teste que a senha errada é recusada.
+- **Aceites** (se os textos foram publicados): quem ainda não aceitou, pela consulta em
+  [`legal/README.md`](legal/README.md).
 
 ## O que ainda depende de decisão sua
 
@@ -197,7 +209,8 @@ desinstalação.
 | Limpeza dos dados de demonstração | Backup e limpeza antes do primeiro aluno real | T1 |
 | Prazo de guarda das imagens de comprovante | 90 dias | T7 |
 | Grade real de cada turma | Cadastrar pelo app depois da 1.7.0 | T6 |
-| Texto da Política de Privacidade | Aprovar com apoio jurídico | L4 |
+| Texto da Política de Privacidade e dos Termos de Uso | Preencher os campos e aprovar com apoio jurídico | L4 |
+| Consentimento do responsável por aluno menor de idade | Definir com o jurídico; o app ainda não cadastra responsável | L4 |
 | Contas Expo, Firebase e Sentry | Depois da política | T9, T10 |
 | Build pelo Actions ou pelo `menu.bat` | Actions | T5 |
 | Merge do PR #16 do `snake-server` (deploy na Render) | Pode ser independente da 1.7.0 | T1 |

@@ -307,6 +307,13 @@ casos os dados pessoais e as imagens de comprovante são apagados, e o históric
 financeiro fica sem identificação, por obrigação legal/fiscal. Antes, o aluno pode
 baixar uma cópia em **Dados → Exportar meus dados**.
 
+**Onde os alunos leem a Política de Privacidade e os Termos de Uso?**
+Em **Dados → Termos e privacidade**, com a data em que cada um aceitou. O texto é
+publicado pela equipe técnica, depois de aprovado por você e pela assessoria
+jurídica. Quando sai uma versão nova, **todos** (inclusive administradores) veem a
+tela "Termos atualizados" ao abrir o app e só continuam depois de aceitar. Quem não
+concordar pode sair da conta e pedir a exclusão dos dados.
+
 **Mudei a chave PIX. Os alunos já veem a nova?**
 Sim, assim que você salva. Cada cobrança nova usa a chave atual.
 
