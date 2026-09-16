@@ -32,6 +32,11 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes.
+- **Painel do admin** (primeira aba, só admin): alunos ativos e inativos,
+  recebido x esperado do mês, inadimplência por faixa de atraso, faturamento de
+  12 meses, frequência média e alunos em risco de evasão, mais o **relatório de
+  inadimplência** por aluno para cobrar e dar baixa. Toda a conta é feita no
+  banco. Regras em [`docs/PAINEL.md`](docs/PAINEL.md).
 - **Mensalidades geradas automaticamente**: no dia 1 de cada mês para todo aluno
   ativo com plano, sem depender de o mês anterior estar quitado. Quem é
   cadastrado até o dia 10 já recebe a fatura proporcional aos dias restantes,

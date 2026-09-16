@@ -13,8 +13,9 @@
 4. [Cadastrar e gerenciar alunos](#4-cadastrar-e-gerenciar-alunos)
 5. [Turmas e aulas](#5-turmas-e-aulas)
 6. [Receber e aprovar pagamentos](#6-receber-e-aprovar-pagamentos)
-7. [Segurança da sua conta](#7-seguranca-da-sua-conta)
-8. [Perguntas frequentes](#8-perguntas-frequentes)
+7. [Painel e inadimplência](#7-painel-e-inadimplencia)
+8. [Segurança da sua conta](#8-seguranca-da-sua-conta)
+9. [Perguntas frequentes](#9-perguntas-frequentes)
 
 ---
 
@@ -245,7 +246,43 @@ histórico daquele aluno.
 
 ---
 
-## 7. Segurança da sua conta
+## 7. Painel e inadimplência
+
+O **Painel** é a primeira aba, e só você (administrador) a vê. Puxe a tela para
+baixo para atualizar. As regras de cada número estão em `docs/PAINEL.md`.
+
+- **Alunos:** ativos, inativos (matrícula trancada), ativos sem plano (não geram
+  mensalidade) e quem saiu no mês.
+- **Mês atual:** quanto entrou do que era esperado, com a barra de progresso, e o
+  restante separado em análise, em aberto e vencidas.
+- **Inadimplência:** tudo que está em aberto ou vencido com vencimento **antes de
+  hoje**, separado em 1 a 30, 31 a 60 e mais de 60 dias. Quem já mandou o
+  comprovante não entra. Dívida de conta excluída a pedido (LGPD) aparece só
+  como **Contas encerradas**, sem nome.
+- **Faturamento de 12 meses:** cada coluna é o esperado do mês (contorno) com o
+  recebido preenchido. É por competência: um pagamento atrasado conta no mês a
+  que a mensalidade se refere.
+- **Frequência:** a média deste mês e a do mês passado, só entre os alunos que
+  tiveram aula com chamada. Abaixo, os alunos **em risco de evasão** (abaixo de
+  50% neste mês, com pelo menos 4 aulas, ou no mês passado). Toque num aluno
+  para abrir a frequência dele.
+
+### Cobrar e dar baixa
+
+1. No Painel, em **Inadimplência**, toque em **Ver relatório** (ou, na aba
+   **Financeiro**, em **Inadimplência**).
+2. A lista mostra quem deve, quanto e há quantos dias, do maior atraso para o
+   menor. Filtre pela faixa no topo. Alunos inativos aparecem com o selo
+   **Inativo**.
+3. Toque no aluno para abrir o histórico dele e **Marcar como paga** o que ele
+   acertou. Ao voltar, a lista já sai atualizada.
+
+> No dia do vencimento, à noite, o Financeiro pode mostrar a mensalidade como
+> "Vencida" um pouco antes de o Painel contar: o Painel usa o dia de Brasília.
+
+---
+
+## 8. Segurança da sua conta
 
 Em **Dados → Segurança**:
 
@@ -257,7 +294,7 @@ Em **Dados → Segurança**:
 
 ---
 
-## 8. Perguntas frequentes
+## 9. Perguntas frequentes
 
 **Um aluno esqueceu a senha. E agora?**
 Gerenciar Alunos → ícone de **chave** no aluno. A senha volta para a padrão e

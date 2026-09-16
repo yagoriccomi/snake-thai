@@ -44,8 +44,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 7 | **T11** — guardar a chamada em andamento no aparelho | 🟡 PR #16 mesclado; 👤 teste no celular | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
 | 8 | **T10** — monitoramento de erros no aparelho | 🟡 PR #17 mesclado; 👤 conta Sentry | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
 | 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | 🟡 PR #18 mesclado; 👤 publicar em produção | T1 | [PLANO-T7](planos/PLANO-T7.md) |
-| 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | 🟡 implementada; 👤 publicar em produção | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
-| 11 | **T8** — Painel do admin + relatório de inadimplência e faturamento | ⬜ | T1, T6, T7 | [PLANO-T8](planos/PLANO-T8.md) |
+| 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | 🟡 PR #19 mesclado; 👤 publicar em produção | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
+| 11 | **T8** — Painel do admin + relatório de inadimplência e faturamento | 🟡 implementada; 👤 publicar em produção | T1, T6, T7 | [PLANO-T8](planos/PLANO-T8.md) |
 | 12 | **T9** — notificações push | ⬜ | T1, T6, T7, 👤 Expo e Firebase | [PLANO-T9](planos/PLANO-T9.md) |
 
 **Por que essa ordem:** os merges pendentes vêm primeiro, para toda branch nova nascer
@@ -162,7 +162,7 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] Hoje excluir turma transformaria as aulas dela em eventos visíveis a **todos** os alunos — corrigido no banco (referências RESTRICT, rotina exige turma, chamada de turma arquivada congelada)
 - [x] Grade semanal por turma: as aulas são geradas sozinhas até o fim do mês seguinte; editar ou encerrar um horário nunca mexe em aula com chamada — 29 casos de regressão SQL
 - [x] Telas de turmas, grade e horário para o admin; seletores sem turma arquivada; chamada de turma arquivada só leitura
-- [ ] PR mesclado
+- [x] PR #19 mesclado — `760da62`
 - [ ] 👤 Validar no app DEV (roteiro em [`ENTREGA-T6`](planos/ENTREGA-T6.md))
 - [ ] 👤⚠️ Publicar em produção depois da T7: conferir (somente leitura) que não há aula de rotina sem turma, `db-push-prod.bat`, e o APK novo antes de usar a grade
 - [ ] 👤 Decidir a limpeza das aulas futuras de demonstração em produção antes de cadastrar a grade real (se coincidirem, viram aulas da grade)
@@ -170,9 +170,12 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 
 ### T8 — Painel do admin ([plano](planos/PLANO-T8.md))
 
-- [ ] Aba **Painel** (só admin, primeira aba): alunos ativos e inativos, recebido x esperado do mês, inadimplência por faixa de atraso, faturamento de 12 meses em gráfico, frequência média e alunos em risco de evasão
-- [ ] Relatório de inadimplência por aluno, que abre o histórico para dar baixa
-- [ ] Toda a conta no banco, só para admin, sem CPF nem telefone saindo do banco
+- [x] Aba **Painel** (só admin, primeira aba): alunos ativos e inativos, recebido x esperado do mês, inadimplência por faixa de atraso, faturamento de 12 meses em gráfico, frequência média e alunos em risco de evasão
+- [x] Relatório de inadimplência por aluno, que abre o histórico para dar baixa (também pelo Financeiro)
+- [x] Toda a conta no banco, só para admin, sem CPF nem telefone saindo do banco — 12 casos de regressão SQL; funções abaixo de 10 ms com a demonstração
+- [ ] PR mesclado
+- [ ] 👤 Validar no app DEV (roteiro em [`ENTREGA-T8`](planos/ENTREGA-T8.md)) e conferir 2 ou 3 números que você conhece da academia
+- [ ] 👤⚠️ Publicar em produção: migration (`db-push-prod.bat`) **antes** do APK novo — com o APK antes, o Painel mostra erro
 
 ### T9 — Notificações push ([plano](planos/PLANO-T9.md))
 
@@ -248,3 +251,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T7 implementada** (branch `feat/editar-aluno-lgpd`): exclusão LGPD transacional (corrige imagens e justificativas esquecidas e fila duplicada), Edge Functions de conta testadas no local, editar aluno (inclui e-mail), excluir minha conta com senha, exportar meus dados, prazo de guarda criado desligado. Nada publicado em produção. Relatório em [`ENTREGA-T7`](planos/ENTREGA-T7.md). |
 | 2026-09-16 | **T7:** PR #18 mesclado (`d71660d`). |
 | 2026-09-16 | **T6 implementada** (branch `feat/grade-semanal-turmas`): turma arquivada em vez de apagada quando tem histórico, destino dos alunos, chamada congelada; grade semanal com geração diária até o fim do mês seguinte, edição e encerramento que não tocam aula com chamada; telas Turmas, Grade e Horário. 29 casos SQL e 577 testes Jest; chamadas conferidas na API local. Nada publicado em produção. Relatório em [`ENTREGA-T6`](planos/ENTREGA-T6.md). |
+| 2026-09-16 | **T6:** PR #19 mesclado (`760da62`), CI verde. |
+| 2026-09-16 | **T8 implementada** (branch `feat/painel-admin`): 5 funções agregadas no banco (só admin, dia de São Paulo, conta excluída só na soma, sem CPF/telefone/e-mail), aba Painel como primeira aba do admin, gráfico de faturamento só com View, relatório de inadimplência por faixa que abre o histórico para dar baixa. 12 casos SQL, 612 testes Jest; números conferidos contra SQL direto na API local; professor e aluno recebem 403. Nada publicado em produção. Relatório em [`ENTREGA-T8`](planos/ENTREGA-T8.md). |
