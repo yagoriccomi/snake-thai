@@ -16,6 +16,10 @@ import { ThemeProvider } from '@/theme/ThemeProvider';
 
 const METRICAS = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 0, left: 0, right: 0, bottom: 0 } };
 
+// O primeiro render da tela (módulos frios) passa dos 5 s padrão com a suíte
+// inteira em paralelo; visto no pre-commit.
+jest.setTimeout(20000);
+
 function renderTela() {
   return render(
     <SafeAreaProvider initialMetrics={METRICAS}>
