@@ -678,6 +678,144 @@ export type Database = {
           },
         ]
       }
+      notification_deliveries: {
+        Row: {
+          created_at: string
+          device_id: string | null
+          error_code: string | null
+          expo_ticket_id: string | null
+          id: string
+          outbox_id: string
+          receipt_checked_at: string | null
+          ticket_status: string
+        }
+        Insert: {
+          created_at?: string
+          device_id?: string | null
+          error_code?: string | null
+          expo_ticket_id?: string | null
+          id?: string
+          outbox_id: string
+          receipt_checked_at?: string | null
+          ticket_status: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string | null
+          error_code?: string | null
+          expo_ticket_id?: string | null
+          id?: string
+          outbox_id?: string
+          receipt_checked_at?: string | null
+          ticket_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "push_devices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_deliveries_outbox_id_fkey"
+            columns: ["outbox_id"]
+            isOneToOne: false
+            referencedRelation: "notification_outbox"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_outbox: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          class_id: string | null
+          created_at: string
+          data: Json
+          dedupe_key: string
+          id: string
+          justification_id: string | null
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error: string | null
+          payment_id: string | null
+          recipient_id: string
+          send_after: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_status"]
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          class_id?: string | null
+          created_at?: string
+          data?: Json
+          dedupe_key: string
+          id?: string
+          justification_id?: string | null
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error?: string | null
+          payment_id?: string | null
+          recipient_id: string
+          send_after?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          class_id?: string | null
+          created_at?: string
+          data?: Json
+          dedupe_key?: string
+          id?: string
+          justification_id?: string | null
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          last_error?: string | null
+          payment_id?: string | null
+          recipient_id?: string
+          send_after?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_outbox_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_justification_id_fkey"
+            columns: ["justification_id"]
+            isOneToOne: false
+            referencedRelation: "absence_justifications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_outbox_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount_cents: number
@@ -856,6 +994,54 @@ export type Database = {
           },
         ]
       }
+      push_devices: {
+        Row: {
+          app_variant: Database["public"]["Enums"]["app_variant"]
+          created_at: string
+          expo_token: string
+          id: string
+          last_seen_at: string
+          platform: Database["public"]["Enums"]["push_platform"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_variant: Database["public"]["Enums"]["app_variant"]
+          created_at?: string
+          expo_token: string
+          id?: string
+          last_seen_at?: string
+          platform: Database["public"]["Enums"]["push_platform"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_variant?: Database["public"]["Enums"]["app_variant"]
+          created_at?: string
+          expo_token?: string
+          id?: string
+          last_seen_at?: string
+          platform?: Database["public"]["Enums"]["push_platform"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "diretorio_perfis"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_devices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       diretorio_perfis: {
@@ -909,6 +1095,7 @@ export type Database = {
         }[]
       }
       concluir_chamada: { Args: { p_class_id: string }; Returns: string }
+      disparar_envio_de_push: { Args: never; Returns: undefined }
       eliminar_comprovantes_do_titular: {
         Args: { p_user_id: string }
         Returns: number
@@ -922,7 +1109,32 @@ export type Database = {
         Args: { p_id: string; p_ultimo_dia: string }
         Returns: Json
       }
+      enfileirar_avisos_aula_sem_chamada: {
+        Args: { p_agora?: string }
+        Returns: number
+      }
       enfileirar_comprovantes_expirados: { Args: never; Returns: number }
+      enfileirar_lembretes_de_mensalidade: {
+        Args: { p_agora?: string }
+        Returns: number
+      }
+      enfileirar_notificacao: {
+        Args: {
+          p_agora?: string
+          p_chave: string
+          p_class_id?: string
+          p_data?: Json
+          p_destinatario: string
+          p_justification_id?: string
+          p_payment_id?: string
+          p_tipo: Database["public"]["Enums"]["notification_kind"]
+        }
+        Returns: boolean
+      }
+      enfileirar_resumo_aulas_sem_chamada: {
+        Args: { p_agora?: string }
+        Returns: number
+      }
       excluir_turma: {
         Args: {
           p_deixar_sem_turma?: boolean
@@ -956,8 +1168,16 @@ export type Database = {
         Args: { p_referencia?: string }
         Returns: number
       }
+      horario_permitido_para_push: {
+        Args: { p_agora: string }
+        Returns: string
+      }
       is_admin: { Args: never; Returns: boolean }
       is_professor: { Args: never; Returns: boolean }
+      limpar_notificacoes_antigas: {
+        Args: { p_agora?: string }
+        Returns: number
+      }
       mark_overdue_payments: { Args: never; Returns: undefined }
       ocorrencias_da_grade: {
         Args: { p_agora: string; p_schedule_id: string }
@@ -1026,11 +1246,53 @@ export type Database = {
           valor_cents: number
         }[]
       }
+      pendencias_de_recibo_push: {
+        Args: { p_limite: number }
+        Returns: {
+          delivery_id: string
+          ticket_id: string
+        }[]
+      }
       previa_exclusao_turma: { Args: { p_group_id: string }; Returns: Json }
       reativar_turma: { Args: { p_group_id: string }; Returns: undefined }
+      registrar_dispositivo_push: {
+        Args: {
+          p_plataforma: Database["public"]["Enums"]["push_platform"]
+          p_token: string
+          p_variante: Database["public"]["Enums"]["app_variant"]
+        }
+        Returns: string
+      }
+      registrar_envio_de_push: {
+        Args: { p_entregas: Json }
+        Returns: undefined
+      }
       registrar_fatura_de_entrada: {
         Args: { p_data: string; p_user_id: string }
         Returns: boolean
+      }
+      registrar_recibos_de_push: {
+        Args: { p_recibos: Json }
+        Returns: undefined
+      }
+      reivindicar_notificacoes: {
+        Args: {
+          p_limite: number
+          p_variante: Database["public"]["Enums"]["app_variant"]
+        }
+        Returns: {
+          class_date_time: string
+          class_id: string
+          class_title: string
+          data: Json
+          device_id: string
+          expo_token: string
+          justification_id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          outbox_id: string
+          payment_id: string
+          recipient_id: string
+        }[]
       }
       relatorio_inadimplencia: {
         Args: { p_referencia?: string }
@@ -1072,6 +1334,7 @@ export type Database = {
       }
     }
     Enums: {
+      app_variant: "production" | "development"
       attendance_status: "present" | "absent"
       billing_period: "monthly" | "quarterly" | "semiannual" | "annual"
       class_type: "routine" | "event"
@@ -1084,8 +1347,25 @@ export type Database = {
         | "migrado_de_provedor"
         | "justificativa_removida"
       media_provider: "supabase_storage" | "cloudinary"
+      notification_kind:
+        | "mensalidade_vence_em_breve"
+        | "mensalidade_vence_hoje"
+        | "mensalidade_atrasada"
+        | "comprovante_enviado"
+        | "comprovante_aprovado"
+        | "comprovante_recusado"
+        | "justificativa_pendente"
+        | "aula_sem_chamada"
+        | "aulas_sem_chamada_resumo"
+      notification_status:
+        | "pending"
+        | "sending"
+        | "sent"
+        | "cancelled"
+        | "failed"
       payment_status: "pending_approval" | "open" | "overdue" | "paid"
       profile_status: "active" | "inactive"
+      push_platform: "android" | "ios"
       user_role: "user" | "admin" | "professor"
     }
     CompositeTypes: {
@@ -1762,6 +2042,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      app_variant: ["production", "development"],
       attendance_status: ["present", "absent"],
       billing_period: ["monthly", "quarterly", "semiannual", "annual"],
       class_type: ["routine", "event"],
@@ -1775,8 +2056,27 @@ export const Constants = {
         "justificativa_removida",
       ],
       media_provider: ["supabase_storage", "cloudinary"],
+      notification_kind: [
+        "mensalidade_vence_em_breve",
+        "mensalidade_vence_hoje",
+        "mensalidade_atrasada",
+        "comprovante_enviado",
+        "comprovante_aprovado",
+        "comprovante_recusado",
+        "justificativa_pendente",
+        "aula_sem_chamada",
+        "aulas_sem_chamada_resumo",
+      ],
+      notification_status: [
+        "pending",
+        "sending",
+        "sent",
+        "cancelled",
+        "failed",
+      ],
       payment_status: ["pending_approval", "open", "overdue", "paid"],
       profile_status: ["active", "inactive"],
+      push_platform: ["android", "ios"],
       user_role: ["user", "admin", "professor"],
     },
   },
