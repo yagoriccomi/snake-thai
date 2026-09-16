@@ -276,7 +276,9 @@ begin
   exception when check_violation then null;
   end;
   begin
-    perform public.salvar_horario_da_grade(null, 't6-a', 'Novo', 2::smallint, '18:00', date '2030-01-01', null, '{}');
+    perform public.salvar_horario_da_grade(p_id => null, p_group_id => 't6-a', p_title => 'Novo',
+      p_weekday => 2::smallint, p_start_time => '18:00', p_valid_from => date '2030-01-01',
+      p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU T8: horário criado em turma arquivada';
   exception when check_violation then null;
   end;

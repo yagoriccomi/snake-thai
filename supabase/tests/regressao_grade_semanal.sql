@@ -187,7 +187,9 @@ do $$
 declare n integer;
 begin
   begin
-    perform public.salvar_horario_da_grade(null, 'grade-a', 'Invasor', 2::smallint, '10:00', date '2030-03-01', null, '{}');
+    perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-a', p_title => 'Invasor',
+      p_weekday => 2::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-01',
+      p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G1: aluno criou horário';
   exception when insufficient_privilege then null;
   end;
@@ -231,9 +233,9 @@ set local request.jwt.claims = '{"sub":"f6100000-0000-4000-8000-000000000001","r
 do $$
 declare v jsonb;
 begin
-  v := public.salvar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', 'grade-a', 'Segunda noite', 1::smallint,
-                                      '20:00', date '2030-03-01', null,
-                                      array['f6100000-0000-4000-8000-000000000002'::uuid]);
+  v := public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
+    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+    p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000002'::uuid]);
   if (v->>'ajustadas')::int <> 7 or (v->>'removidas')::int <> 0 then
     raise exception 'FALHOU G8: resultado %', v;
   end if;
@@ -260,9 +262,9 @@ values ('f6100000-0000-4000-8000-00000000c011', 'f6100000-0000-4000-8000-0000000
 set local role authenticated;
 do $$
 begin
-  perform public.salvar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', 'grade-a', 'Segunda noite', 1::smallint,
-                                         '20:00', date '2030-03-01', null,
-                                         array['f6100000-0000-4000-8000-000000000003'::uuid]);
+  perform public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
+    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+    p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000003'::uuid]);
   if exists (select 1 from public.class_teachers ct join public.classes c on c.id = ct.class_id
               where c.schedule_id = 'f6100000-0000-4000-8000-00000000a001'
                 and c.attendance_taken_at is null and not c.schedule_detached and c.date_time > now()
@@ -339,9 +341,9 @@ end $$;
 set local role authenticated;
 do $$
 begin
-  perform public.salvar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', 'grade-a', 'Segunda noite', 1::smallint,
-                                         '20:00', date '2030-03-01', null,
-                                         array['f6100000-0000-4000-8000-000000000003'::uuid]);
+  perform public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
+    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+    p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000003'::uuid]);
 end $$;
 reset role;
 do $$
@@ -363,29 +365,37 @@ set local role authenticated;
 do $$
 begin
   begin
-    perform public.salvar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', 'grade-a', 'Segunda noite', 2::smallint,
-                                           '20:00', date '2030-03-01', null, '{}');
+    perform public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
+      p_weekday => 2::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+      p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G15: trocou o dia da semana na edição';
   exception when invalid_parameter_value then null;
   end;
   begin
-    perform public.salvar_horario_da_grade(null, 'grade-b', 'Dia 7', 7::smallint, '10:00', date '2030-03-01', null, '{}');
+    perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Dia 7',
+      p_weekday => 7::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-01',
+      p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G15: aceitou weekday 7';
   exception when check_violation then null;
   end;
   begin
-    perform public.salvar_horario_da_grade(null, 'grade-b', 'Invertida', 3::smallint, '10:00', date '2030-03-10', date '2030-03-01', '{}');
+    perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Invertida',
+      p_weekday => 3::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-10',
+      p_valid_until => date '2030-03-01', p_teacher_ids => '{}');
     raise exception 'FALHOU G15: aceitou fim antes do início';
   exception when check_violation then null;
   end;
   begin
-    perform public.salvar_horario_da_grade(null, 'grade-b', 'Repetido', 5::smallint, '19:00', date '2030-05-01', null, '{}');
+    perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Repetido',
+      p_weekday => 5::smallint, p_start_time => '19:00', p_valid_from => date '2030-05-01',
+      p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G15: aceitou horário repetido na mesma turma';
   exception when unique_violation then null;
   end;
   begin
-    perform public.salvar_horario_da_grade(null, 'grade-b', 'Com aluno', 3::smallint, '10:00', date '2030-03-01', null,
-                                           array['f6100000-0000-4000-8000-000000000007'::uuid]);
+    perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Com aluno',
+      p_weekday => 3::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-01',
+      p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000007'::uuid]);
     raise exception 'FALHOU G15: aceitou aluno como professor';
   exception when invalid_parameter_value then null;
   end;

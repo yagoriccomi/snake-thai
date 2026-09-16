@@ -986,12 +986,12 @@ export type Database = {
       salvar_horario_da_grade: {
         Args: {
           p_group_id: string
-          p_id: string
+          p_id?: string
           p_start_time: string
-          p_teacher_ids: string[]
+          p_teacher_ids?: string[]
           p_title: string
           p_valid_from: string
-          p_valid_until: string
+          p_valid_until?: string
           p_weekday: number
         }
         Returns: Json

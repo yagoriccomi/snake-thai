@@ -266,15 +266,17 @@ grant execute on function public.gerar_aulas_da_grade(uuid, timestamptz) to serv
 --    Turma e dia da semana não mudam: para isso, encerre e crie outro — assim
 --    o histórico de cada horário continua coerente.
 -- ----------------------------------------------------------------------------
+-- Parâmetros opcionais por último: o app omite p_id (horário novo) e
+-- p_valid_until (sem fim) em vez de mandar nulo.
 create or replace function public.salvar_horario_da_grade(
-  p_id          uuid,
   p_group_id    text,
   p_title       text,
   p_weekday     smallint,
   p_start_time  time,
   p_valid_from  date,
-  p_valid_until date,
-  p_teacher_ids uuid[]
+  p_teacher_ids uuid[] default '{}',
+  p_valid_until date default null,
+  p_id          uuid default null
 )
 returns jsonb
 language plpgsql
@@ -430,8 +432,8 @@ begin
 end;
 $funcao$;
 
-revoke execute on function public.salvar_horario_da_grade(uuid, text, text, smallint, time, date, date, uuid[]) from public, anon;
-grant execute on function public.salvar_horario_da_grade(uuid, text, text, smallint, time, date, date, uuid[]) to authenticated;
+revoke execute on function public.salvar_horario_da_grade(text, text, smallint, time, date, uuid[], date, uuid) from public, anon;
+grant execute on function public.salvar_horario_da_grade(text, text, smallint, time, date, uuid[], date, uuid) to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 7. Encerrar horário (só admin)
