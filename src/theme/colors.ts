@@ -48,6 +48,13 @@ export interface ColorScheme {
   info: string;
   /** Acento de alerta. */
   warning: string;
+  /**
+   * Faixa "DEV · banco local" do app de desenvolvimento. Âmbar, longe do verde
+   * da marca: bate o olho e sabe que não é o app de produção.
+   */
+  devBanner: string;
+  /** Texto sobre a faixa de desenvolvimento. */
+  onDevBanner: string;
 }
 
 /** Tema escuro — identidade principal da marca (neon sobre preto profundo). */
@@ -69,6 +76,9 @@ export const darkColors: ColorScheme = {
   success: '#22C55E',
   info: '#1E3A8A',
   warning: '#F59E0B',
+  // 10,3:1 — a faixa é a mesma nos dois temas; é o app DEV, não o tema, que ela marca.
+  devBanner: '#F59E0B',
+  onDevBanner: '#0D0D0D',
 };
 
 /**
@@ -97,4 +107,7 @@ export const lightColors: ColorScheme = {
   success: '#15803D',
   info: '#1E3A8A',
   warning: '#B45309',
+  // 10,3:1 — a faixa é a mesma nos dois temas; é o app DEV, não o tema, que ela marca.
+  devBanner: '#F59E0B',
+  onDevBanner: '#0D0D0D',
 };
