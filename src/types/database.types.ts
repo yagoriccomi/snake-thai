@@ -1099,6 +1099,10 @@ export type Database = {
       }
     }
     Functions: {
+      aceitar_documentos_legais: {
+        Args: { p_documentos: string[] }
+        Returns: number
+      }
       anonimizar_titular: {
         Args: { p_solicitante: string; p_user_id: string }
         Returns: Json
@@ -1119,6 +1123,26 @@ export type Database = {
         Returns: undefined
       }
       disparar_envio_de_push: { Args: never; Returns: undefined }
+      documentos_legais_pendentes: {
+        Args: never
+        Returns: {
+          id: string
+          publicado_em: string
+          tipo: Database["public"]["Enums"]["legal_document_kind"]
+          versao: string
+        }[]
+      }
+      documentos_legais_vigentes: {
+        Args: never
+        Returns: {
+          aceito_em: string
+          conteudo: string
+          id: string
+          publicado_em: string
+          tipo: Database["public"]["Enums"]["legal_document_kind"]
+          versao: string
+        }[]
+      }
       eliminar_comprovantes_do_titular: {
         Args: { p_user_id: string }
         Returns: number
@@ -1277,6 +1301,14 @@ export type Database = {
         }[]
       }
       previa_exclusao_turma: { Args: { p_group_id: string }; Returns: Json }
+      publicar_documento_legal: {
+        Args: {
+          p_conteudo: string
+          p_tipo: Database["public"]["Enums"]["legal_document_kind"]
+          p_versao: string
+        }
+        Returns: string
+      }
       reativar_turma: { Args: { p_group_id: string }; Returns: undefined }
       registrar_dispositivo_push: {
         Args: {
