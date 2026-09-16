@@ -139,6 +139,11 @@ describe('CHANGELOG', () => {
     expect(extractChangelogSection(changelog, '1.6.1')).toBe('- B\n');
     expect(extractChangelogSection(changelog, '9.9.9')).toBeNull();
   });
+
+  it('deveDeixarDeForaAsNotasDeRodapeDepoisDaVersaoMaisAntiga', () => {
+    const changelog = '# C\n\n## [1.0.0] - x\n\nPrimeira.\n\n---\n\n> Nota geral.\n';
+    expect(extractChangelogSection(changelog, '1.0.0')).toBe('Primeira.\n');
+  });
 });
 
 describe('buildVersionName', () => {

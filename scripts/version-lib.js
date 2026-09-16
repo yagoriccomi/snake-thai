@@ -198,7 +198,8 @@ function extractChangelogSection(changelog, version) {
   const linhas = changelog.split(/\r?\n/);
   const titulo = linhas.findIndex((linha) => linha.startsWith(`## [${alvo}]`));
   if (titulo === -1) return null;
-  const proximo = linhas.findIndex((linha, i) => i > titulo && linha.startsWith('## ['));
+  // Termina na próxima versão ou no separador "---" das notas de rodapé.
+  const proximo = linhas.findIndex((linha, i) => i > titulo && (linha.startsWith('## [') || linha.trim() === '---'));
   const fim = proximo === -1 ? linhas.length : proximo;
   return `${linhas.slice(titulo + 1, fim).join('\n').trim()}\n`;
 }
