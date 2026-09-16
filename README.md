@@ -237,6 +237,12 @@ versão está no [CHANGELOG](CHANGELOG.md); o passo a passo, em
 | `npm run versao:verificar` | Confere a coerência da versão |
 | `npm run versao:notas -- v1.7.0` | Notas da versão para o GitHub Release |
 
+O **push da tag** (`git push origin v1.7.0`) dispara o workflow **Release Android** no
+GitHub Actions, que compila, confere a assinatura de produção e publica o APK no
+GitHub Release. Para um ensaio sem publicar: *Actions → Release Android → Run workflow*
+na `main`. Os segredos ficam no Environment `release` do GitHub
+([`docs/RELEASE-SIGNING.md`](docs/RELEASE-SIGNING.md)); o `ci.yml` não mudou.
+
 ## 📚 Documentação
 
 A documentação completa vive em [`docs/`](docs/README.md):
