@@ -36,9 +36,9 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | # | Tarefa | Estado | Depende de | Plano |
 |---|---|---|---|---|
 | 1 | **T4 · fase 1** — merges do `snake-thai` (sem efeito em produção) | ✅ | — | [PLANO-T4](planos/PLANO-T4.md) |
-| 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | 🟡 PRs #12 e #16 | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
+| 2 | **T1** — separar dev de produção (app DEV + banco local em Docker) | 🟡 #12 mesclado; #16 aguarda você | T4·1 | [PLANO-T1](planos/PLANO-T1.md) |
 | 3 | **T4 · fase 2** — merges do `snake-server` (⚠️ gera deploy) | ✅ | confirmação do Auto-Deploy | [PLANO-T4](planos/PLANO-T4.md) |
-| 4 | **T3** — padronizar número de versão | ⬜ | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
+| 4 | **T3** — padronizar número de versão | 🟡 PR aberto | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
 | 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | ⬜ | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
 | 6 | **T5** — GitHub Actions: build e publicação automática do APK | ⬜ | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
 | 7 | **T11** — guardar a chamada em andamento no aparelho | ⬜ | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
@@ -84,7 +84,8 @@ porque usa regras das outras e depende de contas externas.
 - [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
 - [x] `snake-server` local ligado ao banco local (verificado com token local); Cloudinary de dev aguarda as credenciais abaixo
 - [x] Fluxo novo: migration **primeiro no local**; produção só por `scripts\db-push-prod.bat` (backup, simulação e dupla confirmação)
-- [ ] PRs #12 (`snake-thai`) e #16 (`snake-server`, ⚠️ merge dispara deploy) mesclados
+- [x] PR #12 (`snake-thai`) mesclado — `c03dc6d`
+- [ ] ⚠️ PR #16 (`snake-server`) — o merge dispara deploy na Render; aguarda a sua confirmação
 - [ ] 👤 Rodar, com o seu token, a checagem **somente leitura** de produção (`migration list` e `db diff`)
 - [ ] 👤 Criar o ambiente Cloudinary de desenvolvimento e colar as credenciais no `.env.dev` do servidor
 - [ ] 👤⚠️ Dados de demonstração em produção: o plano recomendava trocar agora a senha das contas de demo e de teste, mas você já tinha decidido não mudar senhas — **nada foi alterado; a decisão é sua**. **Antes do primeiro aluno real**: backup e limpeza. Informar qual e-mail é a sua conta real de admin
@@ -95,12 +96,14 @@ porque usa regras das outras e depende de contas externas.
 PATCH = correções · MINOR = funcionalidade nova · MAJOR = APK antigo deixa de funcionar.
 Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.6.0+dev.12.abc1234`).
 
-- [ ] Script `npm run versao:patch | minor | major | tag | verificar | notas`, com testes
-- [ ] `versionCode` calculado da versão (1.6.0 → 1006000; hoje todos os APKs saem com 1)
-- [ ] `package.json` alinhado ao `app.json` (hoje está em 1.0.0)
-- [ ] `menu.bat` recusa compilar release com versão desatualizada
-- [ ] `CHANGELOG.md` com o histórico reconstituído e `docs/VERSIONAMENTO.md`
-- Próximas versões: só assinatura e correções = **1.6.1**; qualquer funcionalidade = **1.7.0**
+- [x] Script `npm run versao:patch | minor | major | tag | verificar | notas`, com testes
+- [x] `versionCode` calculado da versão (1.6.0 → 1006000; antes todos os APKs saíam com 1)
+- [x] `package.json` alinhado ao `app.json` (estava em 1.0.0)
+- [x] `menu.bat` recusa compilar release com versão desatualizada
+- [x] `CHANGELOG.md` com o histórico reconstituído e `docs/VERSIONAMENTO.md`
+- [x] Versão instalada visível no fim do Perfil; política de versão do `snake-server` (vai no PR #16)
+- [ ] PR mesclado
+- Próximas versões: com a T1 integrada já há funcionalidade nova, então o próximo APK publicado sugere **1.7.0**; uma 1.6.1 só com a assinatura exige `--forcar`
 
 ### T2 — Tirar a chave de debug do release ([plano](planos/PLANO-T2.md))
 
@@ -218,3 +221,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T4 fase 2 concluída.** PR #15 do `snake-server` (P-19 + 7 atualizações do Dependabot) mesclado com confirmação do usuário (`2500111`); API respondeu `ok` e `401` durante todo o deploy. Majors #3, #4 e #6 fechados e registrados como P-20. Branches mescladas apagadas nos dois repositórios. Relatório em [`ENTREGA-T4`](planos/ENTREGA-T4.md). |
 | 2026-09-16 | **T2, primeiro item:** APK assinado com a chave de debug removido do release `v1.6.0`, com aviso nas notas (confirmado pelo usuário). |
 | 2026-09-16 | **T1 implementada** (PRs `snake-thai` #12 e `snake-server` #16). Banco local em PG17 nas portas 553xx, `db-dev`, seeds locais com trava, app **DEV Snake Thai** com trava de ambiente e faixa, `menu.bat` por variante, `db-push-prod.bat` com backup e dupla confirmação, servidor de dev no banco local. Faltam: instalar o APK DEV no celular, credenciais Cloudinary de dev e merges. Lacunas L2, L5 e L6 resolvidas. Relatório em [`ENTREGA-T1`](planos/ENTREGA-T1.md). |
+| 2026-09-16 | **T1:** PR #12 mesclado (`c03dc6d`, CI verde). APK DEV gerado e conferido (`com.snakethai.app.dev`, banco local embutido, sem endereço de produção). PR #16 do servidor com CI verde, aguardando confirmação por causa do deploy. |
+| 2026-09-16 | **T3 implementada** (branch `chore/versionamento`). Versão só muda ao publicar; `versionCode` derivado (1006000); CLI `versao:*` com CHANGELOG; sufixo de build no app DEV e em testes; `[5]` do menu confere a versão; versão no Perfil. Política do servidor no PR #16. Relatório em [`ENTREGA-T3`](planos/ENTREGA-T3.md). |

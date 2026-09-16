@@ -104,6 +104,7 @@ O `README.md` é a documentação pública. **Sempre que** ocorrer uma das mudan
 * **Jira:** adiado em 2026-07-27 (fora do escopo desta rodada, por escolha do usuário). Não é recusa definitiva — pode ser ativado depois via skill `jira-projeto` (Smart Commits linkando `PROJ-XXX`).
 * **Convenção de branches:** `feat/…`, `fix/…`, `refactor/…` — curta duração, integradas com frequência. [#33][#36]
 * **Convenção de commits:** Conventional Commits obrigatório, validado pelo hook `commit-msg` (Husky). [#32]
+* **Versão do app:** só muda ao publicar APK, por `npm run versao:<parte>` e `versao:tag` (nunca à mão: um teste barra). `versionCode` = MAJOR×1.000.000 + MINOR×1.000 + PATCH; builds fora da tag ganham sufixo `+N.sha` / `+dev.N.sha`. Tag na `main` depois do merge com merge commit; tag publicada nunca se move. Ver `docs/VERSIONAMENTO.md`.
 * **Proteção de borda (Husky):** `pre-commit` roda `tsc --noEmit` (typecheck) como gate antes de cada commit. [#5][#49]
 * **Migração para Cloudinary (em andamento):** branch `feat/comprovantes-cloudinary`, criada a partir de `feat/telas-admin` em 2026-08-31. Move os comprovantes do Supabase Storage para o backend `snake-server` (Render), conforme `docs/BACKEND.md`. Decisão do usuário registrada nesta data. [#33][#36]
 * **Remoto:** `git@github.com:yagoriccomi/snake-thai.git` (GitHub, via SSH). Apenas a chave **pública** é cadastrada no provedor; a privada nunca sai da máquina nem entra no Git. [#37][#55]

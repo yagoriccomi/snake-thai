@@ -26,6 +26,10 @@ describe('app.config.js', () => {
     expect(config.scheme).toBe(base.scheme);
     expect(config.plugins).toEqual(base.plugins);
     expect(config.extra).toMatchObject({ appVariant: 'production' });
+    // Mesma versão do app.json; fora da tag, só ganha o sufixo do commit.
+    expect(config.version?.startsWith(base.version ?? '')).toBe(true);
+    expect(config.version).toMatch(/^\d+\.\d+\.\d+(\+\d+\.[0-9a-f]+(\.dirty)?)?$/);
+    expect(config.android?.versionCode).toBe(base.android?.versionCode);
   });
 
   it('deveUsarProducaoQuandoAVarianteNaoEInformada', () => {
@@ -42,6 +46,8 @@ describe('app.config.js', () => {
     expect(config.name).toBe('DEV Snake Thai');
     expect(config.android?.package).toBe('com.snakethai.app.dev');
     expect(config.scheme).toBe('snakethai-dev');
+    expect(config.version?.startsWith(`${base.version}+dev`)).toBe(true);
+    expect(config.android?.versionCode).toBe(base.android?.versionCode);
     expect(config.android?.adaptiveIcon?.backgroundImage).toBeUndefined();
     expect(config.plugins).toContain('./plugins/withDevCleartext.js');
     // A liberação de HTTP nunca pode vazar para produção.

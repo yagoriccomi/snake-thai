@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-nat
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '@/components/AppText';
+import { AppVersionFooter } from '@/components/AppVersionFooter';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
@@ -462,6 +463,8 @@ export function DadosScreen({
             </Pressable>
           </View>
         </View>
+
+        <AppVersionFooter />
       </ScrollView>
     </ScreenWrapper>
   );
