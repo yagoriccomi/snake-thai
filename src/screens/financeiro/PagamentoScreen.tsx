@@ -156,7 +156,7 @@ export function PagamentoScreen({
             Seu pagamento está <AppText variant="caption" color={colors.info}>
               em análise
             </AppText>
-            . Você será notificado após a aprovação.
+            . Com as notificações ativadas, você é avisado da aprovação.
           </AppText>
           <Button title="Voltar" onPress={handleBack} style={styles.button} />
         </View>

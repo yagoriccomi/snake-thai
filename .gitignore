@@ -70,3 +70,6 @@ output-metadata.json
 
 # Sentry: credenciais da sentry-cli (o .env.sentry-build-plugin já cai em .env.*)
 .sentryclirc
+
+# Deno (checagem/testes das Edge Functions): o projeto não fixa dependências por lock
+deno.lock

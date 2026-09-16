@@ -11,6 +11,9 @@
  * Os comandos do dia a dia passam por scripts/with-variant.js, que carrega o
  * .env da variante e define APP_VARIANT. Ver docs/RUNBOOK.md. [#80][#81]
  */
+const fs = require('fs');
+const path = require('path');
+
 const { VARIANTE_PADRAO, VARIANTES, problemaDeAmbiente } = require('./src/config/regrasDeAmbiente');
 const { buildVersionName, describeGit } = require('./scripts/version-lib');
 
@@ -20,6 +23,19 @@ const COR_DO_ICONE_DEV = '#F59E0B';
 const PACOTE_DEV = 'com.snakethai.app.dev';
 
 const PLUGIN_DE_ASSINATURA = './plugins/withReleaseSigning.js';
+
+/**
+ * Arquivo do Firebase (push no Android). Fora do Git: o repositório é público.
+ * Só entra na configuração se existir — sem ele o app compila igual e só não
+ * consegue ativar notificações (docs/NOTIFICACOES.md).
+ *
+ * @param {NodeJS.ProcessEnv} ambiente
+ * @returns {string | null}
+ */
+function arquivoDoFirebase(ambiente) {
+  const caminho = ambiente.GOOGLE_SERVICES_JSON || path.join(__dirname, 'google-services.json');
+  return fs.existsSync(caminho) ? caminho : null;
+}
 
 /**
  * O app DEV nunca é publicado: assina o release com a chave de debug e não
@@ -57,7 +73,16 @@ module.exports = ({ config }) => {
     }
   }
 
-  const extra = { ...config.extra, appVariant: variante };
+  // projectId do EAS: o token de push da Expo não existe sem ele. Não é segredo;
+  // vem do .env da variante enquanto a conta Expo não está ligada ao app.json.
+  const projectId = ambiente.EAS_PROJECT_ID || config.extra?.eas?.projectId;
+  const extra = {
+    ...config.extra,
+    appVariant: variante,
+    ...(projectId ? { eas: { ...config.extra?.eas, projectId } } : {}),
+  };
+  const googleServicesFile = arquivoDoFirebase(ambiente);
+  const android = googleServicesFile !== null ? { ...config.android, googleServicesFile } : config.android;
   // A versão do app.json só muda ao publicar (docs/VERSIONAMENTO.md). Build que
   // não é publicação ganha sufixo de commit (1.6.0+12.abc1234, 1.6.0+dev.12.abc1234)
   // para dar para saber de onde veio um APK sem inflar o número.
@@ -68,7 +93,7 @@ module.exports = ({ config }) => {
   });
 
   if (variante === 'production') {
-    return { ...config, version, extra };
+    return { ...config, version, android, extra };
   }
 
   const { backgroundImage: _imagemDeFundo, ...iconeSemImagemDeFundo } = config.android.adaptiveIcon;
@@ -80,7 +105,7 @@ module.exports = ({ config }) => {
     scheme: 'snakethai-dev',
     ios: { ...config.ios, bundleIdentifier: PACOTE_DEV },
     android: {
-      ...config.android,
+      ...android,
       package: PACOTE_DEV,
       adaptiveIcon: { ...iconeSemImagemDeFundo, backgroundColor: COR_DO_ICONE_DEV },
     },
