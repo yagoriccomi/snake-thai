@@ -169,7 +169,8 @@ num build exatamente na tag. Antes de compilar, o `[5]` confere se a pasta
 `android/` está com o versionCode e o versionName atuais; se não, rode `[P]`.
 
 **Publicar uma versão** (número novo, tag, GitHub Release) segue o passo a passo de
-[`VERSIONAMENTO.md`](VERSIONAMENTO.md). A versão só muda quando um APK é publicado. Os dois apps convivem no aparelho,
+[`VERSIONAMENTO.md`](VERSIONAMENTO.md). A versão só muda quando um APK é publicado; o
+push da tag dispara o workflow **Release Android**, que compila e publica. Os dois apps convivem no aparelho,
 porque são pacotes diferentes. **APK DEV nunca vai para o GitHub Releases.**
 
 Sem o menu, o equivalente do release DEV:

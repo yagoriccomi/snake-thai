@@ -131,14 +131,15 @@ trocar de um para o outro. Se deixar o Google gerar a chave, os dois ficam incom
 
 ## Build pelo GitHub Actions
 
-Contrato para o workflow de release (tarefa T5):
+O workflow `.github/workflows/release.yml` (**Release Android**) lê:
 
 | No GitHub | Nome |
 | --- | --- |
-| Environment (regra: `main` e tags `v*`) | `release` |
+| Environment (Settings → Environments → New environment; *Deployment branches and tags*: branch `main` e tag `v*`) | `release` |
 | Secret: a keystore em base64 | `RELEASE_KEYSTORE_BASE64` |
 | Secrets: senha, alias, senha da chave | `RELEASE_STORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD` |
-| Variável pública: SHA-256 do certificado | `RELEASE_CERT_SHA256` |
+| Secrets: o app de produção (copie do painel da Supabase de **produção**, não do `.env.dev`) | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, `EXPO_PUBLIC_API_URL` (opcional) |
+| Variável pública: SHA-256 do certificado (a linha `SHA256` do `keytool -list -v`) | `RELEASE_CERT_SHA256` |
 
 Você mesmo cadastra os secrets, sem os valores passarem por ninguém:
 
@@ -147,6 +148,10 @@ Você mesmo cadastra os secrets, sem os valores passarem por ninguém:
 gh secret set RELEASE_STORE_PASSWORD --env release --repo yagoriccomi/snake-thai   # pede o valor sem mostrar
 gh secret set RELEASE_KEY_ALIAS --env release --repo yagoriccomi/snake-thai
 gh secret set RELEASE_KEY_PASSWORD --env release --repo yagoriccomi/snake-thai
+gh secret set EXPO_PUBLIC_SUPABASE_URL --env release --repo yagoriccomi/snake-thai
+gh secret set EXPO_PUBLIC_SUPABASE_ANON_KEY --env release --repo yagoriccomi/snake-thai
+gh secret set EXPO_PUBLIC_API_URL --env release --repo yagoriccomi/snake-thai
+gh variable set RELEASE_CERT_SHA256 --env release --repo yagoriccomi/snake-thai --body "<SHA256 do certificado>"
 ```
 
 No workflow, a keystore é decodificada para `$RUNNER_TEMP` e as senhas chegam ao Gradle
