@@ -15,7 +15,9 @@ cd "$(dirname "$0")/.."
 
 ACAO="${1:-start}"
 
-has_supabase() { command -v supabase >/dev/null 2>&1; }
+# A Supabase CLI vem do package.json (npx), não do PATH global.
+has_supabase() { npx --no-install supabase --version >/dev/null 2>&1; }
+supabase() { npx --no-install supabase "$@"; }
 
 case "$ACAO" in
   start)
