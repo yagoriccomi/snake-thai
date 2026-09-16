@@ -32,6 +32,12 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes.
+- **Notificações push** (Android): lembrete e atraso de mensalidade para o aluno,
+  comprovante para analisar para o admin, aprovação e recusa, justificativa e aula
+  sem chamada para o professor. Ativação pela pessoa (convite + switch no Perfil),
+  texto sem nome nem valor, silêncio das 22h às 7h. Fila no banco, entrega por Edge
+  Function pela Expo. Exige conta Expo e Firebase para funcionar; regras e
+  publicação em [`docs/NOTIFICACOES.md`](docs/NOTIFICACOES.md).
 - **Painel do admin** (primeira aba, só admin): alunos ativos e inativos,
   recebido x esperado do mês, inadimplência por faixa de atraso, faturamento de
   12 meses, frequência média e alunos em risco de evasão, mais o **relatório de
@@ -264,6 +270,7 @@ A documentação completa vive em [`docs/`](docs/README.md):
 - **[Runbook](docs/RUNBOOK.md)** — migrations, tipos, APK, rotação de chaves.
 - **[Versionamento](docs/VERSIONAMENTO.md)** — quando a versão muda e como publicar.
 - **[Edge Functions](docs/EDGE-FUNCTIONS.md)** — contratos das funções server-side.
+- **[Notificações push](docs/NOTIFICACOES.md)** — quem recebe o quê, publicação e monitoramento.
 - Auditorias: [REVIEW.md](REVIEW.md) · [SECURITY.md](SECURITY.md) · [LICENSE_AUDIT.md](LICENSE_AUDIT.md)
 
 ## ⚡ Edge Functions

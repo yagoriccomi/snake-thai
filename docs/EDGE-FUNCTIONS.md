@@ -13,6 +13,39 @@ Fonte: [`supabase/functions/`](../supabase/functions/).
 
 ---
 
+## `send-push`
+
+Entrega a fila de notificações pela Expo. **Não é chamada pelo app**: quem chama é o
+banco (`pg_cron` → `disparar_envio_de_push()` → `pg_net`). Exceção às regras acima:
+não usa JWT (`verify_jwt = false` no `config.toml`); exige
+`Authorization: Bearer <PUSH_DISPATCH_SECRET>`, o mesmo valor do segredo
+`push_dispatch_secret` do Vault. Regras em [`NOTIFICACOES.md`](NOTIFICACOES.md).
+
+**Requisição**
+
+```json
+POST /functions/v1/send-push
+{}
+```
+
+**Respostas**
+
+| Status | Corpo | Quando |
+| --- | --- | --- |
+| `200` | `{ "recibos": 1, "notificacoes": 2, "mensagens": 2, "aceitas": 1, "recusadas": 1 }` | rodada concluída (só contagens) |
+| `401` | `{ "error": "Não autorizado" }` | segredo ausente ou diferente |
+| `405` | `{ "error": "Método não permitido" }` | não é POST |
+| `500` | `{ "error": "Configuração do servidor ausente" }` / `{ "error": "Falha ao ler a fila" }` / `{ "error": "Falha ao gravar o resultado" }` | segredos da função ausentes, `PUSH_APP_VARIANT` inválida ou erro no banco |
+
+Segredos: `PUSH_DISPATCH_SECRET`, `PUSH_APP_VARIANT` (`production` ou `development`),
+`EXPO_ACCESS_TOKEN` (opcional), `EXPO_PUSH_API_URL` (só ensaio local). Funções do
+banco usadas (só `service_role`): `pendencias_de_recibo_push`,
+`registrar_recibos_de_push`, `reivindicar_notificacoes`, `registrar_envio_de_push`.
+
+Deploy: `npx supabase functions deploy send-push --no-verify-jwt --project-ref <PROJECT_REF>`.
+
+---
+
 ## `create-student`
 
 Cria a conta de autenticação de um aluno novo e inicializa o perfil pendente de
