@@ -41,8 +41,8 @@ quebrar. Testes novos colocados nas pastas de sempre continuam rodando nele.
 | 4 | **T3** — padronizar número de versão | ✅ PR #13 | T4·1 | [PLANO-T3](planos/PLANO-T3.md) |
 | 5 | **T2** — tirar a chave de debug do release e assinar com a de produção | 🟡 PR #14 mesclado; 👤 keystore | T3, 👤 keystore | [PLANO-T2](planos/PLANO-T2.md) |
 | 6 | **T5** — GitHub Actions: build e publicação automática do APK | 🟡 PR #15 mesclado; 👤 secrets | T2, T3 | [PLANO-T5](planos/PLANO-T5.md) |
-| 7 | **T11** — guardar a chamada em andamento no aparelho | 🟡 PR aberto; 👤 teste no celular | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
-| 8 | **T10** — monitoramento de erros no aparelho | ⬜ | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
+| 7 | **T11** — guardar a chamada em andamento no aparelho | 🟡 PR #16 mesclado; 👤 teste no celular | T4·1 | [PLANO-T11](planos/PLANO-T11.md) |
+| 8 | **T10** — monitoramento de erros no aparelho | 🟡 código pronto; 👤 conta Sentry | T1, T3, 👤 conta Sentry | [PLANO-T10](planos/PLANO-T10.md) |
 | 9 | **T7** — editar dados do aluno + exclusão de conta (LGPD) | ⬜ | T1 | [PLANO-T7](planos/PLANO-T7.md) |
 | 10 | **T6** — aulas recorrentes (grade semanal) + renomear/excluir turma | ⬜ | T1, T7, T11 | [PLANO-T6](planos/PLANO-T6.md) |
 | 11 | **T8** — Painel do admin + relatório de inadimplência e faturamento | ⬜ | T1, T6, T7 | [PLANO-T8](planos/PLANO-T8.md) |
@@ -133,13 +133,15 @@ Builds de teste e o app DEV não mudam a versão (ganham só um sufixo, ex.: `1.
 - [x] Ao sair da tela: "Continuar marcando", "Descartar" ou "Sair e guardar"; rascunho vence em 7 dias; apagado ao sair do login
 - [x] Testes (47 novos; suíte com 443)
 - [ ] 👤 Validação no app DEV (matar o app no meio da chamada e reabrir) — roteiro em [`ENTREGA-T11`](planos/ENTREGA-T11.md)
-- [ ] PR mesclado
+- [x] PR #16 mesclado — `35687f9`
 
 ### T10 — Monitoramento de erros ([plano](planos/PLANO-T10.md))
 
-- [ ] Endurecer o log contra dado pessoal (nome, nascimento, CPF dentro da mensagem de erro) — **pode começar já**
-- [ ] Sentry (grátis até 5 mil erros/mês) ligado ao log existente, sem dado pessoal, com tela de erro amigável
-- [ ] DEV e produção separados; botão de diagnóstico só fora de produção
+- [x] Endurecer o log contra dado pessoal (nome, nascimento, CPF dentro da mensagem de erro)
+- [x] Sentry (grátis até 5 mil erros/mês) ligado ao log existente, sem dado pessoal, com tela de erro amigável — **desligado até existir o DSN**
+- [x] DEV e produção separados; botão de diagnóstico só fora de produção
+- [x] Build sem token do Sentry não quebra (`menu.bat` e `release.yml` desligam o envio e avisam)
+- [ ] PR mesclado
 - [ ] 👤 Criar a conta no Sentry (região UE), o DSN e o token de build; atualizar a Política de Privacidade
 
 ### T7 — Editar aluno e exclusão de conta ([plano](planos/PLANO-T7.md))
@@ -234,3 +236,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **T5, workflow pronto** (branch `ci/release-android`): `Release Android` por tag e ensaio manual, com travas de assinatura, pacote, versão e banco. Só roda depois que você criar o Environment `release`, os secrets e a variável do certificado. |
 | 2026-09-16 | **T5:** PR #15 mesclado (`c34fd62`); workflow "Release Android" ativo, aguardando Environment, secrets e keystore. |
 | 2026-09-16 | **T11 implementada** (branch `feat/rascunho-chamada`): rascunho cifrado da chamada com recuperação, conflito, validade de 7 dias, 3 botões ao sair e limpeza no logout. 47 testes novos. Falta a validação no celular. Relatório em [`ENTREGA-T11`](planos/ENTREGA-T11.md). |
+| 2026-09-16 | **T11:** PR #16 mesclado (`35687f9`). |
+| 2026-09-16 | **T10 implementada** (branch `feat/monitoramento-erros`): Sentry sem dado pessoal (filtros, id aleatório + papel), logger com coletor, tela de erro amigável, diagnóstico só no DEV, build sem token funcionando. Desligado até você criar a conta e colar o DSN. Relatório em [`ENTREGA-T10`](planos/ENTREGA-T10.md). |
