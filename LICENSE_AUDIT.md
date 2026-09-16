@@ -76,6 +76,8 @@ app — todos permissivos:
 | `@supabase/supabase-js` | MIT | Cliente de backend |
 | `@react-navigation/*` | MIT | Navegação |
 | `aes-js` | MIT | Cifragem da sessão |
+| `@sentry/react-native` e `@sentry/*` do app | MIT | Monitoramento de erros (2026-09-16) |
+| `@sentry/cli` | FSL-1.1-MIT | Só na máquina de build (envio de source maps); não vai no APK. Vira MIT dois anos após cada versão |
 | `react-native-reanimated` equivalentes | MIT | — |
 
 Apache-2.0 (11 pacotes) traz um bônus: **concessão explícita de patente** — o

@@ -62,7 +62,8 @@ src/
 ├── constants/theme.ts  # Design tokens da marca (sem magic strings de cor) [#3]
 ├── lib/
 │   ├── supabase.ts     # Cliente único do Supabase (singleton) [#21]
-│   └── secureStorage.ts# Sessão cifrada (AES-256) — tokens nunca em texto puro [#54]
+│   ├── secureStorage.ts# Sessão cifrada (AES-256) — tokens nunca em texto puro [#54]
+│   └── monitoring/     # Sentry: único ponto que importa o SDK; filtros de PII em scrub.ts [#91][#95]
 └── types/database.types.ts  # Tipos gerados pelo Supabase CLI [#11]
 supabase/migrations/    # Esquema versionado (migrations first) [#87]
 scripts/                # dev.bat / dev.sh — controle do ambiente local

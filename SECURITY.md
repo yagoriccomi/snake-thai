@@ -130,4 +130,5 @@ entra no APK**. Nenhum é vulnerabilidade de runtime do app.
 | Sessão no dispositivo | AES-256, chave no enclave seguro |
 | Senhas | bcrypt (GoTrue); app nunca as armazena |
 | Transporte | HTTPS obrigatório; sem cleartext |
+| Monitoramento de erros (2026-09-16) | Sentry sem PII: `sendDefaultPii` desligado, usuário = id aleatório da instalação + papel, CPF/e-mail/telefone/JWT removidos do texto, URLs sem query, trilha de console descartada (`src/lib/monitoring/scrub.ts`). Token de build nunca no APK |
 | SQL Injection | Não aplicável — cliente tipado, sem concatenação |
