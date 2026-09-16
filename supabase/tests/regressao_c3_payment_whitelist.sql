@@ -14,9 +14,10 @@ values ('aaaaaaaa-1111-1111-1111-111111111111',
 insert into public.profiles (id, role, name)
 values ('aaaaaaaa-1111-1111-1111-111111111111', 'user', 'Aluno de Teste');
 
-insert into public.payments (id, user_id, status, due_date, amount_cents)
+insert into public.payments (id, user_id, status, due_date, amount_cents, reference_month)
 values ('bbbbbbbb-2222-2222-2222-222222222222',
-        'aaaaaaaa-1111-1111-1111-111111111111', 'open', current_date, 12990);
+        'aaaaaaaa-1111-1111-1111-111111111111', 'open', current_date, 12990,
+        date_trunc('month', current_date)::date);
 
 -- A partir daqui, somos o aluno.
 set local role authenticated;
