@@ -14,8 +14,10 @@ Ponto de entrada da documentação técnica e operacional do projeto.
 - **[EDGE-FUNCTIONS.md](EDGE-FUNCTIONS.md)** — contrato de entrada/saída e
   autorização das funções server-side.
 - **[RUNBOOK.md](RUNBOOK.md)** — operações: migrations, tipos, Metro, APK, chaves.
+- **[VERSIONAMENTO.md](VERSIONAMENTO.md)** — quando a versão muda, versionCode e como publicar um APK.
 - **[BACKEND.md](BACKEND.md)** — spec do backend próprio do app (Render): arquitetura híbrida com o Supabase, estrutura extensível por módulos, cold start e o módulo de comprovantes (Cloudinary).
-- **[../README.md](../README.md)** — instalar, configurar `.env` e rodar.
+- **[../README.md](../README.md)** — instalar, configurar `.env.dev`/`.env.prod` e rodar.
+- **[../CHANGELOG.md](../CHANGELOG.md)** — o que mudou em cada versão publicada.
 
 ## Auditorias e conformidade
 

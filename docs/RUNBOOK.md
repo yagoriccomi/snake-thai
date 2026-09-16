@@ -163,8 +163,13 @@ menu.bat  →  [P] preparar  →  [8] gerar  →  [9] instalar
 menu.bat  →  [P] preparar  →  [5] gerar  →  [9] instalar
 ```
 
-O release é copiado para `release\snake-thai-v<versão>.apk` (produção) ou
-`release\snake-thai-dev-v<versão>.apk` (DEV). Os dois apps convivem no aparelho,
+O release é copiado para `release\snake-thai-v<nome do build>.apk` (produção) ou
+`release\snake-thai-dev-v<nome do build>.apk` (DEV) — ex.: `snake-thai-v1.7.0.apk`
+num build exatamente na tag. Antes de compilar, o `[5]` confere se a pasta
+`android/` está com o versionCode e o versionName atuais; se não, rode `[P]`.
+
+**Publicar uma versão** (número novo, tag, GitHub Release) segue o passo a passo de
+[`VERSIONAMENTO.md`](VERSIONAMENTO.md). A versão só muda quando um APK é publicado. Os dois apps convivem no aparelho,
 porque são pacotes diferentes. **APK DEV nunca vai para o GitHub Releases.**
 
 Sem o menu, o equivalente do release DEV:

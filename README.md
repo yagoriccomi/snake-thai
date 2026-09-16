@@ -215,6 +215,22 @@ snake-thai/
 | `npm test` | Executa os testes (Jest + React Native Testing Library). |
 | `npm run supabase:types` | Gera os tipos a partir do banco local. |
 
+## 🏷️ Versões e publicação
+
+A versão só muda quando um APK é **publicado** para os usuários; APKs de teste e o app
+DEV mantêm o número e ganham só um sufixo (ex.: `1.6.0+dev.12.abc1234`). O
+`versionCode` do Android é calculado da versão (1.6.0 → 1006000). O que mudou em cada
+versão está no [CHANGELOG](CHANGELOG.md); o passo a passo, em
+[`docs/VERSIONAMENTO.md`](docs/VERSIONAMENTO.md).
+
+| Comando | Ação |
+| --- | --- |
+| `npm run versao:minor -- --dry-run` | Simula a próxima versão e mostra o rascunho das notas |
+| `npm run versao:patch` / `minor` / `major` | Grava a versão nova e a entrada do CHANGELOG |
+| `npm run versao:tag` | Commit de release e tag, sem push |
+| `npm run versao:verificar` | Confere a coerência da versão |
+| `npm run versao:notas -- v1.7.0` | Notas da versão para o GitHub Release |
+
 ## 📚 Documentação
 
 A documentação completa vive em [`docs/`](docs/README.md):
@@ -222,6 +238,7 @@ A documentação completa vive em [`docs/`](docs/README.md):
 - **[Manual do Administrador](docs/MANUAL-DO-ADMINISTRADOR.md)** — operar o sistema pelo celular, sem depender do dev.
 - **[Arquitetura](docs/ARQUITETURA.md)** — camadas, RLS e Edge Functions (comece aqui se é dev novo no projeto).
 - **[Runbook](docs/RUNBOOK.md)** — migrations, tipos, APK, rotação de chaves.
+- **[Versionamento](docs/VERSIONAMENTO.md)** — quando a versão muda e como publicar.
 - **[Edge Functions](docs/EDGE-FUNCTIONS.md)** — contratos das funções server-side.
 - Auditorias: [REVIEW.md](REVIEW.md) · [SECURITY.md](SECURITY.md) · [LICENSE_AUDIT.md](LICENSE_AUDIT.md)
 
