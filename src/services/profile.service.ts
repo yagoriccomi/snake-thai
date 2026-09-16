@@ -1,3 +1,4 @@
+import { lerErroDaFuncao } from '@/lib/functionsError';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
 import type { Profile } from '@/types/models';
@@ -121,6 +122,26 @@ export async function fetchAllStudents(): Promise<Profile[]> {
     .from('profiles')
     .select('*')
     .eq('role', 'user')
+    .order('name', { ascending: true });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/**
+ * Perfis que a gestão de alunos mostra: alunos e administradores (o filtro
+ * "Admins" da tela precisa deles), sem as contas excluídas (LGPD).
+ *
+ * `fetchAllStudents` continua existindo à parte: o financeiro precisa dos
+ * excluídos, que aparecem como "Usuário removido".
+ */
+export async function fetchManagedProfiles(): Promise<Profile[]> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .in('role', ['user', 'admin'])
+    .is('anonymized_at', null)
     .order('name', { ascending: true });
   if (error !== null) {
     throw error;
@@ -290,4 +311,125 @@ export async function setStudentActive(
   if (error !== null) {
     throw error;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Edição do aluno pelo admin e exclusão de conta (LGPD)
+// ---------------------------------------------------------------------------
+
+type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
+
+/** O que o admin edita na tela EditarAluno (CPF e celular só com dígitos). */
+export interface StudentAdminInput {
+  /** Ausente em perfil pendente: nome e CPF são do aluno no primeiro acesso. */
+  name?: string;
+  cpf?: string;
+  phone: string | null;
+  /** ISO (`AAAA-MM-DD`) ou `null`. */
+  dob: string | null;
+  groupId: string | null;
+  planId: string | null;
+  active: boolean;
+}
+
+/**
+ * Só o que mudou: gravar campo igual dispararia gatilho e auditoria à toa, e
+ * reenviar o CPF de um aluno sem mudança poderia esbarrar em regra do banco.
+ * `deactivated_at` acompanha o status só quando ele muda (constraint de coerência).
+ */
+export function montarAtualizacaoDoAluno(antes: Profile, depois: StudentAdminInput): ProfileUpdate {
+  const mudancas: ProfileUpdate = {};
+  const nome = depois.name?.trim();
+  if (nome !== undefined && nome !== antes.name) mudancas.name = nome;
+  if (depois.cpf !== undefined && depois.cpf !== antes.cpf) mudancas.cpf = depois.cpf;
+  if (depois.phone !== antes.phone) mudancas.phone = depois.phone;
+  if (depois.dob !== antes.dob) mudancas.dob = depois.dob;
+  if (depois.groupId !== antes.group_id) mudancas.group_id = depois.groupId;
+  if (depois.planId !== antes.plan_id) mudancas.plan_id = depois.planId;
+  const ativoAntes = antes.status === 'active';
+  if (depois.active !== ativoAntes) {
+    mudancas.status = depois.active ? 'active' : 'inactive';
+    mudancas.deactivated_at = depois.active ? null : new Date().toISOString();
+  }
+  return mudancas;
+}
+
+/**
+ * Grava a edição do admin. A permissão é do banco (RLS e gatilho: só admin
+ * altera dados de outro perfil); CPF repetido volta como 23505 e a tela
+ * traduz ("Este CPF já está cadastrado em outra conta").
+ *
+ * @returns `false` quando não havia nada para gravar.
+ */
+export async function updateStudentByAdmin(
+  studentId: string,
+  antes: Profile,
+  depois: StudentAdminInput,
+): Promise<boolean> {
+  const mudancas = montarAtualizacaoDoAluno(antes, depois);
+  if (Object.keys(mudancas).length === 0) {
+    return false;
+  }
+  const { error } = await supabase.from('profiles').update(mudancas).eq('id', studentId);
+  if (error !== null) {
+    throw error;
+  }
+  return true;
+}
+
+/** E-mail de login de outro usuário (só admin; o banco recusa os demais). */
+export async function fetchUserEmail(userId: string): Promise<string | null> {
+  const { data, error } = await supabase.rpc('email_do_usuario', { p_user_id: userId });
+  if (error !== null) {
+    throw error;
+  }
+  return data;
+}
+
+/** Troca o e-mail de login de outro usuário (Edge Function `admin-update-user-email`). */
+export async function updateUserEmail(userId: string, email: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('admin-update-user-email', {
+    body: { userId, email: email.trim().toLowerCase() },
+  });
+  if (error !== null) {
+    throw await lerErroDaFuncao(error);
+  }
+}
+
+/** Texto que o servidor exige para a autoexclusão (evita chamada acidental). */
+export const CONFIRMACAO_AUTOEXCLUSAO = 'EXCLUIR MINHA CONTA';
+/** Texto que o servidor exige para o admin excluir outra conta. */
+export const CONFIRMACAO_EXCLUSAO_PELO_ADMIN = 'EXCLUIR CONTA';
+
+/**
+ * O titular exclui a própria conta (LGPD art. 18, VI). A senha é conferida no
+ * servidor. Nunca apaga o perfil pelo cliente: o banco nem permite, e o
+ * cascade levaria o histórico financeiro.
+ */
+export async function deleteMyAccount(senha: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('delete-my-account', {
+    body: { confirmacao: CONFIRMACAO_AUTOEXCLUSAO, senha },
+  });
+  if (error !== null) {
+    throw await lerErroDaFuncao(error);
+  }
+}
+
+/** O admin exclui a conta de um aluno ou professor. */
+export async function deleteUserAccount(userId: string): Promise<void> {
+  const { error } = await supabase.functions.invoke('delete-user-account', {
+    body: { userId, confirmacao: CONFIRMACAO_EXCLUSAO_PELO_ADMIN },
+  });
+  if (error !== null) {
+    throw await lerErroDaFuncao(error);
+  }
+}
+
+/** Todos os dados do titular em JSON (LGPD art. 18, V — portabilidade). */
+export async function exportMyData(): Promise<unknown> {
+  const { data, error } = await supabase.rpc('export_my_data');
+  if (error !== null) {
+    throw error;
+  }
+  return data;
 }

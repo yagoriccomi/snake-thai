@@ -8,10 +8,12 @@ import {
 
 const mockFrom = jest.fn();
 const mockInvoke = jest.fn();
+const mockRpc = jest.fn();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     from: (...args: unknown[]): unknown => mockFrom(...args),
+    rpc: (...args: unknown[]): unknown => mockRpc(...args),
     functions: {
       invoke: (...args: unknown[]): unknown => mockInvoke(...args),
     },
@@ -21,7 +23,16 @@ jest.mock('@/lib/supabase', () => ({
 import {
   createStaff,
   createStudent,
+  deleteMyAccount,
+  deleteUserAccount,
+  exportMyData,
   fetchAllProfessors,
+  fetchManagedProfiles,
+  fetchUserEmail,
+  montarAtualizacaoDoAluno,
+  updateStudentByAdmin,
+  updateUserEmail,
+  type StudentAdminInput,
   finishStaffOnboarding,
   resetStudentPassword,
   setStudentActive,
@@ -30,6 +41,7 @@ import {
   updateUserRole,
   type StaffInput,
 } from '@/services/profile.service';
+import type { Profile } from '@/types/models';
 
 const ALUNO_ID = '219ce3c9-5ad7-4319-9cde-7dbe07e1a573';
 const PROFESSOR_ID = '3e2d1c0b-9a8f-4e5d-8c7b-6a5f4e3d2c1b';
@@ -43,6 +55,7 @@ function mockQuery(resultado: Parameters<typeof createQueryChain>[0]): QueryChai
 beforeEach(() => {
   mockFrom.mockReset();
   mockInvoke.mockReset();
+  mockRpc.mockReset();
 });
 
 describe('updateUserRole — promoção e rebaixamento', () => {
@@ -278,5 +291,173 @@ describe('updateOwnColor', () => {
     await expect(updateOwnColor(ALUNO_ID, '#00AAFF')).rejects.toEqual(
       RLS_DENIED.error,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Edição do aluno pelo admin e exclusão de conta (LGPD)
+// ---------------------------------------------------------------------------
+
+function perfil(parcial: Partial<Profile> = {}): Profile {
+  return {
+    id: ALUNO_ID,
+    role: 'user',
+    name: 'Aluna Teste',
+    cpf: '52998224725',
+    phone: '11912345678',
+    dob: '2000-01-31',
+    is_first_login: false,
+    created_at: '2026-01-01T00:00:00Z',
+    updated_at: '2026-01-01T00:00:00Z',
+    group_id: 'turma-manha',
+    plan_id: 'plano-1',
+    status: 'active',
+    deactivated_at: null,
+    anonymized_at: null,
+    color: null,
+    ...parcial,
+  };
+}
+
+function entrada(antes: Profile, parcial: Partial<StudentAdminInput> = {}): StudentAdminInput {
+  return {
+    name: antes.name ?? undefined,
+    cpf: antes.cpf ?? undefined,
+    phone: antes.phone,
+    dob: antes.dob,
+    groupId: antes.group_id,
+    planId: antes.plan_id,
+    active: antes.status === 'active',
+    ...parcial,
+  };
+}
+
+describe('montarAtualizacaoDoAluno', () => {
+  it('deveMandarSoOsCamposAlterados', () => {
+    const antes = perfil();
+    expect(montarAtualizacaoDoAluno(antes, entrada(antes, { phone: '11987654321', name: ' Aluna Nova ' }))).toEqual({
+      phone: '11987654321',
+      name: 'Aluna Nova',
+    });
+  });
+
+  it('naoDeveMandarDeactivatedAtQuandoOStatusNaoMuda', () => {
+    const antes = perfil();
+    expect(montarAtualizacaoDoAluno(antes, entrada(antes))).toEqual({});
+  });
+
+  it('deveMandarADataAoTrancarELimparAoReativar', () => {
+    const ativa = perfil();
+    const trancar = montarAtualizacaoDoAluno(ativa, entrada(ativa, { active: false }));
+    expect(trancar.status).toBe('inactive');
+    expect(typeof trancar.deactivated_at).toBe('string');
+
+    const trancada = perfil({ status: 'inactive', deactivated_at: '2026-02-01T00:00:00Z' });
+    expect(montarAtualizacaoDoAluno(trancada, entrada(trancada, { active: true }))).toEqual({
+      status: 'active',
+      deactivated_at: null,
+    });
+  });
+
+  it('naoDeveTocarEmNomeECpfDePerfilPendente', () => {
+    const pendente = perfil({ name: null, cpf: null, is_first_login: true });
+    expect(
+      montarAtualizacaoDoAluno(pendente, entrada(pendente, { name: undefined, cpf: undefined, groupId: null })),
+    ).toEqual({ group_id: null });
+  });
+});
+
+describe('updateStudentByAdmin', () => {
+  it('naoDeveChamarOBancoQuandoNadaMudou', async () => {
+    const antes = perfil();
+    expect(await updateStudentByAdmin(ALUNO_ID, antes, entrada(antes))).toBe(false);
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('devePropagarCpfRepetido', async () => {
+    const cpfRepetido = {
+      data: null,
+      error: { message: 'duplicate key value violates unique constraint "profiles_cpf_key"', code: '23505' },
+    };
+    const chain = mockQuery(cpfRepetido);
+    const antes = perfil();
+
+    await expect(updateStudentByAdmin(ALUNO_ID, antes, entrada(antes, { cpf: '11144477735' }))).rejects.toEqual(
+      cpfRepetido.error,
+    );
+    expect(chain.update).toHaveBeenCalledWith({ cpf: '11144477735' });
+    expect(chain.eq).toHaveBeenCalledWith('id', ALUNO_ID);
+  });
+});
+
+describe('exclusão de conta e e-mail', () => {
+  function erroHttp(status: number, corpo: unknown) {
+    return {
+      name: 'FunctionsHttpError',
+      message: 'Edge Function returned a non-2xx status code',
+      context: { status, json: async () => corpo },
+    };
+  }
+
+  it('deleteMyAccountDeveEnviarAConfirmacaoExataEASenha', async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
+    await deleteMyAccount('Senha@123');
+
+    expect(mockInvoke).toHaveBeenCalledWith('delete-my-account', {
+      body: { confirmacao: 'EXCLUIR MINHA CONTA', senha: 'Senha@123' },
+    });
+  });
+
+  it('deveTrazerAMensagemDoServidorQuandoASenhaEstaErrada', async () => {
+    mockInvoke.mockResolvedValue({ data: null, error: erroHttp(401, { error: 'Senha incorreta' }) });
+
+    await expect(deleteMyAccount('errada')).rejects.toMatchObject({
+      name: 'ErroDeFuncao',
+      message: 'Senha incorreta',
+      status: 401,
+    });
+  });
+
+  it('deleteUserAccountDeveUsarAFuncaoENuncaApagarOPerfil', async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+
+    await deleteUserAccount(PROFESSOR_ID);
+
+    expect(mockInvoke).toHaveBeenCalledWith('delete-user-account', {
+      body: { userId: PROFESSOR_ID, confirmacao: 'EXCLUIR CONTA' },
+    });
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('updateUserEmailDeveNormalizarEPropagarDuplicado', async () => {
+    mockInvoke.mockResolvedValue({
+      data: null,
+      error: erroHttp(409, { error: 'Este e-mail já está cadastrado em outra conta' }),
+    });
+
+    await expect(updateUserEmail(ALUNO_ID, ' Aluna@Exemplo.COM ')).rejects.toMatchObject({ status: 409 });
+    expect(mockInvoke).toHaveBeenCalledWith('admin-update-user-email', {
+      body: { userId: ALUNO_ID, email: 'aluna@exemplo.com' },
+    });
+  });
+
+  it('fetchUserEmailEExportMyDataDevemUsarAsFuncoesDoBanco', async () => {
+    mockRpc.mockResolvedValueOnce({ data: 'aluna@exemplo.com', error: null });
+    mockRpc.mockResolvedValueOnce({ data: { perfil: {} }, error: null });
+
+    expect(await fetchUserEmail(ALUNO_ID)).toBe('aluna@exemplo.com');
+    expect(await exportMyData()).toEqual({ perfil: {} });
+    expect(mockRpc).toHaveBeenNthCalledWith(1, 'email_do_usuario', { p_user_id: ALUNO_ID });
+    expect(mockRpc).toHaveBeenNthCalledWith(2, 'export_my_data');
+  });
+
+  it('fetchManagedProfilesDeveTrazerAdminsESemContasExcluidas', async () => {
+    const chain = mockQuery({ data: [], error: null });
+
+    await fetchManagedProfiles();
+
+    expect(chain.in).toHaveBeenCalledWith('role', ['user', 'admin']);
+    expect(chain.is).toHaveBeenCalledWith('anonymized_at', null);
   });
 });

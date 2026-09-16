@@ -12,8 +12,11 @@
  * banco (ex.: CPF duplicado). Aqui a detecção é feita pelo SQLSTATE (`code`).
  */
 
-/** Natureza do erro, para a UI comunicar a origem do problema. */
-export type ErrorKind = 'banco' | 'rede' | 'auth' | 'interno';
+/**
+ * Natureza do erro, para a UI comunicar a origem do problema. `servidor` = o
+ * servidor já respondeu com uma mensagem própria para a pessoa (Edge Function).
+ */
+export type ErrorKind = 'banco' | 'rede' | 'auth' | 'servidor' | 'interno';
 
 /** Erro já classificado e com mensagem amigável. */
 export interface DescribedError {
@@ -81,6 +84,11 @@ export function classifyError(error: unknown): DescribedError {
   const code = readString(error, 'code');
   const name = readString(error, 'name');
   const haystack = `${message} ${details}`.toLowerCase();
+
+  // 0) Mensagem já escrita pelo servidor para a pessoa (src/lib/functionsError.ts).
+  if (name === 'ErroDeFuncao' && message !== '') {
+    return { kind: 'servidor', message };
+  }
 
   // 1) Rede / conexão — fetch falhou, offline, timeout.
   if (
