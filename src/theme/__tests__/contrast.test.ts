@@ -79,6 +79,11 @@ describe.each([
     expect(ratio).toBeGreaterThanOrEqual(MIN_TEXT_RATIO);
   });
 
+  it('deveGarantirLeituraDaFaixaDoAppDeDesenvolvimento', () => {
+    const ratio = contrastRatio(palette.onDevBanner, palette.devBanner);
+    expect(ratio).toBeGreaterThanOrEqual(MIN_TEXT_RATIO);
+  });
+
   it('deveDistinguirOPreenchimentoPrimarioDoFundoDaTela', () => {
     const ratio = contrastRatio(palette.primary, palette.background);
     expect(ratio).toBeGreaterThanOrEqual(MIN_UI_RATIO);

@@ -53,8 +53,8 @@ containerizável. Instale na sua máquina:
   - **Android:** [Android Studio](https://developer.android.com/studio) + **JDK 17**,
     com as variáveis `ANDROID_HOME` e `JAVA_HOME` configuradas no `PATH`.
   - **iOS:** **Xcode** (somente em macOS).
-- **(Opcional) Supabase CLI** para subir o backend localmente —
-  <https://supabase.com/docs/guides/cli>. A CLI gerencia seu próprio Docker.
+- **Docker Desktop** — o banco de desenvolvimento roda nele, pela Supabase CLI
+  (já vem no `npm install`; ela gerencia os próprios containers).
 
 ### Passo a passo
 
@@ -63,26 +63,46 @@ containerizável. Instale na sua máquina:
    npm install
    ```
 
-2. Configure as variáveis de ambiente (copie o exemplo e preencha):
+2. Suba o banco local, popule com dados de demonstração e gere o `.env.dev`:
    ```bash
-   cp .env.example .env
+   scripts\db-dev start     # Linux/Mac: ./scripts/db-dev.sh start
+   scripts\db-dev reset
+   scripts\db-dev env
    ```
 
-3. (Opcional) Suba o backend local do Supabase e o app:
-   - Windows: `scripts\dev.bat start`
-   - Linux/Mac: `./scripts/dev.sh start`
-
-   Ou apenas o app Expo:
+3. Suba o app **DEV** (conectado ao banco local):
    ```bash
    npm start
    ```
 
 4. Abra no **Expo Go** lendo o QR Code, ou pressione `a` (Android) / `i` (iOS).
+   Num aparelho físico, o `127.0.0.1` do banco local precisa do `adb reverse`
+   das portas 55321 e 3000 — o `menu.bat` faz isso sozinho.
+
+### DEV x produção
+
+O projeto gera **dois apps**, que convivem no mesmo celular:
+
+| | DEV Snake Thai | Snake Thai |
+| --- | --- | --- |
+| Banco | local, no Docker desta máquina | Supabase de produção |
+| Pacote Android | `com.snakethai.app.dev` | `com.snakethai.app` |
+| Arquivo de ambiente | `.env.dev` (gerado por `scripts\db-dev env`) | `.env.prod` |
+| Marca visual | faixa "DEV · banco local" e ícone âmbar | nenhuma |
+| Comando | `npm start` | `npm run start:prod` |
+
+A variante vem de `APP_VARIANT` (`development` ou `production`; sem ela, vale
+produção). Os comandos passam por `scripts/with-variant.js`, que carrega o
+arquivo certo. Build e app **recusam** combinações perigosas: o DEV apontando
+para um servidor da internet, ou o de produção apontando para endereço local ou
+sem https. O `.env` simples não é mais lido.
 
 > **Windows:** o `menu.bat` na raiz concentra o dia a dia — subir o Metro, conectar
 > o aparelho por ADB Wi-Fi, gerar o APK e instalar. Ele elege um único alvo ADB
 > (`ANDROID_SERIAL`), então o erro `more than one device/emulator` não ocorre nem
 > quando o mesmo celular está conectado por cabo e por Wi-Fi ao mesmo tempo.
+> A opção `[V]` alterna entre DEV e produção, e a seção "Banco local" sobe,
+> recria e testa o banco de desenvolvimento.
 
 ### Debug x Release — por que o app "não abre sozinho"
 
@@ -94,10 +114,12 @@ normal de um build de desenvolvimento — não é falha do aplicativo.
 Para usar o app no celular sem depender do computador, gere o **release**, que
 empacota o JS dentro do APK:
 
-```bash
-cd android && ./gradlew assembleRelease
-adb install -r app/build/outputs/apk/release/app-release.apk
+```text
+menu.bat  →  [V] escolher a variante  →  [P] preparar  →  [5] release  →  [9] instalar
 ```
+
+O APK sai em `release/snake-thai-v<versão>.apk` (produção) ou
+`release/snake-thai-dev-v<versão>.apk` (DEV). O DEV nunca é publicado.
 
 | | Debug | Release |
 | --- | --- | --- |
@@ -122,6 +144,9 @@ apaga a propriedade do Gradle — o `menu.bat` a reaplica sozinho antes de cada 
 **Trocar a porta exige recompilar o APK**, pois ela vira um resource do binário.
 
 ## 📝 Variáveis de Ambiente
+
+Ficam em `.env.dev` (app DEV) e `.env.prod` (app de produção), nenhum dos dois
+versionado. Modelo e exemplos de cada um em [`.env.example`](.env.example).
 
 | Variável | Propósito |
 | --- | --- |
@@ -148,15 +173,17 @@ apaga a propriedade do Gradle — o `menu.bat` a reaplica sozinho antes de cada 
 ## 🗄️ Banco de Dados (Supabase)
 
 O esquema é versionado em `supabase/migrations/` (migrations first — nunca altere pelo
-Dashboard). Após aplicar as migrations, sincronize os tipos do TypeScript:
+Dashboard). Toda mudança nasce e é testada no **banco local**; produção só recebe
+migration pelo `scripts\db-push-prod.bat`, que faz backup e pede confirmação duas
+vezes. O passo a passo está no [Runbook](docs/RUNBOOK.md#banco-de-dados-migrations-e-tipos).
 
-```bash
-# projeto remoto
-npx supabase gen types typescript --project-id <PROJECT_ID> > src/types/database.types.ts
-
-# ou ambiente local (com supabase start)
-npm run supabase:types
-```
+| Comando (`scripts\db-dev …`) | Faz |
+| --- | --- |
+| `start` / `stop` / `status` | Sobe, para e mostra o Supabase local (portas 553xx) |
+| `reset` | Recria o banco local com contas de teste e dados de demonstração |
+| `test` | Recria o banco local limpo e roda os testes SQL de `supabase/tests` |
+| `types` | Gera `src/types/database.types.ts` a partir do banco local |
+| `env` | Gera o `.env.dev` do app |
 
 ## 📂 Estrutura
 
@@ -164,7 +191,8 @@ npm run supabase:types
 snake-thai/
 ├── App.tsx                 # Componente raiz (Dark Mode)
 ├── index.ts                # Entry point (registerRootComponent)
-├── app.json                # Configuração do Expo
+├── app.json                # Configuração do Expo (base; versão)
+├── app.config.js           # Variante DEV x produção sobre o app.json
 ├── src/
 │   ├── config/             # env.ts — leitura validada de variáveis de ambiente
 │   ├── constants/          # theme.ts — design tokens da marca
@@ -172,18 +200,20 @@ snake-thai/
 │   │                       # + api.ts (cliente HTTP do backend na Render)
 │   └── types/              # database.types.ts (gerado pelo Supabase CLI)
 ├── supabase/migrations/    # Migrations SQL versionadas
-└── scripts/                # dev.bat / dev.sh — controle do ambiente local
+└── scripts/                # db-dev (banco local), with-variant, db-push-prod
 ```
 
 ## 📜 Scripts úteis
 
 | Comando | Ação |
 | --- | --- |
-| `npm start` | Inicia o Metro/Expo na porta **6969**. |
-| `npm run android` / `ios` / `web` | Abre em uma plataforma específica (mesma porta). |
+| `npm start` | Inicia o Metro/Expo do app **DEV** na porta **6969**. |
+| `npm run start:prod` | Inicia o Metro/Expo do app de **produção**. |
+| `npm run android` / `ios` / `web` | Abre o DEV em uma plataforma específica (mesma porta). |
+| `npm run env:dev` | Gera o `.env.dev` a partir do Supabase local. |
 | `npm run typecheck` | Checagem de tipos estrita (`tsc --noEmit`). |
 | `npm test` | Executa os testes (Jest + React Native Testing Library). |
-| `npm run supabase:types` | Gera os tipos do banco local. |
+| `npm run supabase:types` | Gera os tipos a partir do banco local. |
 
 ## 📚 Documentação
 
@@ -218,33 +248,29 @@ supabase functions deploy reset-student-password
 
 ## 🌱 Dados de demonstração
 
-Para apresentar o sistema com a base populada (50 alunos, 5 professores,
-turmas, mensalidades em vários estados e professores coloridos nas aulas):
+Dados de demonstração vivem **só no banco local**. Um comando recria tudo
+(50 alunos, 5 professores, turmas, mensalidades em vários estados e professores
+coloridos nas aulas):
 
 ```bash
-psql "$DATABASE_URL" -f supabase/seed/demo_seed.sql
+scripts\db-dev reset
 ```
 
-O script é **idempotente** — rodar de novo apenas completa o que faltar, sem
-duplicar ninguém. As contas criadas ficam num domínio de e-mail próprio de
-demonstração, justamente para serem localizáveis e removíveis depois. As
-credenciais de acesso são combinadas com a equipe, fora do repositório.
+Ele roda, em ordem, `supabase/seed/local_base.sql` (planos, turmas e as contas de
+teste locais), `demo_seed.sql` e `demo_seed_historico.sql`. As seeds de
+demonstração **se recusam a rodar** num banco que tenha conta fora dos domínios
+de teste, justamente para não misturar dado fictício com gente real.
 
-Para dar corpo à frequência e ao histórico financeiro, rode em seguida:
-
-```bash
-psql "$DATABASE_URL" -f supabase/seed/demo_seed_historico.sql
-```
-
-Ele cria os **últimos 3 meses**: agenda, chamada concluída em toda aula já
+O histórico cria os **últimos 3 meses**: agenda, chamada concluída em toda aula já
 terminada (inclusive as do mês corrente), justificativas revisadas, meses de
 frequência congelados e mensalidades em dia, com atraso e em aberto. Também é
 idempotente e relativo ao dia em que roda: rodar de novo depois só conclui as
 chamadas das aulas que terminaram nesse meio-tempo. Chamada feita por
 professor de verdade e mensalidade com comprovante nunca são sobrescritas.
 
-> **Antes de operar de verdade**, remova os dados fictícios:
-> `psql "$DATABASE_URL" -f supabase/seed/demo_seed_limpar.sql`. Ele apaga
+> **Produção ainda tem dados fictícios de antes do banco local.** Antes de
+> cadastrar o primeiro aluno real, faça backup e rode
+> `supabase/seed/demo_seed_limpar.sql` no banco de produção. Ele apaga
 > somente o domínio de demonstração — contas reais não são tocadas. Dado
 > fictício convivendo com dado real é pior do que base vazia, porque em poucas
 > semanas ninguém distingue mais um do outro.

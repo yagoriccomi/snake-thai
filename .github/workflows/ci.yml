@@ -95,7 +95,7 @@ jobs:
             # ON_ERROR_STOP: qualquer `raise exception` do teste derruba o job.
             # Os testes rodam em transação e terminam em ROLLBACK, então a
             # ordem entre eles não importa e o banco não acumula estado. [#48]
-            psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres"               -v ON_ERROR_STOP=1 -f "$arquivo"
+            psql "postgresql://postgres:postgres@127.0.0.1:55322/postgres"               -v ON_ERROR_STOP=1 -f "$arquivo"
           done
           if [ "$encontrou" -eq 0 ]; then
             echo "::error::Nenhum teste SQL encontrado em supabase/tests/."

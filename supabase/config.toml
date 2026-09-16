@@ -1,29 +1,47 @@
 # Configuração do projeto Supabase (ambiente local via CLI).
+# Portas 553xx: a faixa padrão 543xx é usada por outro projeto nesta máquina.
 # Se a sua versão da CLI reclamar de chaves, rode `supabase init` para
 # regenerar este arquivo alinhado à sua versão e mantenha a pasta migrations/.
 project_id = "snake-thai"
 
 [api]
 enabled = true
-port = 54321
+port = 55321
 schemas = ["public", "storage", "graphql_public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 
 [db]
-port = 54322
-shadow_port = 54320
-major_version = 15
+port = 55322
+shadow_port = 55320
+# Mesma versão da produção (PostgreSQL 17.6, conferido em 2026-09-16). [#81]
+major_version = 17
+
+[db.pooler]
+enabled = false
+port = 55329
 
 [studio]
 enabled = true
-port = 54323
+port = 55323
+
+[local_smtp]
+enabled = true
+port = 55324
+
+# O app não usa realtime nem analytics; desligados poupam memória quando outra
+# stack Supabase (radar-tributario) roda ao mesmo tempo nas portas 543xx.
+[realtime]
+enabled = false
+
+[analytics]
+enabled = false
 
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
 # Em produção, restrinja as URLs de redirecionamento.
-additional_redirect_urls = ["snakethai://"]
+additional_redirect_urls = ["snakethai://", "snakethai-dev://"]
 jwt_expiry = 3600
 enable_signup = true
 

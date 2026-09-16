@@ -22,6 +22,14 @@ rem     resource embutido no APK e deep link do aparelho. A 8081 (padrao do
 rem     React Native) conflita com qualquer outro projeto RN aberto na maquina.
 set "METRO_PORT=6969"
 
+rem --- Variante do app: "dev" (DEV Snake Thai, banco LOCAL) ou "prod" (o app das
+rem     pessoas, banco de PRODUCAO). O menu abre em DEV: e o app de trabalho do
+rem     dia a dia; gerar o de producao e escolha consciente, pela opcao [V].
+rem     Cada variante e outro pacote Android, entao a pasta android/ guarda em
+rem     android\.variante para qual delas foi gerada.
+set "VARIANTE=dev"
+call :APLICA_VARIANTE
+
 rem --- Alvo ADB unico da sessao. Toda ferramenta Android (adb, expo, gradle)
 rem     respeita ANDROID_SERIAL, entao "more than one device" nao acontece.
 set "ANDROID_SERIAL="
@@ -31,14 +39,18 @@ rem --- Modo diagnostico nao-interativo:  menu.bat --device
 rem     Imprime qual aparelho seria eleito, sem abrir o menu.
 if /i "%~1"=="--device" goto DIAG_DEVICE
 if /i "%~1"=="--build" goto DIAG_BUILD
+if /i "%~1"=="--variant" goto DIAG_VARIANT
 
 :MENU
 cls
 echo ===================================================
-echo             S N A K E   T H A I   -   DEV
+echo           S N A K E   T H A I   -   PAINEL
 echo ===================================================
+echo   Variante: %VARIANTE_ROTULO%
 echo   Metro: porta %METRO_PORT%
 if defined ANDROID_SERIAL echo   Alvo ADB: %ANDROID_SERIAL%
+echo.
+echo    [V] Alternar variante DEV / PROD
 echo.
 echo   -- DESENVOLVIMENTO --
 echo    [1] Iniciar Expo (Dev Client + cache limpo)
@@ -56,6 +68,10 @@ echo    [8] Gerar APK  Debug/Dev
 echo    [5] Gerar APK  Release
 echo    [9] Instalar APK no aparelho
 echo.
+echo   -- BANCO LOCAL (Supabase em Docker, so para o DEV) --
+echo    [B] Subir banco local          [S] Parar banco local
+echo    [R] Recriar com dados de demo  [T] Testes SQL
+echo.
 echo   -- MANUTENCAO --
 echo    [6] Limpeza Profunda (cache + build)
 echo.
@@ -64,6 +80,11 @@ echo ===================================================
 set "OPT="
 set /p "OPT=Escolha uma opcao: "
 
+if /i "%OPT%"=="V" goto TROCA_VARIANTE
+if /i "%OPT%"=="B" goto DB_START
+if /i "%OPT%"=="S" goto DB_STOP
+if /i "%OPT%"=="R" goto DB_RESET
+if /i "%OPT%"=="T" goto DB_TEST
 if /i "%OPT%"=="P" goto PREBUILD
 if /i "%OPT%"=="D" goto DISCONNECT
 if "%OPT%"=="1" goto EXPO
@@ -95,11 +116,12 @@ if defined ANDROID_SERIAL (
     echo  [i] Nenhum aparelho no adb - o Expo vai servir apenas pelo QR Code.
 )
 call :CHECK_ENV
+call :CHECK_DB
 call :FREE_PORT
 call :ADB_REVERSE
-echo  [i] Metro na porta %METRO_PORT%.
+echo  [i] Metro na porta %METRO_PORT%, variante %VARIANTE_ROTULO%.
 echo.
-call npx expo start --dev-client -c --port %METRO_PORT%
+call node scripts\with-variant.js %VARIANTE% -- npx expo start --dev-client -c --port %METRO_PORT%
 pause
 goto MENU
 
@@ -215,18 +237,30 @@ goto MENU
 rem ---------------------------------------------------------------------------
 :PREBUILD
 cls
-echo [P] Preparando o projeto nativo (expo prebuild)...
+echo [P] Preparando o projeto nativo (expo prebuild) - %VARIANTE_ROTULO%...
 echo     Gera a pasta 'android' exigida pelos builds via Gradle ([8] e [5]).
 echo.
+call :CHECK_ENV
 call :SET_JDK
 echo  [i] JAVA_HOME: %JAVA_HOME%
 echo.
-if exist "android\gradlew.bat" (
-    echo  [i] A pasta 'android' ja existe.
-    echo      Para regenerar do zero:  npx expo prebuild -p android --clean
+call :LE_VARIANTE_ANDROID
+set "LIMPAR="
+if exist "android\gradlew.bat" if /i not "%VARIANTE_ANDROID%"=="%VARIANTE%" set "LIMPAR=--clean"
+if defined LIMPAR (
+    echo  [i] A pasta 'android' e da variante "%VARIANTE_ANDROID%"; vou regenerar do zero
+    echo      para "%VARIANTE%" - muda o pacote, o nome, o icone e o manifesto.
+    echo.
+) else if exist "android\gradlew.bat" (
+    echo  [i] A pasta 'android' ja e desta variante.
     echo.
 )
-call npx expo prebuild --platform android
+rem android/ nao e versionada: o aviso de "alteracoes nao commitadas" do
+rem --clean nao protege nada aqui e so travaria o menu numa pergunta.
+set "EXPO_NO_GIT_STATUS=1"
+call node scripts\with-variant.js %VARIANTE% -- npx expo prebuild --platform android %LIMPAR%
+set "EXPO_NO_GIT_STATUS="
+if exist "android\gradlew.bat" >"android\.variante" echo %VARIANTE%
 echo.
 rem O prebuild regenera android/ do zero e apaga a porta customizada.
 call :ENSURE_PORT_PROP
@@ -241,7 +275,7 @@ goto MENU
 rem ---------------------------------------------------------------------------
 :APK_RELEASE
 cls
-echo [5] Gerando APK de RELEASE via Gradle...
+echo [5] Gerando APK de RELEASE via Gradle - %VARIANTE_ROTULO%...
 echo.
 call :CHECK_ENV
 call :GRADLE_BUILD assembleRelease release
@@ -251,7 +285,7 @@ goto MENU
 rem ---------------------------------------------------------------------------
 :APK_DEBUG
 cls
-echo [8] Gerando APK de DEVELOPMENT/DEBUG via Gradle...
+echo [8] Gerando APK de DEVELOPMENT/DEBUG via Gradle - %VARIANTE_ROTULO%...
 echo.
 call :CHECK_ENV
 call :GRADLE_BUILD assembleDebug debug
@@ -272,10 +306,15 @@ if not defined ADB (
 set "DEBUG_APK=%CD%\android\app\build\outputs\apk\debug\app-debug.apk"
 set "RELEASE_APK=%CD%\android\app\build\outputs\apk\release\app-release.apk"
 set "APK="
-if exist "%DEBUG_APK%" set "APK=%DEBUG_APK%"
-if not defined APK if exist "%RELEASE_APK%" set "APK=%RELEASE_APK%"
+rem So o que foi compilado PARA esta variante: instalar o APK da outra
+rem colocaria o app no pacote errado, falando com o banco errado.
+call :LE_VARIANTE_ANDROID
+if /i "%VARIANTE_ANDROID%"=="%VARIANTE%" if exist "%DEBUG_APK%" set "APK=%DEBUG_APK%"
+if /i "%VARIANTE_ANDROID%"=="%VARIANTE%" if not defined APK if exist "%RELEASE_APK%" set "APK=%RELEASE_APK%"
+call :LE_VERSAO
+if not defined APK if exist "%CD%\release\%PREFIXO_APK%-v%VERSAO%.apk" set "APK=%CD%\release\%PREFIXO_APK%-v%VERSAO%.apk"
 if not defined APK (
-    echo  [!] Nenhum APK encontrado em android\app\build\outputs\apk.
+    echo  [!] Nenhum APK da variante %VARIANTE_ROTULO% encontrado.
     echo      Gere primeiro pela opcao [8] Debug ou [5] Release.
     echo.
     pause
@@ -302,7 +341,7 @@ echo.
 set "INSTALL_RESULT=%ERRORLEVEL%"
 echo.
 if "%INSTALL_RESULT%"=="0" (
-    echo  [OK] APK instalado. Abra o app "Snake Thai" no aparelho.
+    echo  [OK] APK instalado. Abra o app "%NOME_DO_APP%" no aparelho.
     call :ADB_REVERSE
 ) else (
     echo  [!] A instalacao falhou. Codigo de saida: %INSTALL_RESULT%
@@ -396,6 +435,90 @@ echo ALVO=%ANDROID_SERIAL%
 echo PORTA_METRO=%METRO_PORT%
 endlocal
 exit /b 0
+
+rem ---------------------------------------------------------------------------
+rem  Modo diagnostico "menu.bat --variant": mostra a variante e o que ela usa.
+:DIAG_VARIANT
+call :LE_VARIANTE_ANDROID
+echo VARIANTE=%VARIANTE%
+echo APP=%NOME_DO_APP%
+if exist "%ARQUIVO_ENV%" (echo ENV=%ARQUIVO_ENV% presente) else (echo ENV=%ARQUIVO_ENV% AUSENTE)
+echo ANDROID=%VARIANTE_ANDROID%
+endlocal
+exit /b 0
+
+rem ---------------------------------------------------------------------------
+:TROCA_VARIANTE
+if /i "%VARIANTE%"=="dev" (set "VARIANTE=prod") else (set "VARIANTE=dev")
+call :APLICA_VARIANTE
+cls
+echo  [i] Variante agora: %VARIANTE_ROTULO%
+if /i "%VARIANTE%"=="prod" (
+    echo.
+    echo  [!] ATENCAO: o app gerado nesta variante grava no banco de PRODUCAO.
+)
+echo.
+call :LE_VARIANTE_ANDROID
+if exist "android\gradlew.bat" if /i not "%VARIANTE_ANDROID%"=="%VARIANTE%" (
+    echo  [i] A pasta 'android' e de outra variante: rode [P] antes de gerar APK.
+    echo.
+)
+pause
+goto MENU
+
+rem ---------------------------------------------------------------------------
+rem  BANCO LOCAL: atalhos para scripts\db-dev.bat. Tudo --local; producao nunca.
+:DB_START
+cls
+echo [B] Subindo o Supabase local (portas 553xx)...
+echo.
+call scripts\db-dev.bat start
+if not errorlevel 1 if not exist ".env.dev" (
+    echo.
+    echo  [i] Gerando o .env.dev do app a partir do banco local...
+    call scripts\db-dev.bat env
+)
+pause
+goto MENU
+
+:DB_STOP
+cls
+echo [S] Parando o Supabase local...
+echo.
+call scripts\db-dev.bat stop
+pause
+goto MENU
+
+:DB_RESET
+cls
+echo [R] Recriar o banco LOCAL com dados de demonstracao.
+echo     Apaga TUDO o que estiver no banco local (producao nao e afetada).
+echo.
+set "CONFIRMA="
+set /p "CONFIRMA=Digite S para continuar: "
+if /i not "%CONFIRMA%"=="S" goto MENU
+call scripts\db-dev.bat reset
+pause
+goto MENU
+
+:DB_TEST
+cls
+echo [T] Testes SQL no banco LOCAL.
+echo     Recria o banco local LIMPO antes (os dados de demo somem; use [R] depois).
+echo.
+set "CONFIRMA="
+set /p "CONFIRMA=Digite S para continuar: "
+if /i not "%CONFIRMA%"=="S" goto MENU
+call scripts\db-dev.bat test
+if errorlevel 1 (
+    echo.
+    echo  [!] Algum teste SQL falhou. Veja o log acima.
+) else (
+    echo.
+    echo  [OK] Testes SQL verdes.
+)
+pause
+goto MENU
 
 rem ---------------------------------------------------------------------------
 :END
@@ -522,18 +645,78 @@ if not defined HW_REF (
 goto :eof
 
 rem ===========================================================================
-rem  SUB-ROTINA: avisa se o .env estiver faltando.
+rem  SUB-ROTINA: deriva nome do app, arquivo de ambiente e prefixo do APK da
+rem  variante escolhida.
+rem ===========================================================================
+:APLICA_VARIANTE
+if /i "%VARIANTE%"=="prod" (
+    set "VARIANTE_ROTULO=PROD - banco de PRODUCAO"
+    set "NOME_DO_APP=Snake Thai"
+    set "ARQUIVO_ENV=.env.prod"
+    set "PREFIXO_APK=snake-thai"
+    color 0A
+) else (
+    set "VARIANTE_ROTULO=DEV - banco local"
+    set "NOME_DO_APP=DEV Snake Thai"
+    set "ARQUIVO_ENV=.env.dev"
+    set "PREFIXO_APK=snake-thai-dev"
+    color 0E
+)
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: le para qual variante a pasta android/ foi gerada.
+rem  Saida: VARIANTE_ANDROID ("ausente" sem pasta; "desconhecida" sem marcador,
+rem  caso de uma pasta gerada antes das variantes - tratada como diferente).
+rem ===========================================================================
+:LE_VARIANTE_ANDROID
+set "VARIANTE_ANDROID=ausente"
+if not exist "android\gradlew.bat" goto :eof
+set "VARIANTE_ANDROID=desconhecida"
+if exist "android\.variante" set /p VARIANTE_ANDROID=<"android\.variante"
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: le a versao do app.json (fonte unica da versao).
+rem ===========================================================================
+:LE_VERSAO
+set "VERSAO="
+for /f "usebackq delims=" %%v in (`node -p "require('./app.json').expo.version"`) do set "VERSAO=%%v"
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: avisa se o arquivo de ambiente da variante estiver faltando.
 rem  As variaveis EXPO_PUBLIC_* sao embutidas no bundle em tempo de build; sem
-rem  elas o app instala, mas quebra no boot (fail-fast de src/config/env.ts).
+rem  elas o comando para (scripts\with-variant.js) antes de gerar um app quebrado.
 rem ===========================================================================
 :CHECK_ENV
-if not exist ".env" (
+if exist ".env" if not exist ".env.prod" (
     echo.
-    echo  [!] Arquivo .env AUSENTE na raiz do projeto.
-    echo      O app instala, mas quebra ao abrir: faltam
-    echo      EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY.
-    echo      Rode:  copy .env.example .env    e preencha os valores.
+    echo  [!] Existe um .env antigo, que NAO e mais lido.
+    echo      Se ele for o de producao, renomeie:  move .env .env.prod
+)
+if not exist "%ARQUIVO_ENV%" (
     echo.
+    echo  [!] Arquivo %ARQUIVO_ENV% AUSENTE na raiz do projeto.
+    if /i "%VARIANTE%"=="dev" (
+        echo      Suba o banco local pela opcao [B]: ela gera o .env.dev.
+    ) else (
+        echo      Rode:  copy .env.example .env.prod    e preencha com os valores
+        echo      do painel da Supabase de PRODUCAO.
+    )
+    echo.
+)
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: no DEV, avisa se o Supabase local nao estiver no ar - sem ele o
+rem  app abre, mas toda tela da erro de rede.
+rem ===========================================================================
+:CHECK_DB
+if /i not "%VARIANTE%"=="dev" goto :eof
+docker ps --format "{{.Names}}" 2>nul | findstr /x /c:"supabase_kong_snake-thai" >nul 2>&1
+if errorlevel 1 (
+    echo  [!] O banco local nao esta no ar. Suba pela opcao [B] em outra janela.
 )
 goto :eof
 
@@ -552,6 +735,16 @@ if errorlevel 1 (
 ) else (
     echo  [i] adb reverse ativo: localhost:%METRO_PORT% do aparelho aponta para este PC.
 )
+rem O DEV fala com 127.0.0.1 (Supabase local 55321, snake-server local 3000).
+rem Sem o reverse, esse endereco no celular e o proprio celular.
+if /i not "%VARIANTE%"=="dev" goto :eof
+"%ADB%" -s "%ANDROID_SERIAL%" reverse tcp:55321 tcp:55321 >nul 2>&1
+if errorlevel 1 (
+    echo  [!] Nao consegui criar o adb reverse do banco local - o app DEV fica sem dados.
+    goto :eof
+)
+"%ADB%" -s "%ANDROID_SERIAL%" reverse tcp:3000 tcp:3000 >nul 2>&1
+echo  [i] adb reverse do banco local ativo: portas 55321 e 3000.
 goto :eof
 
 rem ===========================================================================
@@ -602,15 +795,24 @@ if not exist "android\gradlew.bat" (
     echo      Rode a opcao [P] Preparar projeto nativo antes de gerar o APK.
     goto :eof
 )
+rem Pasta de uma variante com o JS da outra = app de producao falando com o
+rem banco local, ou o DEV com o de producao. Nao compila.
+call :LE_VARIANTE_ANDROID
+if /i not "%VARIANTE_ANDROID%"=="%VARIANTE%" (
+    echo  [!] A pasta 'android' foi gerada para "%VARIANTE_ANDROID%", e a variante
+    echo      escolhida e "%VARIANTE%". Rode a opcao [P] antes de gerar o APK.
+    goto :eof
+)
 call :SET_JDK
 call :ENSURE_PORT_PROP
 echo  [i] JAVA_HOME: %JAVA_HOME%
 set "PROOT=%CD%"
-echo  [^>] Compilando (tarefa: %1)... na 1a vez isso demora varios minutos.
+echo  [^>] Compilando %VARIANTE_ROTULO% (tarefa: %1)... na 1a vez demora varios minutos.
 echo.
 pushd android
-rem -P garante a porta mesmo se o gradle.properties for regenerado.
-call .\gradlew.bat %1 -PreactNativeDevServerPort=%METRO_PORT%
+rem -P garante a porta mesmo se o gradle.properties for regenerado. O
+rem with-variant carrega o .env da variante: o bundle JS e montado aqui.
+call node "%PROOT%\scripts\with-variant.js" %VARIANTE% -- .\gradlew.bat %1 -PreactNativeDevServerPort=%METRO_PORT%
 set "BUILD_RESULT=%ERRORLEVEL%"
 popd
 
@@ -618,8 +820,21 @@ echo.
 if "%BUILD_RESULT%"=="0" (
     echo  [OK] APK gerado em:
     echo       %PROOT%\android\app\build\outputs\apk\%2\app-%2.apk
+    if /i "%2"=="release" call :COPIA_RELEASE
 ) else (
     echo  [!] A compilacao falhou. Codigo de saida: %BUILD_RESULT%
     echo      Confira o log acima - JDK/JAVA_HOME, SDK/NDK, etc.
 )
+goto :eof
+
+rem ===========================================================================
+rem  SUB-ROTINA: copia o APK de release para release\<prefixo>-v<versao>.apk.
+rem  O nome ja diz a variante: snake-thai-dev-v... nunca vai para o GitHub.
+rem ===========================================================================
+:COPIA_RELEASE
+call :LE_VERSAO
+if not defined VERSAO goto :eof
+if not exist "%PROOT%\release" mkdir "%PROOT%\release"
+copy /y "%PROOT%\android\app\build\outputs\apk\release\app-release.apk" "%PROOT%\release\%PREFIXO_APK%-v%VERSAO%.apk" >nul
+echo       copia: release\%PREFIXO_APK%-v%VERSAO%.apk
 goto :eof

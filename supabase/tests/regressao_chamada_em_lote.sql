@@ -1,6 +1,6 @@
 -- Regressão da chamada em lote e do comprovante obrigatório
 -- (migration 20260914190000_chamada_em_lote). Roda numa transação e termina
--- em ROLLBACK: nenhuma linha sobrevive, pode rodar contra produção.
+-- em ROLLBACK: nenhuma linha sobrevive, mesmo assim, rode só no banco local (scripts\db-dev test).
 --
 --   turma L · aula k1 (começou há 1 h) e k2 (amanhã) · professor P nas duas
 --   A1 declarou que vem · A2 sem registro · A3 já tinha presença gravada

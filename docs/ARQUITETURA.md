@@ -96,6 +96,11 @@ que é um administrador. Contratos em [`docs/EDGE-FUNCTIONS.md`](EDGE-FUNCTIONS.
 - **A cor da marca não é a cor do texto.** No tema claro, o verde neon reprova
   contraste como texto (2:1). Há dois tokens: `primary` (preenche botões) e
   `primaryText` (legível sobre o fundo). Ver `docs/A11Y.md`.
+- **Dois apps, dois bancos.** O "DEV Snake Thai" (pacote `.dev`, faixa âmbar)
+  fala só com o Supabase local no Docker; o "Snake Thai" fala só com produção.
+  A variante vem de `APP_VARIANT`, e a mesma regra (`config/regrasDeAmbiente.js`)
+  é conferida no build e no boot: testar gravando em produção deixa de ser um
+  descuido possível. Detalhes no `docs/RUNBOOK.md`.
 - **Porta 6969 do Metro, não 8081.** Evita conflito com outros projetos RN. A
   porta é embutida no APK (`gradle.properties`), então trocá-la exige recompilar.
 
@@ -122,7 +127,7 @@ supabase/
 
 | Documento | Cobre |
 | --- | --- |
-| `README.md` | Instalar, configurar `.env`, rodar |
+| `README.md` | Instalar, banco local, `.env.dev` / `.env.prod`, rodar |
 | `docs/RUNBOOK.md` | Operações: migrations, tipos, Metro, APK, chaves |
 | `docs/EDGE-FUNCTIONS.md` | Contrato das funções server-side |
 | `docs/MANUAL-DO-ADMINISTRADOR.md` | Uso pelo dono da academia |

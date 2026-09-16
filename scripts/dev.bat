@@ -14,7 +14,8 @@ cd /d "%~dp0\.."
 set "ACAO=%~1"
 if "%ACAO%"=="" set "ACAO=start"
 
-where supabase >nul 2>nul
+rem A Supabase CLI vem do package.json (npx), não do PATH global.
+call npx --no-install supabase --version >nul 2>nul
 if %errorlevel%==0 ( set "HAS_SUPABASE=1" ) else ( set "HAS_SUPABASE=0" )
 
 if /i "%ACAO%"=="start"   goto start
@@ -26,21 +27,21 @@ echo Uso: scripts\dev.bat [start^|stop^|restart^|status]
 exit /b 1
 
 :start
-if "%HAS_SUPABASE%"=="1" ( supabase start ) else ( echo [aviso] Supabase CLI nao encontrado - subindo apenas o app Expo. )
+if "%HAS_SUPABASE%"=="1" ( call npx --no-install supabase start ) else ( echo [aviso] Supabase CLI nao encontrado - subindo apenas o app Expo. )
 call npm start
 goto fim
 
 :stop
-if "%HAS_SUPABASE%"=="1" ( supabase stop )
+if "%HAS_SUPABASE%"=="1" ( call npx --no-install supabase stop )
 goto fim
 
 :restart
-if "%HAS_SUPABASE%"=="1" ( supabase stop ^& supabase start )
+if "%HAS_SUPABASE%"=="1" ( call npx --no-install supabase stop ^& call npx --no-install supabase start )
 call npm start
 goto fim
 
 :status
-if "%HAS_SUPABASE%"=="1" ( supabase status ) else ( echo Supabase CLI nao instalado. )
+if "%HAS_SUPABASE%"=="1" ( call npx --no-install supabase status ) else ( echo Supabase CLI nao instalado. )
 goto fim
 
 :fim

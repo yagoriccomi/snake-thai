@@ -1,5 +1,5 @@
 -- Regressão da geração de mensalidades. Roda dentro de uma transação e faz
--- ROLLBACK no fim: NENHUMA linha sobrevive, pode rodar contra produção.
+-- ROLLBACK no fim: NENHUMA linha sobrevive, mesmo assim, rode só no banco local (scripts\db-dev test).
 \set ON_ERROR_STOP on
 
 begin;

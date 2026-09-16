@@ -27,6 +27,26 @@
 
 begin;
 
+-- ----------------------------------------------------------------------------
+-- Trava: seed de DEMONSTRAÇÃO só roda em banco sem gente real
+--
+--    Até 2026-09-16 estas seeds rodavam direto em produção. Agora a
+--    demonstração vive no banco LOCAL (scripts\db-dev reset). Se existir
+--    qualquer conta fora dos domínios de teste, o script para aqui, antes de
+--    gravar uma linha. [#81]
+-- ----------------------------------------------------------------------------
+do $$
+begin
+  if exists (
+    select 1 from auth.users
+     where email not like '%@demo.snakethai.com'
+       and email not like '%@snake.com'
+       and email not like '%@t.invalid'
+  ) then
+    raise exception 'Seed de demonstracao recusada: este banco tem contas reais. Rode so no banco local (scripts\db-dev reset).';
+  end if;
+end $$;
+
 create temp table parametros on commit drop as
 select
   (date_trunc('month', now() at time zone 'America/Sao_Paulo') - interval '3 months')::date as primeiro_mes,
