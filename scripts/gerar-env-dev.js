@@ -5,8 +5,10 @@
  * que o .gitignore bloqueia.
  *
  * Preserva o que é escolhido à mão num .env.dev existente: EXPO_PUBLIC_API_URL
- * (o snake-server local só é usado com a Cloudinary de dev configurada) e
- * EXPO_PUBLIC_SENTRY_DSN (monitoramento de erros, opcional).
+ * (o snake-server local só é usado com a Cloudinary de dev configurada),
+ * EXPO_PUBLIC_SENTRY_DSN (monitoramento de erros, opcional) e EAS_PROJECT_ID
+ * (sem ele o app DEV volta a dizer que notificação é indisponível, e descobrir
+ * isso leva um build de vários minutos).
  */
 'use strict';
 
@@ -34,13 +36,18 @@ function lerStatus() {
   return { url, chave };
 }
 
-function principal() {
-  const { url, chave } = lerStatus();
-  const anterior = fs.existsSync(ARQUIVO) ? lerEnv(fs.readFileSync(ARQUIVO, 'utf8')) : {};
+/**
+ * Monta o conteúdo do .env.dev preservando as escolhas manuais do arquivo atual.
+ *
+ * @param {{ url: string, chave: string, anterior?: Record<string, string> }} dados
+ * @returns {string}
+ */
+function montarConteudo({ url, chave, anterior = {} }) {
   const apiUrl = anterior.EXPO_PUBLIC_API_URL ?? '';
   const sentryDsn = anterior.EXPO_PUBLIC_SENTRY_DSN ?? '';
+  const easProjectId = anterior.EAS_PROJECT_ID ?? '';
 
-  const conteudo = [
+  return [
     '# Gerado por scripts/gerar-env-dev.js — app "DEV Snake Thai" contra o banco LOCAL.',
     '# Nunca coloque aqui endereço de produção: o build e o app recusam.',
     `EXPO_PUBLIC_SUPABASE_URL=${url}`,
@@ -50,16 +57,28 @@ function principal() {
     `EXPO_PUBLIC_API_URL=${apiUrl}`,
     '# Monitoramento de erros (Sentry). Vazio: desligado. Ver docs/RUNBOOK.md.',
     `EXPO_PUBLIC_SENTRY_DSN=${sentryDsn}`,
+    '# Projeto Expo (push). Vazio: o app diz que notificação é indisponível.',
+    '# Ver docs/NOTIFICACOES.md.',
+    `EAS_PROJECT_ID=${easProjectId}`,
     '',
   ].join('\n');
+}
 
-  fs.writeFileSync(ARQUIVO, conteudo);
+function principal() {
+  const { url, chave } = lerStatus();
+  const anterior = fs.existsSync(ARQUIVO) ? lerEnv(fs.readFileSync(ARQUIVO, 'utf8')) : {};
+
+  fs.writeFileSync(ARQUIVO, montarConteudo({ url, chave, anterior }));
   console.log(`.env.dev gerado para ${url}`);
 }
 
-try {
-  principal();
-} catch (erro) {
-  console.error(`[gerar-env-dev] ${erro.message}`);
-  process.exit(1);
+if (require.main === module) {
+  try {
+    principal();
+  } catch (erro) {
+    console.error(`[gerar-env-dev] ${erro.message}`);
+    process.exit(1);
+  }
 }
+
+module.exports = { montarConteudo };
