@@ -81,11 +81,11 @@ porque usa regras das outras e depende de contas externas.
 - [x] Variante do app: `app.config.js` com **"DEV Snake Thai"** (`com.snakethai.app.dev`), instalável ao lado do app de produção
 - [x] `.env.dev` e `.env.prod` separados e trava que impede o app DEV de apontar para produção (e vice-versa); faixa "DEV · banco local" na tela
 - [x] `menu.bat` com escolha de variante e comandos do banco local
-- [ ] APK DEV gerado (`release/snake-thai-dev-v1.6.0+dev.25.9289a3e.apk`, conferido) e instalado no seu celular ao lado do de produção — 👤 falta conectar o celular no ADB para instalar
+- [x] APK DEV gerado e instalado no seu celular em 2026-09-17 (`1.6.0+dev.103.ac2ebfa`, por Wi-Fi), ao lado do app de produção
 - [x] `snake-server` local ligado ao banco local (verificado com token local); Cloudinary de dev aguarda as credenciais abaixo
 - [x] Fluxo novo: migration **primeiro no local**; produção só por `scripts\db-push-prod.bat` (backup, simulação e dupla confirmação)
 - [x] PR #12 (`snake-thai`) mesclado — `c03dc6d`
-- [ ] ⚠️ PR #16 (`snake-server`) — o merge dispara deploy na Render; aguarda a sua confirmação
+- [x] ⚠️ PR #16 (`snake-server`) mesclado por você em 2026-09-17 (`0941ac5`), com deploy na Render feito
 - [ ] 👤 Rodar, com o seu token, a checagem **somente leitura** de produção (`migration list` e `db diff`)
 - [ ] 👤 Criar o ambiente Cloudinary de desenvolvimento e colar as credenciais no `.env.dev` do servidor
 - [ ] 👤⚠️ Dados de demonstração em produção: o plano recomendava trocar agora a senha das contas de demo e de teste, mas você já tinha decidido não mudar senhas — **nada foi alterado; a decisão é sua**. **Antes do primeiro aluno real**: backup e limpeza. Informar qual e-mail é a sua conta real de admin
@@ -273,3 +273,5 @@ plano da tarefa (seção 3). Para mudar qualquer uma, basta responder. As que ma
 | 2026-09-16 | **L7:** PR #24 mesclado (`8804390`), CI verde. |
 | 2026-09-16 | **L4 feita** (branch `feat/politica-de-privacidade`): rascunhos da Política de Privacidade e dos Termos de Uso em `docs/legal/` com os fatos do app e campos `[PREENCHER]`; aceite registrado por versão no primeiro acesso; tela "Termos atualizados" a cada versão (sem travar sem rede); Perfil → Termos e privacidade; texto publicado imutável e publicação por migration gerada por script, que o banco recusa com campo em aberto. 9 grupos de casos SQL, 698 Jest; ensaio completo na API local. Nada publicado. Relatório em [`ENTREGA-L4`](planos/ENTREGA-L4.md). |
 | 2026-09-16 | **L4:** PR #25 mesclado (`da2688a`), CI verde. Com isso, todas as tarefas (T1–T11) e lacunas (L1–L7) estão feitas do lado do código; o que resta é decisão sua ou passo de produção (marcados com 👤). |
+| 2026-09-17 | **T1 (servidor):** você mesclou o PR #16 do `snake-server` (`0941ac5`) e o deploy na Render saiu. |
+| 2026-09-17 | **APK DEV no celular:** `1.6.0+dev.103.ac2ebfa` instalado por Wi-Fi (adb), com as portas 55321, 3000 e 6969 encaminhadas. Falta você percorrer o roteiro de teste. |
