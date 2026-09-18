@@ -44,7 +44,7 @@ supabase/.env
 *.key
 *.pem
 *.mobileprovision
-google-services.json
+google-services*.json
 GoogleService-Info.plist
 
 # Gradle / Android Studio (caso rode prebuild)

@@ -38,7 +38,14 @@
           "exigirChaveDeProducao": true
         }
       ],
-      "@sentry/react-native/expo",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://de.sentry.io/",
+          "organization": "num-tem",
+          "project": "snake-thai"
+        }
+      ],
       [
         "expo-local-authentication",
         {
