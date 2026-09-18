@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const mockSignIn = jest.fn();
@@ -32,6 +32,36 @@ function renderTela() {
 beforeEach(() => {
   jest.clearAllMocks();
   mockSignIn.mockResolvedValue(undefined);
+});
+
+describe('LoginScreen — erro ao entrar', () => {
+  it('deveDizerQueEFalhaDeConexaoEmVezDeCulparASenha', async () => {
+    // Sem rede, dizer "senha inválida" faz a pessoa digitar a senha certa de
+    // novo achando que errou. Foi o que aconteceu no teste com o celular.
+    mockContas.mockReturnValue(CONTAS);
+    mockSignIn.mockRejectedValue(new TypeError('Network request failed'));
+    const tela = renderTela();
+
+    fireEvent.press(tela.getByRole('tab', { name: 'Admin' }));
+    await act(async () => {
+      fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    });
+
+    expect(tela.getByText('Falha de conexão. Verifique sua internet e tente novamente.')).toBeTruthy();
+  });
+
+  it('deveDizerSenhaInvalidaQuandoOServidorRecusa', async () => {
+    mockContas.mockReturnValue(CONTAS);
+    mockSignIn.mockRejectedValue({ name: 'AuthApiError', message: 'Invalid login credentials', status: 400 });
+    const tela = renderTela();
+
+    fireEvent.press(tela.getByRole('tab', { name: 'Admin' }));
+    await act(async () => {
+      fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    });
+
+    expect(tela.getByText('E-mail ou senha inválidos.')).toBeTruthy();
+  });
 });
 
 describe('LoginScreen — atalho de teste', () => {
@@ -70,7 +100,9 @@ describe('LoginScreen — atalho de teste', () => {
     const tela = renderTela();
 
     fireEvent.press(tela.getByRole('tab', { name: 'Admin' }));
-    fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    await act(async () => {
+      fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    });
 
     expect(mockSignIn).toHaveBeenCalledWith('adm@snake.com', 'senha-do-seed');
   });

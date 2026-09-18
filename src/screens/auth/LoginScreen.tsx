@@ -18,6 +18,7 @@ import { SegmentedControl, type SegmentOption } from '@/components/SegmentedCont
 import { lerContasDeTeste, type ContaDeTeste } from '@/config/contasDeTeste';
 import { useAuth } from '@/context/AuthProvider';
 import { useTheme } from '@/theme/ThemeProvider';
+import { describeError } from '@/utils/errors';
 import { isValidEmail } from '@/utils/validation';
 
 const SCREEN_EDGES = ['bottom'] as const;
@@ -78,8 +79,11 @@ export function LoginScreen(): React.JSX.Element {
     setSubmitting(true);
     try {
       await signIn(email, password);
-    } catch {
-      setError('E-mail ou senha inválidos.');
+    } catch (falha) {
+      // Não assuma senha errada: sem rede (ou com o banco fora do ar) a pessoa
+      // digitava a senha certa de novo e de novo, achando que tinha errado.
+      // describeError separa falha de conexão de credencial inválida.
+      setError(describeError(falha));
     } finally {
       setSubmitting(false);
     }
