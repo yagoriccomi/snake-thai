@@ -1,4 +1,10 @@
-# Política de Privacidade
+-- Modelo de privacy_policy (gerado por scripts/sincronizar-modelo-legal.js).
+-- O texto é o de docs/legal/. Campos da academia ficam como {{chave}} e são
+-- preenchidos pelo admin no app; a substituição acontece ao publicar.
+-- Marcadores: base_legal_saude, canal_contato, cnpj, encarregado, endereco, menores_de_idade, prazo_auditoria, prazo_backups, prazo_comprovantes, prazo_mensalidades, razao_social, regiao_cloudinary, transferencia_internacional
+
+insert into public.legal_templates (kind, body)
+values ('privacy_policy', $modelo$# Política de Privacidade
 
 Esta política explica quais dados pessoais o aplicativo Snake Thai usa, para quê, com quem eles são compartilhados, por quanto tempo ficam guardados e como você exerce seus direitos pela Lei Geral de Proteção de Dados (Lei nº 13.709/2018, LGPD).
 
@@ -146,3 +152,5 @@ Se acontecer um incidente de segurança que possa causar risco ou dano relevante
 ## 12. Mudanças nesta política
 
 Quando esta política mudar, o aplicativo mostrará a nova versão e pedirá o seu aceite antes de continuar. As versões anteriores ficam guardadas. A versão vigente pode ser lida a qualquer momento em Perfil, "Termos e privacidade".
+$modelo$)
+on conflict (kind) do update set body = excluded.body, updated_at = now();

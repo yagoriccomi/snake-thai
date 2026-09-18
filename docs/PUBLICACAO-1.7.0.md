@@ -39,12 +39,12 @@
   - Sentry (T10): DSN e token.
   - Expo e Firebase (T9): `EAS_PROJECT_ID` e `google-services.json`; sem eles as
     notificações ficam "indisponíveis".
-- [ ] **Política de Privacidade e Termos de Uso (L4):**
-  - Preencher os `[PREENCHER: …]` dos rascunhos em [`legal/`](legal/README.md).
-  - Aprovar o texto com apoio jurídico.
-  - Gerar as migrations de publicação com `npm run legal:publicar`.
-  - Os textos podem ir numa publicação seguinte, mas push e Sentry não devem ser ligados
-    antes deles.
+- [x] **Política de Privacidade e Termos de Uso (L4):** texto aprovado em 2026-09-18.
+- [ ] **Preencher os dados da academia nos termos**, e isso acontece **depois** de a
+  1.7.0 estar publicada: a tela fica em *Dados → Dados dos termos e da política* e os
+  valores vivem no banco de produção. Só então se gera a migration de publicação com
+  `npm run legal:publicar` (ver [`legal/README`](legal/README.md)). Push e Sentry não
+  devem ser ligados antes de os documentos estarem publicados.
 
 ## 1. Checagens somente leitura em produção
 
@@ -55,7 +55,7 @@ npx supabase migration list --linked
 ```
 
 O esperado é que a última migration aplicada seja a de **2026-09-14**
-(`20260914190000_chamada_em_lote`) e que as dez abaixo apareçam só no local. Se faltar
+(`20260914190000_chamada_em_lote`) e que as quinze abaixo apareçam só no local. Se faltar
 alguma anterior, **pare** e resolva primeiro.
 
 No SQL Editor de produção (só `select`):
@@ -90,6 +90,11 @@ O script mostra o projeto, pede `PRODUCAO`, faz o backup em
 | `20260916220151_senha_padrao_protegida` | L1 | Tira a senha de primeiro acesso do alcance dos alunos |
 | `20260916221418_saude_das_rotinas` | L3 | Aviso de rotina com falha no Painel |
 | `20260916223510_documentos_legais_aceite` | L4 | Aceite registrado por versão; nada muda até um texto ser publicado |
+| `20260918190000_risco_evasao_70` | — | Risco de evasão passa a ser abaixo de 70% |
+| `20260918200000_frequencia_turma_e_trancamento` | — | Frequência conta da entrada na turma e para no trancamento |
+| `20260918210000_dados_dos_termos` | — | Tabelas e funções dos dados que a academia preenche nos termos |
+| `20260918210100_modelo_privacy_policy` | — | Texto-modelo da Política (com marcadores) |
+| `20260918210200_modelo_terms_of_use` | — | Texto-modelo dos Termos (com marcadores) |
 
 Se os textos aprovados já estiverem prontos, as migrations `…_publicar_privacy_policy_…`
 e `…_publicar_terms_of_use_…` entram por último. Com elas, todos precisam aceitar na

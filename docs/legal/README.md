@@ -1,14 +1,19 @@
 # Documentos legais
 
-> ⚠️ **Rascunhos, não publicados.** Os textos abaixo descrevem o app como ele é hoje,
-> mas não passaram por aprovação da academia nem por assessoria jurídica. O que só a
-> academia sabe está marcado com `[PREENCHER: …]`. O banco **recusa** publicar texto
-> com essa marca.
+> ⚠️ **Texto aprovado, ainda não publicado.** O conteúdo foi aprovado pelo dono da
+> academia em 2026-09-18. O que a academia precisa dizer de si (razão social, CNPJ,
+> prazos, foro) **não vive mais neste arquivo**: são marcadores `{{chave}}`,
+> preenchidos pelo admin no app, em **Dados → Dados dos termos e da política**. O
+> banco monta o texto ao publicar e **recusa** publicar com marcador sobrando.
 
-| Documento | Arquivo | Campos em aberto |
+| Documento | Arquivo | Marcadores |
 |---|---|---|
-| Política de Privacidade | [`POLITICA-DE-PRIVACIDADE.md`](POLITICA-DE-PRIVACIDADE.md) | Controlador, CNPJ, endereço, canal e encarregado, região da Cloudinary, base legal do dado de saúde, mecanismo de transferência internacional, prazos (mensalidades, comprovantes, auditoria, backups), menores de idade |
-| Termos de Uso | [`TERMOS-DE-USO.md`](TERMOS-DE-USO.md) | Razão social, CNPJ, contrato de matrícula, contato, foro |
+| Política de Privacidade | [`POLITICA-DE-PRIVACIDADE.md`](POLITICA-DE-PRIVACIDADE.md) | 13 |
+| Termos de Uso | [`TERMOS-DE-USO.md`](TERMOS-DE-USO.md) | 5 |
+
+São 15 chaves distintas (razão social, CNPJ e canal de contato aparecem nos dois).
+A tela do app lista todas com ajuda em português, e um teste garante que nenhum
+marcador do texto fica sem campo na tela — nem o contrário.
 
 ## Como o app usa estes textos
 
@@ -35,32 +40,45 @@ O app entende só isto:
 
 Negrito, links e tabelas aparecem como texto puro.
 
-## Como publicar (depois da aprovação)
+## Como publicar
 
-1. **Preencher** todos os `[PREENCHER: …]` e validar o texto com a assessoria
-   jurídica.
-2. **Gerar a migration a partir do arquivo aprovado:**
+O texto vive no repositório; os dados da academia vivem no banco de cada
+instalação. Por isso a publicação tem três etapas.
 
-   ```
-   npm run legal:publicar -- politica 1.0
-   npm run legal:publicar -- termos 1.0
-   ```
+**1. O esquema e o modelo vão para produção.** Se o texto mudou, gere a migration
+do modelo e abra PR — é o diff do texto que se revisa:
 
-   O script recusa texto com campo em aberto e cria
-   `supabase/migrations/<data>_publicar_<tipo>_<versão>.sql`.
-3. **Testar e revisar:** `scripts\db-dev test`, abrir o app DEV e conferir a tela de
-   aceite. Depois, PR e merge.
-4. **Publicar em produção** junto das demais migrations
-   (`scripts\db-push-prod.bat`). A migration da L4 (`documentos_legais_aceite`)
-   precisa ir antes.
+```
+npm run legal:modelo -- politica
+npm run legal:modelo -- termos
+```
 
-Todos os usuários serão chamados a aceitar na próxima abertura do app.
+Publique junto das demais migrations e instale o APK com a tela "Dados dos termos".
+
+**2. A academia preenche e confere.** No app, em *Dados → Dados dos termos e da
+política*, o admin preenche os 15 campos e usa "Ver Política de Privacidade" e
+"Ver Termos de Uso" para ler o texto exatamente como ficará. O que faltar aparece
+entre chaves duplas.
+
+**3. Publicar a versão.** A migration de publicação tem uma linha só; o texto é
+montado no banco de destino, com os valores daquela academia:
+
+```
+npm run legal:publicar -- politica 1.0
+npm run legal:publicar -- termos 1.0
+```
+
+Depois: `scripts\db-dev test`, PR, merge e `scripts\db-push-prod.bat`.
+
+Se faltar qualquer campo, a publicação falha em voz alta e nada é gravado.
+Publicou: **todos** aceitam de novo na próxima abertura do app.
 
 ## Como corrigir um texto já publicado
 
 Documento publicado **não muda**: o aceite de cada pessoa aponta para o texto que ela
-leu. Para corrigir, edite o arquivo e publique **outra versão** (por exemplo, `1.1`).
-Todos aceitam de novo.
+leu — e isso vale também para os dados da academia: trocar o CNPJ na tela **não**
+reescreve o documento já aceito. Para corrigir, publique **outra versão** (por exemplo,
+`1.1`). Todos aceitam de novo.
 
 ## Consultas úteis
 

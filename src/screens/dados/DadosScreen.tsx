@@ -206,6 +206,7 @@ export function DadosScreen({
   const exportarDados = useCallback(() => void exportacao.exportar(), [exportacao]);
   const goToExcluirConta = useCallback(() => navigation.navigate('ExcluirConta'), [navigation]);
   const goToDocumentosLegais = useCallback(() => navigation.navigate('DocumentosLegais'), [navigation]);
+  const goToDadosDosTermos = useCallback(() => navigation.navigate('DadosDosTermos'), [navigation]);
 
   /**
    * Liga/desliga o desbloqueio biométrico. Ativar dispara a confirmação da
@@ -287,6 +288,13 @@ export function DadosScreen({
                 icon="pricetags-outline"
                 label="Planos e mensalidades"
                 onPress={goToPlans}
+                styles={styles}
+                colors={colors}
+              />
+              <NavRow
+                icon="document-text-outline"
+                label="Dados dos termos e da política"
+                onPress={goToDadosDosTermos}
                 styles={styles}
                 colors={colors}
               />
