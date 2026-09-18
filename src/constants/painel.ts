@@ -7,7 +7,7 @@
 export const MESES_DO_GRAFICO = 12;
 
 /** Abaixo deste percentual de frequência o aluno entra em risco de evasão. */
-export const LIMIAR_RISCO_EVASAO_PERCENT = 50;
+export const LIMIAR_RISCO_EVASAO_PERCENT = 70;
 
 /** Aulas contadas no mês atual para o percentual dele valer como alerta. */
 export const MIN_AULAS_PARA_RISCO = 4;

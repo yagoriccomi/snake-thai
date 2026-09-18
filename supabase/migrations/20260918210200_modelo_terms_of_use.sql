@@ -1,4 +1,10 @@
-# Termos de Uso
+-- Modelo de terms_of_use (gerado por scripts/sincronizar-modelo-legal.js).
+-- O texto é o de docs/legal/. Campos da academia ficam como {{chave}} e são
+-- preenchidos pelo admin no app; a substituição acontece ao publicar.
+-- Marcadores: canal_contato, cnpj, contrato_matricula, foro, razao_social
+
+insert into public.legal_templates (kind, body)
+values ('terms_of_use', $modelo$# Termos de Uso
 
 Estes termos valem para o uso do aplicativo Snake Thai por alunos, professores e administradores de {{razao_social}}, CNPJ {{cnpj}} (a "academia").
 
@@ -58,3 +64,5 @@ Quando estes termos mudarem, o aplicativo mostrará a nova versão e pedirá o s
 Dúvidas: {{canal_contato}}.
 
 Estes termos seguem as leis brasileiras. Fica eleito o foro da comarca de {{foro}}, ressalvado o direito do consumidor de propor ação no foro do seu domicílio.
+$modelo$)
+on conflict (kind) do update set body = excluded.body, updated_at = now();

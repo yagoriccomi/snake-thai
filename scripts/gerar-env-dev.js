@@ -4,6 +4,10 @@
  * (`npx supabase status`). Não imprime a chave: ela vai direto para o arquivo,
  * que o .gitignore bloqueia.
  *
+ * Também escreve as contas de teste do seed local (EXPO_PUBLIC_DEV_CONTAS e
+ * EXPO_PUBLIC_DEV_SENHA), que alimentam o atalho de login do app DEV: elas
+ * saem do próprio seed e ficam só neste arquivo, bloqueado pelo .gitignore.
+ *
  * Preserva o que é escolhido à mão num .env.dev existente: EXPO_PUBLIC_API_URL
  * (o snake-server local só é usado com a Cloudinary de dev configurada),
  * EXPO_PUBLIC_SENTRY_DSN (monitoramento de erros, opcional) e EAS_PROJECT_ID
@@ -18,6 +22,39 @@ const { execSync } = require('child_process');
 const { lerEnv } = require('./with-variant');
 
 const ARQUIVO = path.join(__dirname, '..', '.env.dev');
+const SEED = path.join(__dirname, '..', 'supabase', 'seed', 'local_base.sql');
+
+/** Papel de cada conta do seed, na ordem em que o atalho as mostra. */
+const CONTAS_DO_SEED = [
+  { papel: 'admin', email: 'adm@snake.com' },
+  { papel: 'professor', email: 'professor@snake.com' },
+  { papel: 'aluno', email: 'aluno@snake.com' },
+];
+
+/**
+ * Contas de teste para o atalho de login do app DEV.
+ *
+ * A senha sai do próprio seed: nunca é digitada aqui e continua valendo depois
+ * de qualquer `db-dev reset`. Se o seed mudar de formato, o atalho simplesmente
+ * não aparece — nada quebra.
+ *
+ * @returns {{ contas: string, senha: string }}
+ */
+function lerContasDoSeed() {
+  if (!fs.existsSync(SEED)) {
+    return { contas: '', senha: '' };
+  }
+  const sql = fs.readFileSync(SEED, 'utf8');
+  const senha = /crypt\('([^']+)'/.exec(sql)?.[1] ?? '';
+  if (senha === '') {
+    return { contas: '', senha: '' };
+  }
+  const presentes = CONTAS_DO_SEED.filter((conta) => sql.includes(conta.email));
+  return {
+    contas: presentes.map((conta) => `${conta.papel}:${conta.email}`).join('|'),
+    senha,
+  };
+}
 
 function lerStatus() {
   const saida = execSync('npx --no-install supabase status -o json', {
@@ -46,6 +83,7 @@ function montarConteudo({ url, chave, anterior = {} }) {
   const apiUrl = anterior.EXPO_PUBLIC_API_URL ?? '';
   const sentryDsn = anterior.EXPO_PUBLIC_SENTRY_DSN ?? '';
   const easProjectId = anterior.EAS_PROJECT_ID ?? '';
+  const { contas, senha } = lerContasDoSeed();
 
   return [
     '# Gerado por scripts/gerar-env-dev.js — app "DEV Snake Thai" contra o banco LOCAL.',
@@ -60,6 +98,10 @@ function montarConteudo({ url, chave, anterior = {} }) {
     '# Projeto Expo (push). Vazio: o app diz que notificação é indisponível.',
     '# Ver docs/NOTIFICACOES.md.',
     `EAS_PROJECT_ID=${easProjectId}`,
+    '# Atalho de login do app DEV: contas do seed local. Só existe aqui, nunca no Git,',
+    '# e o app de produção ignora mesmo que a variável apareça.',
+    `EXPO_PUBLIC_DEV_CONTAS=${contas}`,
+    `EXPO_PUBLIC_DEV_SENHA=${senha}`,
     '',
   ].join('\n');
 }

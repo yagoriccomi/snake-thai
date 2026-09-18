@@ -56,6 +56,8 @@ export type DadosStackParamList = {
   HorarioForm: { groupId: string; groupName: string; schedule?: ScheduleFormParams };
   /** Política de Privacidade e Termos de Uso vigentes, com a data do aceite. */
   DocumentosLegais: undefined;
+  /** Dados da academia que entram nos termos (admin): CNPJ, prazos, foro. */
+  DadosDosTermos: undefined;
 };
 
 /** Stack interna da aba "Aulas" (lista + detalhe + criação/edição + frequência). */

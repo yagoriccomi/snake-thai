@@ -307,6 +307,17 @@ casos os dados pessoais e as imagens de comprovante são apagados, e o históric
 financeiro fica sem identificação, por obrigação legal/fiscal. Antes, o aluno pode
 baixar uma cópia em **Dados → Exportar meus dados**.
 
+**Onde eu preencho o CNPJ e os outros dados dos termos?**
+Em **Dados → Dados dos termos e da política**. São 15 campos (razão social, CNPJ,
+endereço, contato, encarregado, prazos de guarda, foro e os pontos que a assessoria
+jurídica precisa definir). Cada um explica o que escrever. Os botões "Ver Política
+de Privacidade" e "Ver Termos de Uso" mostram o texto exatamente como vai ficar; o
+que faltar aparece entre chaves duplas, assim: {{cnpj}}.
+
+Preencher **não publica nada**. A publicação é feita pela equipe técnica e faz
+todos os alunos, professores e administradores aceitarem os documentos de novo ao
+abrir o app — por isso não acontece com um toque.
+
 **Onde os alunos leem a Política de Privacidade e os Termos de Uso?**
 Em **Dados → Termos e privacidade**, com a data em que cada um aceitou. O texto é
 publicado pela equipe técnica, depois de aprovado por você e pela assessoria

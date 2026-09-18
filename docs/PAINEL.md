@@ -29,7 +29,7 @@ o banco é.
 | **Contas encerradas** | Inadimplência de contas excluídas (LGPD): só o valor somado, sem nome |
 | **Faturamento** | Esperado × recebido por **competência**, últimos 12 meses |
 | **Frequência média** | Média do percentual dos alunos ativos que tiveram **ao menos uma aula contada** |
-| **Risco de evasão** | Aluno ativo abaixo de **50%** no mês atual (com pelo menos **4** aulas contadas) **ou** no último mês fechado |
+| **Risco de evasão** | Aluno ativo abaixo de **70%** no mês atual (com pelo menos **4** aulas contadas) **ou** no último mês fechado |
 
 ## Decisões (2026-09-16, modo Loop, recomendações do plano)
 
@@ -51,7 +51,7 @@ o banco é.
 6. **Faturamento por competência**, igual ao Financeiro por mês, para os dois não
    se contradizerem. Um pagamento atrasado feito hoje aumenta o recebido do mês
    de origem, não o do mês em que o dinheiro entrou.
-7. **Risco de evasão:** limite de 50% e mínimo de 4 aulas no mês atual, para uma
+7. **Risco de evasão:** limite de 70% e mínimo de 4 aulas no mês atual, para uma
    falta no começo do mês não gerar alarme. Os dois valores são parâmetros da
    função e constantes no app (`src/constants/painel.ts`).
 8. **Frequência média sem denominador zero.** A regra da frequência devolve 100%

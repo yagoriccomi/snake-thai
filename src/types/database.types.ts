@@ -642,6 +642,42 @@ export type Database = {
         }
         Relationships: []
       }
+      legal_field_values: {
+        Row: {
+          id: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          id: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          id?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      legal_templates: {
+        Row: {
+          body: string
+          kind: Database["public"]["Enums"]["legal_document_kind"]
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          kind: Database["public"]["Enums"]["legal_document_kind"]
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          kind?: Database["public"]["Enums"]["legal_document_kind"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       media_deletion_queue: {
         Row: {
           asset_ref: string
@@ -952,6 +988,7 @@ export type Database = {
           deactivated_at: string | null
           dob: string | null
           group_id: string | null
+          group_since: string | null
           id: string
           is_first_login: boolean
           name: string | null
@@ -969,6 +1006,7 @@ export type Database = {
           deactivated_at?: string | null
           dob?: string | null
           group_id?: string | null
+          group_since?: string | null
           id: string
           is_first_login?: boolean
           name?: string | null
@@ -986,6 +1024,7 @@ export type Database = {
           deactivated_at?: string | null
           dob?: string | null
           group_id?: string | null
+          group_since?: string | null
           id?: string
           is_first_login?: boolean
           name?: string | null
@@ -1309,6 +1348,13 @@ export type Database = {
         }
         Returns: string
       }
+      publicar_documento_legal_do_modelo: {
+        Args: {
+          p_tipo: Database["public"]["Enums"]["legal_document_kind"]
+          p_versao: string
+        }
+        Returns: string
+      }
       reativar_turma: { Args: { p_group_id: string }; Returns: undefined }
       registrar_dispositivo_push: {
         Args: {
@@ -1360,6 +1406,13 @@ export type Database = {
           turma: string
           user_id: string
           vencimento_mais_antigo: string
+        }[]
+      }
+      renderizar_documento_legal: {
+        Args: { p_tipo: Database["public"]["Enums"]["legal_document_kind"] }
+        Returns: {
+          conteudo: string
+          faltando: string[]
         }[]
       }
       salvar_chamada: {

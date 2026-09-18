@@ -148,12 +148,23 @@ quebre a frequência de todo mundo em silêncio.
   chamada dela. O banco recusa `salvar_chamada` e `concluir_chamada` nessas
   aulas, e elas saem do aviso de aula sem chamada.
 - **Troca de turma no meio do mês** (inclusive ao arquivar com destino): a
-  frequência do mês usa a turma atual. As aulas da turma antiga saem da conta do
-  aluno e as da nova passam a contar. A tela de exclusão avisa; o recomendado é
-  mudar na virada do mês. O mês já fechado não muda.
+  frequência do mês usa a turma atual, contada **a partir da entrada nela**
+  (`profiles.group_since`, mantido por gatilho). As aulas da turma antiga saem da
+  conta do mês, e as da turma nova que aconteceram **antes** de o aluno chegar
+  não entram — elas viravam falta e derrubavam a frequência de quem era
+  remanejado (auditoria de 2026-09-18: um aluno de 100% caía para 0%, e a média
+  da academia, de 83% para 55%). A tela de exclusão avisa; o recomendado continua
+  sendo mudar na virada do mês. O mês já fechado não muda.
+- **Matrícula trancada para de contar** no dia do trancamento
+  (`profiles.deactivated_at`): as aulas seguintes não entram no denominador, o
+  aluno sai da lista de chamada nova (continua visível se já tinha marcação
+  naquela aula) e o fechamento mensal não congela retrato de quem não teve aula
+  — era assim que o trancado acumulava 0% todo mês e o aluno cadastrado depois
+  de um mês fechado ganhava 100% nele.
 
-Regressões: `supabase/tests/regressao_turmas.sql` (13 casos) e
-`supabase/tests/regressao_grade_semanal.sql` (16 casos).
+Regressões: `supabase/tests/regressao_turmas.sql` (13 casos),
+`supabase/tests/regressao_grade_semanal.sql` (16 casos) e
+`supabase/tests/regressao_frequencia_turma_e_trancamento.sql` (6 casos).
 
 ## A conta
 

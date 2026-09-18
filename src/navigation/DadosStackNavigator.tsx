@@ -9,6 +9,7 @@ import { AlterarSenhaScreen } from '@/screens/dados/AlterarSenhaScreen';
 import { CadastrarAlunoScreen } from '@/screens/dados/CadastrarAlunoScreen';
 import { CadastrarEquipeScreen } from '@/screens/dados/CadastrarEquipeScreen';
 import { ConfiguracoesScreen } from '@/screens/dados/ConfiguracoesScreen';
+import { DadosDosTermosScreen } from '@/screens/dados/DadosDosTermosScreen';
 import { PlanosScreen } from '@/screens/dados/PlanosScreen';
 import { DadosScreen } from '@/screens/dados/DadosScreen';
 import { EditarAlunoScreen } from '@/screens/dados/EditarAlunoScreen';
@@ -58,6 +59,7 @@ export function DadosStackNavigator(): React.JSX.Element {
       <Stack.Screen name="EditarAluno" component={EditarAlunoScreen} options={EDITAR_ALUNO_OPTIONS} />
       <Stack.Screen name="ExcluirConta" component={ExcluirContaScreen} options={EXCLUIR_CONTA_OPTIONS} />
       <Stack.Screen name="DocumentosLegais" component={DocumentosLegaisScreen} options={DOCUMENTOS_LEGAIS_OPTIONS} />
+      <Stack.Screen name="DadosDosTermos" component={DadosDosTermosScreen} options={DADOS_DOS_TERMOS_OPTIONS} />
       <Stack.Screen
         name="AlterarSenha"
         component={AlterarSenhaScreen}
@@ -86,6 +88,7 @@ const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };
 const EDITAR_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Editar Aluno' };
 const EXCLUIR_CONTA_OPTIONS: NativeStackNavigationOptions = { title: 'Excluir Conta' };
 const DOCUMENTOS_LEGAIS_OPTIONS: NativeStackNavigationOptions = { title: 'Termos e privacidade' };
+const DADOS_DOS_TERMOS_OPTIONS: NativeStackNavigationOptions = { title: 'Dados dos termos' };
 const PLANOS_OPTIONS: NativeStackNavigationOptions = { title: 'Planos' };
 const TURMAS_OPTIONS: NativeStackNavigationOptions = { title: 'Turmas' };
 const GRADE_OPTIONS: NativeStackNavigationOptions = { title: 'Grade semanal' };

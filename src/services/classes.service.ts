@@ -159,6 +159,8 @@ export async function updateClass(
 export interface StudentRef {
   id: string;
   name: string | null;
+  /** Situação da matrícula: quem trancou some da chamada nova. */
+  status: 'active' | 'inactive' | null;
 }
 
 /**
@@ -171,7 +173,7 @@ export async function fetchStudentsForGroup(
   // Do DIRETÓRIO, não de `profiles`: o professor precisa listar os alunos
   // para fazer a chamada, e a RLS de profiles não o deixa vê-los (nem deve —
   // ali há CPF, telefone e nascimento). A chamada só precisa de id e nome. [#54]
-  const base = supabase.from('diretorio_perfis').select('id, name').eq('role', 'user');
+  const base = supabase.from('diretorio_perfis').select('id, name, status').eq('role', 'user');
   const query = groupId !== null ? base.eq('group_id', groupId) : base;
   const { data, error } = await query.order('name', { ascending: true });
   if (error !== null) {

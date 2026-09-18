@@ -61,5 +61,5 @@ jest.mock('expo-notifications', () => ({
 
 jest.mock('expo-constants', () => ({
   __esModule: true,
-  default: { expoConfig: { extra: { eas: { projectId: 'projeto-de-teste' } } } },
+  default: { expoConfig: { version: '9.9.9', extra: { eas: { projectId: 'projeto-de-teste' } } } },
 }));
