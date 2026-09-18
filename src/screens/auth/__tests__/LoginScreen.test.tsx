@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const mockSignIn = jest.fn();
@@ -43,11 +43,11 @@ describe('LoginScreen — erro ao entrar', () => {
     const tela = renderTela();
 
     fireEvent.press(tela.getByRole('tab', { name: 'Admin' }));
-    fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    await act(async () => {
+      fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    });
 
-    await waitFor(() =>
-      expect(tela.getByText('Falha de conexão. Verifique sua internet e tente novamente.')).toBeTruthy(),
-    );
+    expect(tela.getByText('Falha de conexão. Verifique sua internet e tente novamente.')).toBeTruthy();
   });
 
   it('deveDizerSenhaInvalidaQuandoOServidorRecusa', async () => {
@@ -56,9 +56,11 @@ describe('LoginScreen — erro ao entrar', () => {
     const tela = renderTela();
 
     fireEvent.press(tela.getByRole('tab', { name: 'Admin' }));
-    fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    await act(async () => {
+      fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    });
 
-    await waitFor(() => expect(tela.getByText('E-mail ou senha inválidos.')).toBeTruthy());
+    expect(tela.getByText('E-mail ou senha inválidos.')).toBeTruthy();
   });
 });
 
@@ -98,7 +100,9 @@ describe('LoginScreen — atalho de teste', () => {
     const tela = renderTela();
 
     fireEvent.press(tela.getByRole('tab', { name: 'Admin' }));
-    fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    await act(async () => {
+      fireEvent.press(tela.getByRole('button', { name: 'Entrar' }));
+    });
 
     expect(mockSignIn).toHaveBeenCalledWith('adm@snake.com', 'senha-do-seed');
   });
