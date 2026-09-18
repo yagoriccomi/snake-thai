@@ -1,3 +1,4 @@
+import { LIMIAR_RISCO_EVASAO_PERCENT, MIN_AULAS_PARA_RISCO } from '@/constants/painel';
 import { NETWORK_FAILURE, RLS_DENIED } from '@/test-utils/supabaseMock';
 
 const mockRpc = jest.fn();
@@ -130,7 +131,12 @@ describe('fetchAlunosEmRisco', () => {
 
     const alunos = await fetchAlunosEmRisco();
 
-    expect(mockRpc).toHaveBeenCalledWith('painel_alunos_em_risco', { p_limite_percent: 50, p_min_aulas: 4 });
+    // O limiar é decisão de negócio (hoje 70%): o serviço tem de mandar o que
+    // está configurado, não um número fixo no teste.
+    expect(mockRpc).toHaveBeenCalledWith('painel_alunos_em_risco', {
+      p_limite_percent: LIMIAR_RISCO_EVASAO_PERCENT,
+      p_min_aulas: MIN_AULAS_PARA_RISCO,
+    });
     expect(alunos).toEqual([
       { userId: 'a-1', nome: 'Ana', turma: null, frequenciaMesAtual: null, frequenciaUltimoMes: 25 },
     ]);
