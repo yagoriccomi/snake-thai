@@ -310,6 +310,7 @@ function perfil(parcial: Partial<Profile> = {}): Profile {
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
     group_id: 'turma-manha',
+    group_since: '2026-01-01T00:00:00Z',
     plan_id: 'plano-1',
     status: 'active',
     deactivated_at: null,

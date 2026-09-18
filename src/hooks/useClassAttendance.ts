@@ -66,7 +66,10 @@ export function useClassAttendance(
           declarado[linha.user_id] = linha.declared_status;
         }
       }
-      setStudents(alunos);
+      // Matrícula trancada sai da chamada (a frequência dela parou no
+      // trancamento). Quem já tem marcação NESTA aula continua visível: o
+      // professor precisa enxergar o que registrou antes do trancamento.
+      setStudents(alunos.filter((aluno) => aluno.status !== 'inactive' || oficial[aluno.id] !== undefined));
       setOfficialByStudent(oficial);
       setDeclaredByStudent(declarado);
     } catch (erro) {

@@ -4,7 +4,7 @@ import { fireEvent, render } from '@testing-library/react-native';
 import { RollCallRow } from '@/components/RollCallRow';
 import { ThemeProvider } from '@/theme/ThemeProvider';
 
-const ALUNO = { id: 'aluno-1', name: 'Ana Souza' };
+const ALUNO = { id: 'aluno-1', name: 'Ana Souza', status: 'active' as const };
 
 type Props = React.ComponentProps<typeof RollCallRow>;
 

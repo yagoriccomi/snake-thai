@@ -952,6 +952,7 @@ export type Database = {
           deactivated_at: string | null
           dob: string | null
           group_id: string | null
+          group_since: string | null
           id: string
           is_first_login: boolean
           name: string | null
@@ -969,6 +970,7 @@ export type Database = {
           deactivated_at?: string | null
           dob?: string | null
           group_id?: string | null
+          group_since?: string | null
           id: string
           is_first_login?: boolean
           name?: string | null
@@ -986,6 +988,7 @@ export type Database = {
           deactivated_at?: string | null
           dob?: string | null
           group_id?: string | null
+          group_since?: string | null
           id?: string
           is_first_login?: boolean
           name?: string | null
