@@ -38,7 +38,8 @@ Notificações (só se você ativar):
 - o histórico dos avisos enviados.
 
 Falhas do aplicativo:
-- quando o app apresenta um erro, é enviado um relatório técnico com o modelo do aparelho, a versão do sistema e do app, a parte do app em que o erro aconteceu, um código aleatório da instalação e um código interno da conta com o papel (aluno, professor ou administrador);
+- quando o app apresenta um erro, é enviado um relatório técnico com dados do aparelho (modelo, versão do sistema, idioma, fuso, memória e bateria), a versão do app, a parte do app em que o erro aconteceu, um código aleatório gerado na instalação e o papel da conta (aluno, professor ou administrador);
+- esse código de instalação não identifica a sua conta: ele é sorteado no aparelho e não é o número do seu cadastro;
 - o relatório não leva nome, CPF, e-mail, telefone, valores nem imagens.
 
 No próprio aparelho:

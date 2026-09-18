@@ -77,10 +77,28 @@ Contas e arquivos que só você cria:
 1. **Expo:** conta em expo.dev e projeto do app. O *projectId* (não é segredo) vai em
    `EAS_PROJECT_ID` no `.env.prod` e no `.env.dev`.
 2. **Firebase:** um projeto com dois apps Android, `com.snakethai.app` e
-   `com.snakethai.app.dev`. Baixe o `google-services.json` para a raiz de
-   `snake-thai` (fica fora do Git; ou aponte `GOOGLE_SERVICES_JSON` para ele).
-3. **Chave FCM V1:** Firebase → Contas de serviço → gerar chave; envie em expo.dev →
-   Credentials → Android → FCM V1, para os dois pacotes. Apague a cópia local.
+   `com.snakethai.app.dev`. Registre os **dois** antes de baixar: o
+   `google-services.json` da tela do projeto traz os dois numa única cópia, e é essa
+   que vai para a raiz de `snake-thai` (fica fora do Git; ou aponte
+   `GOOGLE_SERVICES_JSON` para ela). Com o arquivo de um app só, o build morre no fim
+   com `no matching client found for package name`.
+3. **Chave FCM V1:** Firebase → Contas de serviço → gerar chave privada (é SEGREDO:
+   guarde fora do repositório). O envio pelo site não serve — *Credentials → Android*
+   exige cadastrar uma keystore de build, que este projeto não usa, porque compila
+   localmente. Faça pela CLI, que não pede assinatura nenhuma:
+
+   ```bash
+   npx --yes eas-cli@latest login
+   npx --yes eas-cli@latest credentials -p android
+   ```
+
+   No menu: perfil **`dev`** (ou `prod`) → **Google Service Account** → *Set up a
+   Google Service Account Key for Push Notifications (FCM V1)* → caminho do arquivo.
+   Repita para os dois pacotes e apague a cópia local depois.
+
+   O `eas.json` da raiz existe só para esse comando ter um perfil para escolher, e os
+   perfis carregam `APP_VARIANT` para o pacote certo ser resolvido. O projeto **não**
+   compila na nuvem.
 4. (Recomendado) **Enhanced Push Security** na Expo e um Access Token.
 
 Publicação:

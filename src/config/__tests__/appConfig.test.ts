@@ -73,7 +73,15 @@ describe('app.config.js', () => {
   it('naoDeveExigirOArquivoDoFirebaseParaCompilar', () => {
     const config = configPara({ APP_VARIANT: 'production', GOOGLE_SERVICES_JSON: 'C:/nao/existe/google-services.json' });
     expect(config.android?.googleServicesFile).toBeUndefined();
-    expect(config.extra?.eas).toBeUndefined();
+  });
+
+  it('deveUsarOProjetoExpoDoAppJsonQuandoNaoHaVariavelDeAmbiente', () => {
+    // O projectId não é segredo e vive no app.json: assim o build funciona sem .env
+    // (GitHub Actions, por exemplo). A variável de ambiente ainda vence, se existir.
+    const doAppJson = (require('../../../app.json') as { expo: { extra: { eas: { projectId: string } } } }).expo.extra
+      .eas.projectId;
+    const config = configPara({ APP_VARIANT: 'production' });
+    expect(config.extra?.eas).toEqual({ projectId: doAppJson });
   });
 
   it('deveUsarOArquivoDoFirebaseEOProjectIdQuandoExistem', () => {
