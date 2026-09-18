@@ -45,6 +45,8 @@ supabase/.env
 *.pem
 *.mobileprovision
 google-services*.json
+# Chave de conta de serviço do Firebase (acesso administrativo ao projeto).
+*firebase-adminsdk*.json
 GoogleService-Info.plist
 
 # Gradle / Android Studio (caso rode prebuild)
