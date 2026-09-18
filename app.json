@@ -66,6 +66,11 @@
           "defaultChannel": "geral"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "2139fb00-b272-4518-b577-38e16f8a0b95"
+      }
+    }
   }
 }
