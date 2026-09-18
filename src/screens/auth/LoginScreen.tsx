@@ -14,6 +14,8 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { SegmentedControl, type SegmentOption } from '@/components/SegmentedControl';
+import { lerContasDeTeste, type ContaDeTeste } from '@/config/contasDeTeste';
 import { useAuth } from '@/context/AuthProvider';
 import { useTheme } from '@/theme/ThemeProvider';
 import { isValidEmail } from '@/utils/validation';
@@ -36,6 +38,26 @@ export function LoginScreen(): React.JSX.Element {
   const [password, setPassword] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Só o app DEV tem contas de teste (vêm do .env.dev); em produção é lista vazia.
+  const contasDeTeste = React.useMemo(() => lerContasDeTeste(), []);
+  const [papelEscolhido, setPapelEscolhido] = useState<ContaDeTeste['papel'] | null>(null);
+  const opcoesDeTeste = React.useMemo<SegmentOption<ContaDeTeste['papel']>[]>(
+    () => contasDeTeste.map((conta) => ({ value: conta.papel, label: conta.rotulo })),
+    [contasDeTeste],
+  );
+
+  /** Preenche o formulário com a conta escolhida; entrar continua sendo um toque seu. */
+  const usarContaDeTeste = useCallback(
+    (papel: ContaDeTeste['papel']) => {
+      const conta = contasDeTeste.find((candidata) => candidata.papel === papel);
+      if (conta === undefined) return;
+      setPapelEscolhido(papel);
+      setError(null);
+      setEmail(conta.email);
+      setPassword(conta.senha);
+    },
+    [contasDeTeste],
+  );
   const passwordRef = useRef<TextInput>(null);
 
   /** "Próximo" no teclado do e-mail leva direto ao campo de senha. */
@@ -130,6 +152,17 @@ export function LoginScreen(): React.JSX.Element {
             style={styles.submit}
           />
 
+          {contasDeTeste.length > 0 ? (
+            <View style={styles.atalho}>
+              <AppText variant="caption">Atalho de teste — preenche o login do banco local:</AppText>
+              <SegmentedControl
+                options={opcoesDeTeste}
+                value={papelEscolhido ?? contasDeTeste[0]?.papel ?? 'admin'}
+                onChange={usarContaDeTeste}
+              />
+            </View>
+          ) : null}
+
           <Pressable
             onPress={handleForgot}
             hitSlop={8}
@@ -150,6 +183,7 @@ function makeStyles(
   fonts: ReturnType<typeof useTheme>['fonts'],
 ) {
   return StyleSheet.create({
+    atalho: { gap: 8, marginTop: 18 },
     scroll: {
       flexGrow: 1,
     },

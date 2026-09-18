@@ -14,7 +14,7 @@ describe('montarConteudo', () => {
 
     const lido = lerEnv(montarConteudo({ ...LOCAL, anterior }));
 
-    expect(lido).toEqual({
+    expect(lido).toMatchObject({
       EXPO_PUBLIC_SUPABASE_URL: LOCAL.url,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: LOCAL.chave,
       EXPO_PUBLIC_API_URL: anterior.EXPO_PUBLIC_API_URL,
@@ -38,5 +38,21 @@ describe('montarConteudo', () => {
 
     expect(lido.EXPO_PUBLIC_SUPABASE_URL).toBe(LOCAL.url);
     expect(lido.EAS_PROJECT_ID).toBe('projeto-1');
+  });
+});
+
+describe('contas de teste do atalho de login', () => {
+  it('deveTrazerAsTresContasDoSeedComSenha', () => {
+    // Saem do seed local, não de valor escrito aqui: assim seguem valendo
+    // depois de qualquer db-dev reset.
+    const lido = lerEnv(montarConteudo(LOCAL));
+
+    expect(lido.EXPO_PUBLIC_DEV_CONTAS.split('|').map((parte) => parte.split(':')[0])).toEqual([
+      'admin',
+      'professor',
+      'aluno',
+    ]);
+    expect(lido.EXPO_PUBLIC_DEV_CONTAS).toContain('adm@snake.com');
+    expect(lido.EXPO_PUBLIC_DEV_SENHA.length).toBeGreaterThan(7);
   });
 });
