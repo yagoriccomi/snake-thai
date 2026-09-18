@@ -25,8 +25,9 @@ function versaoDoBuild(): string | null {
  * no topo, para não disputar espaço com o cabeçalho de cada tela; e mostra a
  * versão porque a pergunta de suporte é sempre "qual APK você instalou?".
  *
- * A faixa cobre a área de gestos do Android (por isso o `paddingBottom` com o
- * inset): o conteúdo do app termina logo acima dela.
+ * A tira laranja fica fina, só com o texto; a área de gestos do Android abaixo
+ * dela leva a cor de fundo — pintada de âmbar, a faixa parecia três vezes mais
+ * grossa do que é.
  */
 export function DevBanner(): React.JSX.Element {
   const { colors, fonts } = useTheme();
@@ -36,19 +37,23 @@ export function DevBanner(): React.JSX.Element {
   const rotulo = versao === null ? 'DEV' : `DEV · v${versao}`;
 
   return (
-    <View
-      style={[styles.faixa, { paddingBottom: insets.bottom }]}
-      accessible
-      accessibilityRole="text"
-      accessibilityLabel={
-        versao === null
-          ? 'Aplicativo de desenvolvimento, conectado ao banco local'
-          : `Aplicativo de desenvolvimento, versão ${versao}, conectado ao banco local`
-      }
-    >
-      <Text style={styles.texto} numberOfLines={1}>
-        {rotulo}
-      </Text>
+    <View style={styles.rodape}>
+      <View
+        style={styles.faixa}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={
+          versao === null
+            ? 'Aplicativo de desenvolvimento, conectado ao banco local'
+            : `Aplicativo de desenvolvimento, versão ${versao}, conectado ao banco local`
+        }
+      >
+        <Text style={styles.texto} numberOfLines={1}>
+          {rotulo}
+        </Text>
+      </View>
+      {/* Área de gestos do Android, na cor do app. */}
+      <View style={{ height: insets.bottom }} />
     </View>
   );
 }
@@ -102,8 +107,9 @@ const styles = StyleSheet.create({
 
 function makeStyles(colors: ColorScheme, fonts: Fonts) {
   return StyleSheet.create({
+    rodape: { backgroundColor: colors.background },
     faixa: {
-      minHeight: 16,
+      height: 14,
       alignItems: 'flex-end',
       justifyContent: 'center',
       paddingHorizontal: 10,
