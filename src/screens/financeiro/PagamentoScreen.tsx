@@ -7,6 +7,7 @@ import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { WaitingState } from '@/components/WaitingState';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
+import { useCopiarChavePix } from '@/hooks/useCopiarChavePix';
 import { useAuth } from '@/context/AuthProvider';
 import type { FinanceiroStackScreenProps } from '@/navigation/types';
 import {
@@ -32,6 +33,9 @@ const ENVIO_DEMORADO =
 const FALHA_NO_ENVIO =
   'Não conseguimos enviar seu comprovante. Ele continua salvo aqui: toque em ' +
   'tentar de novo.';
+const CHAVE_NAO_CONFIGURADA = 'Chave PIX não configurada';
+const FALHA_AO_COPIAR =
+  'Não conseguimos copiar. Toque na chave acima e segure para copiar à mão.';
 
 /**
  * Fluxo de pagamento PIX (aluno): exibe a chave da academia e permite anexar o
@@ -46,9 +50,10 @@ export function PagamentoScreen({
   const { settings } = useAcademySettings();
   const { paymentId, dueDate } = route.params;
 
-  // A chave PIX vive na configuracao da academia, editavel pelo admin. Enquanto
-  // ela nao carrega (ou nao foi preenchida), avisamos em vez de exibir vazio.
-  const pixKey = settings?.pix_key ?? 'Chave PIX nao configurada';
+  // A chave PIX vive na configuração da academia, editável pelo admin. Enquanto
+  // ela não carrega (ou não foi preenchida), avisamos em vez de exibir vazio.
+  const chavePix = settings?.pix_key ?? null;
+  const { estado: estadoDaCopia, podeCopiar, copiar } = useCopiarChavePix(chavePix);
 
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -171,9 +176,34 @@ export function PagamentoScreen({
 
         <View style={[styles.pixBox, { borderColor: colors.border, backgroundColor: colors.surface }]}>
           <AppText variant="label">Chave PIX da academia</AppText>
-          <AppText variant="subtitle" color={colors.primaryText} style={styles.pixKey}>
-            {pixKey}
+          {/* Selecionável para servir de saída caso copiar falhe no aparelho. */}
+          <AppText
+            variant="subtitle"
+            color={colors.primaryText}
+            style={styles.pixKey}
+            selectable={podeCopiar}
+          >
+            {chavePix ?? CHAVE_NAO_CONFIGURADA}
           </AppText>
+
+          {/* Sem chave cadastrada não há botão: copiar o aviso seria pior que
+              não ter o botão. [#98] */}
+          {podeCopiar ? (
+            <Button
+              title={estadoDaCopia === 'copiada' ? 'Chave copiada ✓' : 'Copiar chave PIX'}
+              variant="secondary"
+              onPress={copiar}
+              accessibilityHint="Copia a chave PIX para você colar no aplicativo do seu banco"
+              style={styles.botaoCopiar}
+            />
+          ) : null}
+
+          {estadoDaCopia === 'falhou' ? (
+            <AppText variant="caption" color={colors.error}>
+              {FALHA_AO_COPIAR}
+            </AppText>
+          ) : null}
+
           <AppText variant="caption">
             Pague pelo app do seu banco e anexe o comprovante abaixo.
           </AppText>
@@ -227,6 +257,10 @@ const styles = StyleSheet.create({
   },
   pixKey: {
     marginVertical: 2,
+  },
+  botaoCopiar: {
+    marginTop: 4,
+    alignSelf: 'stretch',
   },
   section: {
     marginTop: 20,
