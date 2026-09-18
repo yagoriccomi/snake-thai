@@ -31,7 +31,9 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   admin aprova ou recusa. Aulas que passam sem chamada geram aviso na agenda.
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
-- Gestão de pagamentos com envio e aprovação de comprovantes.
+- Gestão de pagamentos com envio e aprovação de comprovantes. Na tela de envio,
+  um toque **copia a chave PIX** da academia para a área de transferência — chave
+  digitada à mão erra fácil, e o erro só aparece no banco.
 - **Notificações push** (Android): lembrete e atraso de mensalidade para o aluno,
   comprovante para analisar para o admin, aprovação e recusa, justificativa e aula
   sem chamada para o professor. Ativação pela pessoa (convite + switch no Perfil),
