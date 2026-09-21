@@ -93,8 +93,18 @@ em destaque se ele saiu com a chave de debug. Manualmente:
 & "$env:LOCALAPPDATA\Android\Sdk\build-tools\<versão>\apksigner.bat" verify --print-certs release\snake-thai-v<versão>.apk
 ```
 
-**Impressão digital SHA-256 do certificado de produção:** _a preencher depois da geração
-(é pública; o arquivo e a senha, não)._
+**Impressão digital SHA-256 do certificado de produção** (é pública; o arquivo e a senha,
+não), registrada na publicação da 1.7.0 em 2026-09-21:
+
+```
+B8:C0:F4:08:8D:82:73:C3:70:34:46:BF:F0:2A:89:C9:66:71:BA:92:06:BE:F2:27:6C:20:58:82:AA:EE:34:CC
+```
+
+Sem os dois-pontos (formato do `apksigner` e da variável `RELEASE_CERT_SHA256`):
+`b8c0f4088d8273c3703446bff02a89c96671ba9206bef2276c205882aaee34cc`.
+
+Um APK de produção que apresente outro certificado **não foi assinado com a nossa chave** —
+não distribua.
 
 ## O que a trava faz
 
