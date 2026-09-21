@@ -1,5 +1,6 @@
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
+import type { DevicePushToken } from 'expo-notifications';
 import { Platform } from 'react-native';
 
 import { env } from '@/config/env';
@@ -94,17 +95,25 @@ export function motivoDeIndisponibilidade(): MotivoDeIndisponibilidade | null {
 /**
  * Token Expo do aparelho.
  *
+ * @param tokenDoAparelho Token do Firebase que já veio no evento do sistema.
+ *   Informe sempre que tiver: sem ele, a biblioteca pede um token novo ao
+ *   Firebase e **reemite o evento `onDevicePushToken`** — quem registra o
+ *   aparelho dentro do ouvinte desse evento cai num laço infinito.
+ *   (`PushTokenModule.kt`: `promise.resolve(token); onNewToken(token)`.)
  * @throws PushIndisponivelError sem projectId, fora do Android ou sem Firebase
  *   no build (a biblioteca nativa recusa gerar o token).
  */
-export async function obterTokenExpo(): Promise<string> {
+export async function obterTokenExpo(tokenDoAparelho?: DevicePushToken): Promise<string> {
   const motivo = motivoDeIndisponibilidade();
   if (motivo !== null) {
     throw new PushIndisponivelError(motivo);
   }
   await configurarCanais();
   try {
-    const { data } = await Notifications.getExpoPushTokenAsync({ projectId: projectIdDaExpo() ?? undefined });
+    const { data } = await Notifications.getExpoPushTokenAsync({
+      projectId: projectIdDaExpo() ?? undefined,
+      devicePushToken: tokenDoAparelho,
+    });
     return data;
   } catch (falha) {
     // Build sem google-services.json: o FirebaseApp não existe e o token falha.

@@ -55,6 +55,28 @@ pg_cron a cada minuto ──► disparar_envio_de_push()
 | Entrega | `supabase/functions/send-push/` (contrato em [`EDGE-FUNCTIONS.md`](EDGE-FUNCTIONS.md)) |
 | App | `src/services/pushNotifications.service.ts`, `src/context/PushNotificationsProvider.tsx`, convite na aba Aulas e switch no Perfil |
 
+### Armadilha do token: pedir o token reemite o evento
+
+`Notifications.getExpoPushTokenAsync()` pede o token ao Firebase, e o módulo
+nativo **emite `onDevicePushToken` logo depois de devolvê-lo**
+(`PushTokenModule.kt`: `promise.resolve(token); onNewToken(token)`).
+
+Quem ouve esse evento e reage pedindo um token novo fecha um laço infinito.
+Aconteceu: em três dias de aparelho ligado, **120 mil** chamadas a
+`registrar_dispositivo_push` — dezenas por segundo, no banco e na bateria de
+quem só ativou as notificações.
+
+Por isso, no ouvinte do evento:
+
+1. **repasse o token que veio no evento** (`obterTokenExpo(tokenDoAparelho)`) —
+   com ele a biblioteca não pede outro, e nada é reemitido;
+2. **só grave se o token mudou** de verdade em relação ao guardado no aparelho;
+3. os registros entram numa **fila serial**, senão o evento chega antes de a
+   primeira gravação terminar, lê o token guardado ainda vazio e grava de novo.
+
+O teste `naoDeveEntrarEmLacoQuandoPedirOTokenReemiteOEvento` simula o eco da
+biblioteca; sem a correção ele não falha — ele **derruba o processo do Jest**.
+
 Resultado de cada envio: aceito → `sent`; só aparelhos inexistentes → `cancelled`
 (`sem_dispositivo`); erro passageiro (HTTP 429/5xx, rede) → volta com espera de 2,
 4, 8… minutos; depois de 5 tentativas → `failed`. Envio preso há 10 minutos volta

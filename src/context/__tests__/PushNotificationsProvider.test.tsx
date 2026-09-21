@@ -14,6 +14,10 @@ const mockLerPermissao = jest.fn();
 const mockObterToken = jest.fn();
 const mockRegistrar = jest.fn();
 const mockPrecisaAceitar = jest.fn();
+const mockGetStoredToken = jest.fn();
+const mockSetStoredToken = jest.fn();
+/** Ouvintes de token do sistema, para simular o evento `onDevicePushToken`. */
+const ouvintesDeToken: ((token: unknown) => void)[] = [];
 
 jest.mock('@/context/AuthProvider', () => ({ useAuth: (): unknown => mockUseAuth() }));
 jest.mock('@/context/LegalConsentProvider', () => ({
@@ -33,8 +37,8 @@ jest.mock('@/navigation/navigationRef', () => ({
 jest.mock('@/services/pushPreference.service', () => ({
   getPushChoice: (...args: unknown[]): unknown => mockGetChoice(...args),
   setPushChoice: (...args: unknown[]): unknown => mockSetChoice(...args),
-  getStoredPushToken: jest.fn().mockResolvedValue(null),
-  setStoredPushToken: jest.fn().mockResolvedValue(undefined),
+  getStoredPushToken: (...args: unknown[]): unknown => mockGetStoredToken(...args),
+  setStoredPushToken: (...args: unknown[]): unknown => mockSetStoredToken(...args),
   clearStoredPushToken: jest.fn().mockResolvedValue(undefined),
 }));
 jest.mock('@/services/pushNotifications.service', () => {
@@ -85,8 +89,33 @@ beforeEach(() => {
   mockLerPermissao.mockResolvedValue({ concedida: true, podePerguntar: true });
   mockObterToken.mockResolvedValue('ExponentPushToken[abc]');
   mockRegistrar.mockResolvedValue(undefined);
+  // Storage de mentira, mas com memória: o real lembra o que gravou, e é
+  // justamente isso que evita o segundo registro do mesmo token.
+  let tokenGuardado: string | null = null;
+  mockGetStoredToken.mockImplementation(() => Promise.resolve(tokenGuardado));
+  mockSetStoredToken.mockImplementation((_usuario: string, token: string) => {
+    tokenGuardado = token;
+    return Promise.resolve();
+  });
+  ouvintesDeToken.length = 0;
   notificacoes.getLastNotificationResponse.mockReturnValue(null);
+  notificacoes.addPushTokenListener.mockImplementation((ouvinte: (token: never) => void) => {
+    ouvintesDeToken.push(ouvinte as (token: unknown) => void);
+    return { remove: () => undefined } as never;
+  });
 });
+
+/**
+ * O comportamento real da biblioteca: pedir o token ao sistema REEMITE o
+ * evento de "token novo" (PushTokenModule.kt resolve a promessa e chama
+ * onNewToken em seguida). É esse eco que já fechou um laço infinito.
+ */
+function pedirTokenReemitindoOEvento(tokenDoAparelho?: unknown): Promise<string> {
+  if (tokenDoAparelho === undefined) {
+    ouvintesDeToken.forEach((ouvinte) => ouvinte({ type: 'android', data: 'fcm-token' }));
+  }
+  return Promise.resolve('ExponentPushToken[abc]');
+}
 
 describe('PushNotificationsProvider', () => {
   it('naoDevePedirPermissaoSemOToqueEmAtivar', async () => {
@@ -190,6 +219,68 @@ describe('PushNotificationsProvider', () => {
     await waitFor(() =>
       expect(mockNavegar).toHaveBeenCalledWith('Main', { screen: 'Aulas', params: { screen: 'AulasHome' } }),
     );
+  });
+
+  it('naoDeveEntrarEmLacoQuandoPedirOTokenReemiteOEvento', async () => {
+    // Regressão: o ouvinte pedia um token novo, o pedido reemitia o evento e o
+    // ouvinte rodava outra vez. Em três dias de aparelho ligado deu 120 mil
+    // registros — dezenas de chamadas por segundo ao banco.
+    mockUseAuth.mockReturnValue(sessao('user'));
+    mockGetChoice.mockResolvedValue('ativado');
+    mockObterToken.mockImplementation(pedirTokenReemitindoOEvento);
+    const { findByText } = render(
+      <PushNotificationsProvider>
+        <Estado />
+      </PushNotificationsProvider>,
+    );
+
+    expect(await findByText('ativado|ativado')).toBeTruthy();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+  });
+
+  it('deveRegistrarQuandoOSistemaTrocaOTokenDeVerdade', async () => {
+    mockUseAuth.mockReturnValue(sessao('user'));
+    mockGetChoice.mockResolvedValue('ativado');
+    const { findByText } = render(
+      <PushNotificationsProvider>
+        <Estado />
+      </PushNotificationsProvider>,
+    );
+    await findByText('ativado|ativado');
+
+    // Token guardado diferente do novo: o aparelho trocou de token de verdade.
+    mockGetStoredToken.mockResolvedValue('ExponentPushToken[antigo]');
+    mockObterToken.mockResolvedValue('ExponentPushToken[novo]');
+    await act(async () => {
+      ouvintesDeToken.forEach((ouvinte) => ouvinte({ type: 'android', data: 'fcm-token-novo' }));
+      await Promise.resolve();
+    });
+
+    await waitFor(() => expect(mockRegistrar).toHaveBeenCalledWith('ExponentPushToken[novo]'));
+  });
+
+  it('naoDeveRegistrarDeNovoQuandoOTokenNaoMudou', async () => {
+    mockUseAuth.mockReturnValue(sessao('user'));
+    mockGetChoice.mockResolvedValue('ativado');
+    const { findByText } = render(
+      <PushNotificationsProvider>
+        <Estado />
+      </PushNotificationsProvider>,
+    );
+    await findByText('ativado|ativado');
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
+
+    mockGetStoredToken.mockResolvedValue('ExponentPushToken[abc]');
+    await act(async () => {
+      ouvintesDeToken.forEach((ouvinte) => ouvinte({ type: 'android', data: 'fcm-token' }));
+      await Promise.resolve();
+    });
+
+    expect(mockRegistrar).toHaveBeenCalledTimes(1);
   });
 
   it('naoDeveLevarProfessorParaOFinanceiro', async () => {
