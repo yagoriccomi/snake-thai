@@ -5,6 +5,29 @@ quando um APK é publicado — regras em [`docs/VERSIONAMENTO.md`](docs/VERSIONA
 As entradas novas são geradas por `npm run versao:<parte>` a partir dos commits e
 revisadas antes da publicação.
 
+## [1.7.0] - 2026-09-21
+
+### Novidades
+
+- **Painel do admin**, na primeira aba: alunos ativos e inativos, quanto entrou do que era esperado no mês, inadimplência por faixa de atraso, faturamento dos últimos 12 meses, frequência média e alunos em risco de evasão. Junto vem o **relatório de inadimplência** por aluno, para cobrar e dar baixa.
+- **Turmas e grade semanal**: o admin cadastra os horários fixos de cada turma e as aulas passam a ser geradas sozinhas. Turma pode ser renomeada, encerrada ou reativada — e a que tem histórico é arquivada, com as aulas e a frequência preservadas.
+- **Notificações no celular** (Android): vencimento e atraso da mensalidade para o aluno, comprovante para analisar para o admin, aprovação e recusa, justificativa e aula que passou sem chamada para o professor. Quem ativa é a própria pessoa, o aviso não mostra nome nem valor na tela bloqueada, e nada chega entre 22h e 7h.
+- **Política de Privacidade e Termos de Uso dentro do app**, com o aceite registrado por versão. Texto novo, aceite novo.
+- **Dados dos termos** (admin): uma tela para preencher razão social, CNPJ, endereço, encarregado de dados, foro e prazos, que é o que monta a Política e os Termos.
+- **Excluir a própria conta** e **exportar meus dados**, exigindo a senha — e o admin passa a editar o cadastro do aluno, inclusive o e-mail.
+- **Copiar a chave PIX** com um toque na tela de envio do comprovante: chave digitada à mão erra fácil, e o erro só aparece no banco.
+- **A chamada não concluída fica guardada no aparelho** e volta ao reabrir o app, com aviso de que foi recuperada.
+- **Aviso no Painel quando uma rotina automática falha**, dizendo qual foi.
+- **A versão instalada aparece no fim do Perfil**, para saber o que está no aparelho na hora de pedir ajuda.
+
+### Correções
+
+- **Sem internet, o login dizia "senha inválida".** A pessoa digitava a senha certa de novo e de novo. Agora a falha de conexão é dita como tal.
+- **Quem ativava as notificações ficava com o aparelho registrando sem parar** — dezenas de vezes por segundo, gastando bateria e dados. O registro acontece uma vez, e de novo só quando o token muda mesmo.
+- **A senha de primeiro acesso saiu do alcance de quem não é administrador**, e as contas criadas passam a usar a senha configurada pela academia.
+- **Frequência**: conta a partir da entrada do aluno na turma e para de contar enquanto a matrícula está trancada. O risco de evasão passa a ser presença abaixo de 70%.
+- **Filtros do Financeiro**: os números ao lado dos nomes deixaram de se espremer e quebrar em duas linhas.
+
 ## [1.6.0] - 2026-09-14
 
 ### Novidades
