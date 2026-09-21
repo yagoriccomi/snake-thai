@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import type { DevicePushToken } from 'expo-notifications';
 
 import { useAuth } from '@/context/AuthProvider';
 import { useLegalConsent } from '@/context/LegalConsentProvider';
@@ -28,6 +29,18 @@ import { describeError } from '@/utils/errors';
 import { destinoDaNotificacao, type DestinoDaNotificacao } from '@/utils/notificationRouting';
 
 const log = createLogger('PushNotifications');
+
+/** O que o registro do aparelho precisa saber. */
+interface PedidoDeRegistro {
+  usuario: string;
+  /**
+   * Token que veio no evento do sistema. Repassado à biblioteca para que ela
+   * NÃO peça um token novo — pedir reemite o evento e fecha um laço.
+   */
+  tokenDoAparelho?: DevicePushToken;
+  /** Não grava se o token continua o mesmo já guardado neste aparelho. */
+  somenteSeMudou?: boolean;
+}
 
 /**
  * - `carregando`: lendo a escolha e a permissão.
@@ -82,11 +95,23 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
     setStatus('indisponivel');
   }, []);
 
+  /**
+   * Registro em andamento. Os pedidos entram em fila: sem isso, o evento do
+   * sistema chega antes de a primeira gravação terminar, vê o token guardado
+   * ainda vazio e grava de novo — dois registros para o mesmo aparelho.
+   */
+  const filaDeRegistro = useRef<Promise<unknown>>(Promise.resolve());
+
   /** Pede o token e grava o aparelho; guarda o token para poder apagá-lo depois. */
-  const registrar = useCallback(
-    async (usuario: string): Promise<boolean> => {
+  const gravar = useCallback(
+    async ({ usuario, tokenDoAparelho, somenteSeMudou = false }: PedidoDeRegistro): Promise<boolean> => {
       try {
-        const token = await obterTokenExpo();
+        const token = await obterTokenExpo(tokenDoAparelho);
+        // O evento do sistema repete mesmo com o token igual. Gravar de novo
+        // não acrescenta nada e é chamada de rede a mais no aparelho da pessoa.
+        if (somenteSeMudou && (await getStoredPushToken(usuario)) === token) {
+          return true;
+        }
         await registrarDispositivo(token);
         await setStoredPushToken(usuario, token);
         setErro(null);
@@ -102,6 +127,19 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
       }
     },
     [marcarIndisponivel],
+  );
+
+  /** Enfileira o registro, para que dois pedidos nunca corram em paralelo. */
+  const registrar = useCallback(
+    async (pedido: PedidoDeRegistro): Promise<boolean> => {
+      const proximo = filaDeRegistro.current.then(
+        () => gravar(pedido),
+        () => gravar(pedido),
+      );
+      filaDeRegistro.current = proximo;
+      return proximo;
+    },
+    [gravar],
   );
 
   // Ao entrar na conta (e a cada abertura): estado atual e registro do aparelho.
@@ -134,7 +172,7 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
         setStatus('negado');
         return;
       }
-      const ok = await registrar(userId);
+      const ok = await registrar({ usuario: userId });
       if (!cancelado && ok) setStatus('ativado');
     })();
     return () => {
@@ -143,10 +181,15 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
   }, [userId, profile, marcarIndisponivel, registrar]);
 
   // Token trocado pelo sistema: registra o novo.
+  //
+  // O token do evento é repassado adiante DE PROPÓSITO. Pedir outro aqui faz a
+  // biblioteca reemitir este mesmo evento, que chamaria isto de novo: em três
+  // dias de aparelho ligado, foram 120 mil registros — dezenas por segundo.
   useEffect(() => {
     if (userId === null) return undefined;
-    const assinatura = Notifications.addPushTokenListener(() => {
-      if (escolhaRef.current === 'ativado') void registrar(userId);
+    const assinatura = Notifications.addPushTokenListener((tokenDoAparelho) => {
+      if (escolhaRef.current !== 'ativado') return;
+      void registrar({ usuario: userId, tokenDoAparelho, somenteSeMudou: true });
     });
     return () => assinatura.remove();
   }, [userId, registrar]);
@@ -204,7 +247,7 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
       await setPushChoice(userId, 'ativado');
       escolhaRef.current = 'ativado';
       setEscolha('ativado');
-      if (await registrar(userId)) setStatus('ativado');
+      if (await registrar({ usuario: userId })) setStatus('ativado');
     } catch (falha) {
       log.error('Falha ao ativar notificações', falha);
       setErro(`Não foi possível ativar as notificações. ${describeError(falha)}`);
