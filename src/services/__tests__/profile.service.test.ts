@@ -58,19 +58,19 @@ beforeEach(() => {
   mockRpc.mockReset();
 });
 
-describe('updateUserRole — promoção e rebaixamento', () => {
+describe('updateUserRole — promoção e rebaixamento da equipe', () => {
   it('devePropagarARecusaQuandoEhOUltimoAdministradorAtivo', async () => {
     mockQuery(LAST_ADMIN_BLOCKED);
     // O pior desfecho possível: engolir este erro faria a tela dizer "rebaixado
     // com sucesso" e o sistema ficaria SEM nenhum administrador, para sempre.
-    await expect(updateUserRole(ALUNO_ID, 'user')).rejects.toEqual(
+    await expect(updateUserRole(ALUNO_ID, 'professor', '#39FF14')).rejects.toEqual(
       LAST_ADMIN_BLOCKED.error,
     );
   });
 
   it('devePropagarARecusaDaRlsQuandoQuemChamaNaoEhAdmin', async () => {
     mockQuery(RLS_DENIED);
-    // Um aluno não pode se autopromover — e a tela precisa saber que falhou.
+    // Um professor não pode se autopromover — e a tela precisa saber que falhou.
     await expect(updateUserRole(ALUNO_ID, 'admin')).rejects.toEqual(
       RLS_DENIED.error,
     );
@@ -88,7 +88,20 @@ describe('updateUserRole — promoção e rebaixamento', () => {
     await updateUserRole(ALUNO_ID, 'admin');
     // Sem o filtro por id, um UPDATE promoveria a base inteira a administrador.
     expect(chain.eq).toHaveBeenCalledWith('id', ALUNO_ID);
-    expect(chain.update).toHaveBeenCalledWith({ role: 'admin' });
+  });
+
+  it('deveLimparACorAoPromoverAAdministrador', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await updateUserRole(ALUNO_ID, 'admin');
+    // A cor é exclusiva de professor: sem limpá-la na mesma operação, o banco
+    // recusa a promoção pela constraint profiles_color_only_for_professor.
+    expect(chain.update).toHaveBeenCalledWith({ role: 'admin', color: null });
+  });
+
+  it('deveDevolverACorAoRebaixarParaProfessor', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await updateUserRole(ALUNO_ID, 'professor', '#22C55E');
+    expect(chain.update).toHaveBeenCalledWith({ role: 'professor', color: '#22C55E' });
   });
 });
 
