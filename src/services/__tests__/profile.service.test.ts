@@ -256,7 +256,7 @@ describe('createStudent', () => {
     // O plano é o que liga o aluno ao faturamento: se não trafegar aqui, o
     // aluno nasce sem cobrança e ninguém percebe até o fim do mês.
     expect(mockInvoke).toHaveBeenCalledWith('create-student', {
-      body: { email: 'aluno@snake.com', groupId: 'turma-1', planId: 'plan-1' },
+      body: { email: 'aluno@snake.com', groupId: 'turma-1', planId: 'plan-1', accessChannel: 'app' },
     });
   });
 
@@ -264,7 +264,42 @@ describe('createStudent', () => {
     mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
     await createStudent('aluno@snake.com', null);
     expect(mockInvoke).toHaveBeenCalledWith('create-student', {
-      body: { email: 'aluno@snake.com', groupId: null, planId: null },
+      body: { email: 'aluno@snake.com', groupId: null, planId: null, accessChannel: 'app' },
+    });
+  });
+
+  it('deveMandarOsDadosDeQuemNaoUsaOApp', async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    await createStudent('aluno@snake.com', 'turma-1', 'plan-1', {
+      canal: 'none',
+      dados: { name: 'Ana Beatriz Lima', cpf: '12345678901', phone: '11988887777', dob: '2000-05-10' },
+    });
+    // Sem estes dados o aluno entra na chamada sem nome: ninguém mais vai
+    // preenchê-los, porque ele não acessa o sistema.
+    expect(mockInvoke).toHaveBeenCalledWith('create-student', {
+      body: {
+        email: 'aluno@snake.com',
+        groupId: 'turma-1',
+        planId: 'plan-1',
+        accessChannel: 'none',
+        name: 'Ana Beatriz Lima',
+        cpf: '12345678901',
+        phone: '11988887777',
+        dob: '2000-05-10',
+      },
+    });
+  });
+
+  it('naoDeveMandarDadosPessoaisDeQuemUsaOApp', async () => {
+    mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+    await createStudent('aluno@snake.com', null, null, {
+      canal: 'app',
+      dados: { name: 'Ana', cpf: '12345678901' },
+    });
+    // Quem usa o app preenche os próprios dados no primeiro acesso; mandar
+    // nome e CPF aqui pularia essa etapa e a pessoa ficaria sem telefone.
+    expect(mockInvoke).toHaveBeenCalledWith('create-student', {
+      body: { email: 'aluno@snake.com', groupId: null, planId: null, accessChannel: 'app' },
     });
   });
 });
@@ -324,6 +359,7 @@ function perfil(parcial: Partial<Profile> = {}): Profile {
     updated_at: '2026-01-01T00:00:00Z',
     group_id: 'turma-manha',
     group_since: '2026-01-01T00:00:00Z',
+    access_channel: 'app',
     plan_id: 'plano-1',
     status: 'active',
     deactivated_at: null,

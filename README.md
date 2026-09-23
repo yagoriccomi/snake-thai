@@ -90,12 +90,21 @@ containerizável. Instale na sua máquina:
    scripts\db-dev env
    ```
 
-3. Suba o app **DEV** (conectado ao banco local):
+3. Em **outro terminal**, sirva as Edge Functions:
+   ```bash
+   scripts\db-dev funcoes
+   ```
+
+   O `start` sobe o banco, mas **não** as Edge Functions. Sem este comando
+   rodando, cadastrar aluno, cadastrar equipe, trocar e-mail e excluir conta
+   falham no app com "não foi possível" — a função não existe localmente.
+
+4. Suba o app **DEV** (conectado ao banco local):
    ```bash
    npm start
    ```
 
-4. Abra no **Expo Go** lendo o QR Code, ou pressione `a` (Android) / `i` (iOS).
+5. Abra no **Expo Go** lendo o QR Code, ou pressione `a` (Android) / `i` (iOS).
    Num aparelho físico, o `127.0.0.1` do banco local precisa do `adb reverse`
    das portas 55321 e 3000 — o `menu.bat` faz isso sozinho.
 
@@ -210,6 +219,7 @@ vezes. O passo a passo está no [Runbook](docs/RUNBOOK.md#banco-de-dados-migrati
 | `test` | Recria o banco local limpo e roda os testes SQL de `supabase/tests` |
 | `types` | Gera `src/types/database.types.ts` a partir do banco local |
 | `env` | Gera o `.env.dev` do app |
+| `funcoes` | Serve as Edge Functions locais e **fica rodando** |
 
 ## 📂 Estrutura
 

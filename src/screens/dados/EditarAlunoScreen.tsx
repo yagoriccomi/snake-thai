@@ -138,7 +138,10 @@ export function EditarAlunoScreen({
     void carregar();
   }, [carregar]);
 
-  const pendente = perfil?.is_first_login ?? false;
+  // Pendente de verdade é quem AINDA VAI entrar e preencher os próprios dados.
+  // Quem não acessa o sistema nunca vai: os campos ficam com o administrador.
+  const semAcesso = perfil?.access_channel === 'none';
+  const pendente = (perfil?.is_first_login ?? false) && !semAcesso;
 
   const mudarCampo = useCallback((campo: keyof ValoresDoFormularioDeAluno, valor: string) => {
     setAviso(null);

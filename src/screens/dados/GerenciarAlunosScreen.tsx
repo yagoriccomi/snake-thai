@@ -234,7 +234,7 @@ export function GerenciarAlunosScreen({
             <View style={styles.info}>
               <View style={styles.nameLine}>
                 <Text style={styles.name} numberOfLines={1}>
-                  {item.name ?? 'Aluno pendente'}
+                  {item.name ?? (item.access_channel === 'none' ? 'Sem nome' : 'Aluno pendente')}
                 </Text>
                 {isAdmin ? (
                   <View style={styles.adminPill}>

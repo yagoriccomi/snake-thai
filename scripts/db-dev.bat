@@ -1,7 +1,7 @@
 @echo off
 rem ============================================================================
 rem  db-dev.bat - banco LOCAL de desenvolvimento (Supabase CLI em Docker)
-rem  Uso:  scripts\db-dev.bat [start^|stop^|status^|reset^|test^|types^|env]
+rem  Uso:  scripts\db-dev.bat [start^|stop^|status^|reset^|test^|types^|env^|funcoes]
 rem
 rem    start   sobe o Supabase local (portas 553xx)
 rem    stop    para o Supabase local
@@ -10,6 +10,11 @@ rem    reset   recria o banco: migrations + base local + dados de demonstracao
 rem    test    recria o banco LIMPO e roda todos os testes SQL de supabase\tests
 rem    types   gera src\types\database.types.ts a partir do banco local
 rem    env     gera o .env.dev do app apontando para o banco local
+rem    funcoes serve as Edge Functions locais e FICA RODANDO (Ctrl+C encerra)
+rem
+rem  O `supabase start` NAO sobe as Edge Functions. Sem `funcoes` rodando,
+rem  cadastrar aluno, cadastrar equipe, trocar e-mail e excluir conta falham
+rem  no app DEV com "nao foi possivel", porque a funcao nao existe localmente.
 rem
 rem  Tudo aqui e --local. A CLI esta vinculada ao projeto de PRODUCAO, e um
 rem  comando digitado sem --local poderia acertar o banco real. Producao so
@@ -28,11 +33,21 @@ if /i "%ACAO%"=="reset"  goto reset
 if /i "%ACAO%"=="test"   goto test
 if /i "%ACAO%"=="types"  goto types
 if /i "%ACAO%"=="env"    goto env
-echo Uso: scripts\db-dev.bat [start^|stop^|status^|reset^|test^|types^|env]
+if /i "%ACAO%"=="funcoes" goto funcoes
+echo Uso: scripts\db-dev.bat [start^|stop^|status^|reset^|test^|types^|env^|funcoes]
 exit /b 1
 
 :start
 call npx --no-install supabase start
+echo.
+echo  [i] As Edge Functions NAO sobem com o banco. Para cadastrar aluno ou
+echo      equipe no app DEV, abra outro terminal e rode: scripts\db-dev funcoes
+exit /b %errorlevel%
+
+:funcoes
+rem Fica em primeiro plano de proposito: o log de cada chamada aparece aqui,
+rem e e onde o erro da funcao aparece quando o cadastro falha.
+call npx --no-install supabase functions serve
 exit /b %errorlevel%
 
 :stop

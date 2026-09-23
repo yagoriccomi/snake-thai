@@ -80,11 +80,22 @@ Deno.serve(async (req: Request): Promise<Response> => {
   let email = '';
   let groupId: string | null = null;
   let planId: string | null = null;
+  /** 'none' = a pessoa não acessa o sistema; a academia registra por ela. */
+  let accessChannel = 'app';
+  let name: string | null = null;
+  let cpf: string | null = null;
+  let phone: string | null = null;
+  let dob: string | null = null;
   try {
     const body = (await req.json()) as {
       email?: unknown;
       groupId?: unknown;
       planId?: unknown;
+      accessChannel?: unknown;
+      name?: unknown;
+      cpf?: unknown;
+      phone?: unknown;
+      dob?: unknown;
     };
     email = String(body.email ?? '').trim().toLowerCase();
     if (typeof body.groupId === 'string' && body.groupId.trim() !== '') {
@@ -93,11 +104,34 @@ Deno.serve(async (req: Request): Promise<Response> => {
     if (typeof body.planId === 'string' && body.planId.trim() !== '') {
       planId = body.planId.trim();
     }
+    if (body.accessChannel === 'none') {
+      accessChannel = 'none';
+    }
+    if (typeof body.name === 'string' && body.name.trim() !== '') {
+      name = body.name.trim();
+    }
+    if (typeof body.cpf === 'string' && body.cpf.trim() !== '') {
+      cpf = body.cpf.replace(/\D/g, '');
+    }
+    if (typeof body.phone === 'string' && body.phone.trim() !== '') {
+      phone = body.phone.replace(/\D/g, '');
+    }
+    if (typeof body.dob === 'string' && body.dob.trim() !== '') {
+      dob = body.dob.trim();
+    }
   } catch {
     return json({ error: 'Corpo inválido' }, 400);
   }
   if (!EMAIL_REGEX.test(email)) {
     return json({ error: 'E-mail inválido' }, 400);
+  }
+  // Sem acesso, ninguém mais preenche: o cadastro precisa vir completo, senão
+  // a chamada mostra um aluno sem nome e o banco recusa a linha.
+  if (accessChannel === 'none' && (name === null || cpf === null)) {
+    return json(
+      { error: 'Aluno que não usa o aplicativo precisa de nome e CPF no cadastro.' },
+      400,
+    );
   }
 
   // Cria o usuário de autenticação com a senha de primeiro acesso configurada
@@ -122,9 +156,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const { error: insertError } = await adminClient.from('profiles').insert({
     id: created.user.id,
     role: 'user',
+    // Continua `true` mesmo sem acesso: a troca de senha segue devida para o
+    // dia em que a pessoa entrar (pela página web, quando ela existir). Quem
+    // não acessa é identificado por `access_channel`, não por este campo.
     is_first_login: true,
     group_id: groupId,
     plan_id: planId,
+    access_channel: accessChannel,
+    name,
+    cpf,
+    phone,
+    dob,
   });
   if (insertError !== null) {
     // Rollback: remove o usuário de auth para não deixar conta órfã.

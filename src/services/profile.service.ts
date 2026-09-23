@@ -103,13 +103,52 @@ export async function updateProfile(
  * padrão) e a inicialização do perfil ocorrem numa Edge Function com
  * `service_role` (nunca no cliente), que valida se o chamador é admin.
  */
+/** Por onde a pessoa acessa o sistema. */
+export type CanalDeAcesso = 'app' | 'none';
+
+/** Dados que só o administrador informa, para quem não acessa o sistema. */
+export interface DadosDoAlunoSemAcesso {
+  name: string;
+  cpf: string;
+  phone?: string;
+  /** ISO `AAAA-MM-DD`. */
+  dob?: string;
+}
+
+/**
+ * Cadastra um aluno.
+ *
+ * Quem usa o aplicativo entra com o e-mail e preenche os próprios dados no
+ * primeiro acesso. Quem **não** acessa (não há app para iPhone) precisa vir
+ * completo daqui: ninguém mais vai preencher, e sem nome o professor não sabe
+ * quem marcar na chamada. O banco recusa a linha incompleta.
+ *
+ * @param email   E-mail de login.
+ * @param groupId Turma, ou `null`.
+ * @param planId  Plano, ou `null` — é ele que liga o aluno ao faturamento.
+ * @param acesso  `'app'` (padrão) ou `'none'`, com os dados obrigatórios.
+ */
 export async function createStudent(
   email: string,
   groupId: string | null,
   planId: string | null = null,
+  acesso: { canal: CanalDeAcesso; dados?: DadosDoAlunoSemAcesso } = { canal: 'app' },
 ): Promise<void> {
   const { error } = await supabase.functions.invoke('create-student', {
-    body: { email: email.trim().toLowerCase(), groupId, planId },
+    body: {
+      email: email.trim().toLowerCase(),
+      groupId,
+      planId,
+      accessChannel: acesso.canal,
+      ...(acesso.canal === 'none' && acesso.dados !== undefined
+        ? {
+            name: acesso.dados.name,
+            cpf: acesso.dados.cpf,
+            phone: acesso.dados.phone,
+            dob: acesso.dados.dob,
+          }
+        : {}),
+    },
   });
   if (error !== null) {
     throw error;
