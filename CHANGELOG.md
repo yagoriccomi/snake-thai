@@ -5,6 +5,12 @@ quando um APK é publicado — regras em [`docs/VERSIONAMENTO.md`](docs/VERSIONA
 As entradas novas são geradas por `npm run versao:<parte>` a partir dos commits e
 revisadas antes da publicação.
 
+## [1.7.1] - 2026-09-23
+
+### Correções
+
+- **Aluno não vira mais administrador.** Na lista de alunos havia um botão sem rótulo que, com um toque, dava a um aluno acesso ao financeiro da academia, ao cadastro de todo mundo e à exclusão de contas. O botão saiu da lista, e o próprio banco passou a recusar: administrador agora sai da equipe, e só um professor pode ser promovido.
+
 ## [1.7.0] - 2026-09-21
 
 ### Novidades
