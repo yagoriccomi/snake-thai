@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
@@ -168,7 +168,11 @@ export function CadastrarAlunoScreen({
 
   return (
     <ScreenWrapper avoidKeyboard>
-      <View style={styles.form}>
+      <ScrollView
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <AppText variant="caption" style={styles.message}>
           {defaultPassword !== null ? (
             <>
@@ -247,7 +251,7 @@ export function CadastrarAlunoScreen({
           loading={submitting}
           style={styles.button}
         />
-      </View>
+      </ScrollView>
     </ScreenWrapper>
   );
 }
@@ -261,8 +265,11 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   form: {
-    flex: 1,
+    // flexGrow, não flex: com `flex: 1` o conteúdo fica preso à altura da tela
+    // e a rolagem não acontece, escondendo o botão de cadastrar.
+    flexGrow: 1,
     paddingTop: 24,
+    paddingBottom: 24,
   },
   center: {
     flex: 1,
