@@ -32,6 +32,14 @@ begin
     return new;
   end if;
 
+  -- Sem sessão é migration, seed ou o servidor (service_role) montando dados.
+  -- A trava existe contra o que se alcança PELO APP; engessar o banco impediria
+  -- até de corrigir um cadastro errado por fora. Mesmo critério de
+  -- `enforce_profile_update_rules`.
+  if (select auth.uid()) is null then
+    return new;
+  end if;
+
   -- Aluno é o papel de quem treina: não vira nada, e nada vira aluno. Uma
   -- conta cadastrada errada é excluída e refeita com o papel certo.
   if old.role = 'user' or new.role = 'user' then
@@ -45,7 +53,7 @@ end;
 $funcao$;
 
 comment on function public.enforce_role_change_rules() is
-  'Só professor vira administrador (e volta a professor). Aluno não muda de papel — decisão de 2026-09-22.';
+  'Só professor vira administrador (e volta a professor). Aluno não muda de papel pelo app — decisão de 2026-09-22. Sem sessão (migration, seed, service_role) a regra não se aplica.';
 
 create trigger enforce_role_change_rules
   before update of role on public.profiles

@@ -115,11 +115,29 @@ begin
   begin
     update public.profiles set role = 'professor', color = '#39FF14'
      where id = 'ca000000-0000-4000-8000-000000000001';
-    -- Se passou, é porque havia outro admin ativo; então não é o caso de teste.
+    -- Passou: havia outro administrador ativo, então a trava não se aplicava.
     raise notice 'OK P7: havia outro administrador ativo, trava não se aplica aqui';
-  exception when raise_exception or insufficient_privilege then
+  -- check_violation (23514) é o código que prevent_last_admin_removal usa.
+  exception when check_violation or raise_exception or insufficient_privilege then
     raise notice 'OK P7: o último administrador continua protegido';
   end;
+end $$;
+
+-- =====================================================================
+-- P8 — sem sessão (migration/seed/servidor) a regra não se aplica
+-- =====================================================================
+reset role;
+set local request.jwt.claims = '{}';
+do $$
+begin
+  -- Corrigir um cadastro errado por fora precisa continuar possível; a trava
+  -- existe contra o que se alcança pelo app.
+  update public.profiles set role = 'professor', color = '#39FF14'
+   where id = 'ca000000-0000-4000-8000-000000000003';
+  if (select role from public.profiles where id = 'ca000000-0000-4000-8000-000000000003') <> 'professor' then
+    raise exception 'FALHOU P8: contexto sem sessão não conseguiu ajustar o papel';
+  end if;
+  raise notice 'OK P8: migration e servidor continuam ajustando o papel';
 end $$;
 
 rollback;
