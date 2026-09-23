@@ -97,7 +97,7 @@ cai na versão pura (ou `+dev`).
    ele confere que a tag bate com a versão, compila APK e AAB assinados com a chave de
    produção, recusa publicar se a assinatura, o pacote, a versão ou o banco embutido
    não forem os de produção, e cria o GitHub Release com as notas do CHANGELOG,
-   `snake-thai-v1.7.0.apk`, `snake-thai-v1.7.0-playstore.aab` e `SHA256SUMS.txt`.
+   `snake-thai-v1.7.0.apk` e `snake-thai-v1.7.0-playstore.aab`.
    Acompanhe com `gh run watch`.
 
 **Ensaio antes da tag:** em *Actions → Release Android → Run workflow* (na `main`), ou
@@ -109,6 +109,26 @@ a versão da pasta `android/` e o certificado) e depois
 `node scripts/version.js notes v1.7.0 > %TEMP%\notas.md` e
 `gh release create v1.7.0 release\snake-thai-v1.7.0.apk --title "Snake Thai 1.7.0" --notes-file %TEMP%\notas.md`.
 **Nunca os dois caminhos para a mesma tag.**
+
+### Por que não publicamos hashes dos arquivos
+
+Decidido em 2026-09-23: **nada de `SHA256SUMS.txt` no release.** Não acrescente
+de novo.
+
+O hash ficaria hospedado no mesmo lugar que o arquivo. Quem conseguisse trocar o
+APK no release trocaria o arquivo de hashes junto — um hash só vale quando vem
+por um canal independente daquilo que ele verifica.
+
+Quem identifica um APK legítimo é a **assinatura**, e ela é melhor em tudo o que
+importa aqui: prova autoria (só quem tem a keystore assina), e o **Android
+confere sozinho**, sem ninguém precisar digitar comando nenhum. Foi exatamente
+isso que obrigou a desinstalar na 1.6.0 → 1.7.0, quando a chave mudou.
+
+Some-se o óbvio: nenhum aluno vai calcular SHA-256 no celular antes de instalar.
+
+A conferência oficial é a impressão digital do certificado, em
+[`RELEASE-SIGNING.md`](RELEASE-SIGNING.md), que as notas do release repetem a
+cada versão.
 
 ### Tag publicada não se move
 

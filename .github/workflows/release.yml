@@ -194,7 +194,9 @@ jobs:
           mkdir -p saida
           cp android/app/build/outputs/apk/release/app-release.apk "saida/snake-thai-v${NOME}.apk"
           cp android/app/build/outputs/bundle/release/app-release.aab "saida/snake-thai-v${NOME}-playstore.aab"
-          (cd saida && sha256sum -- *.apk *.aab > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          # Nada de arquivo de hashes: ver "Por que não publicamos hashes" em
+          # docs/VERSIONAMENTO.md. Quem identifica um APK legítimo é a
+          # assinatura, que o Android confere sozinho.
 
       - name: Publica o GitHub Release
         if: steps.modo.outputs.publicar == 'true'
@@ -211,7 +213,6 @@ jobs:
             echo "Baixe \`snake-thai-v${versao}.apk\` em **Assets** e abra no Android. O \`-playstore.aab\` não serve para instalar direto."
             echo ""
             echo "SHA-256 do certificado de assinatura: \`${CERT_ESPERADO}\`"
-            echo "Hashes dos arquivos: \`SHA256SUMS.txt\`."
           } >> "$notas"
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
             gh release upload "$GITHUB_REF_NAME" saida/* --clobber
