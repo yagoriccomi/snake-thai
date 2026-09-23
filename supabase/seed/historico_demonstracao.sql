@@ -24,8 +24,14 @@
 --      e sem risco de a acentuação chegar corrompida.
 --   2. A string de conexão NÃO é a chave de API. Ela começa com
 --      `postgresql://` e está em Project Settings > Database >
---      Connection string > URI. Um valor `sbp_...` ou `eyJ...` é chave, e
---      não serve aqui.
+--      Connection string. Um valor `sbp_...` ou `eyJ...` é chave, e não
+--      serve aqui.
+--   3. Naquela página, escolha a aba **Session pooler**, não "Direct
+--      connection". A direta (`db.<projeto>.supabase.co`) só resolve para
+--      IPv6, e o contêiner não tem IPv6 — o erro é "Network is unreachable",
+--      que parece banco fora do ar e não é. O pooler responde em IPv4, na
+--      mesma porta 5432, e aguenta a transação longa deste script (a aba
+--      "Transaction pooler", na 6543, não aguenta).
 --
 --   docker cp supabase/seed/historico_demonstracao.sql supabase_db_snake-thai:/tmp/historico.sql
 --   docker exec supabase_db_snake-thai psql "postgresql://..." -f /tmp/historico.sql
