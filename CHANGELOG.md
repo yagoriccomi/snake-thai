@@ -5,6 +5,16 @@ quando um APK é publicado — regras em [`docs/VERSIONAMENTO.md`](docs/VERSIONA
 As entradas novas são geradas por `npm run versao:<parte>` a partir dos commits e
 revisadas antes da publicação.
 
+## [1.8.0] - 2026-09-23
+
+### Novidades
+
+- **Aluno de iPhone agora pode ser cadastrado.** Não existe aplicativo para iPhone, mas esses alunos precisam existir no sistema: o professor faz a chamada deles e a mensalidade conta no financeiro. No cadastro, marque **"Não usa"** em *Acesso ao aplicativo* e preencha nome, CPF, celular e nascimento — antes esses dados só podiam ser preenchidos pelo próprio aluno, e quem nunca entrava ficava sem nome na chamada para sempre.
+
+### Correções
+
+- **O formulário de cadastro não rolava.** Com os campos novos, o botão "Cadastrar aluno" ficava fora da tela e não dava para alcançá-lo.
+
 ## [1.7.1] - 2026-09-23
 
 ### Correções

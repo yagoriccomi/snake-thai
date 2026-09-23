@@ -2,7 +2,7 @@
   "expo": {
     "name": "Snake Thai",
     "slug": "snake-thai",
-    "version": "1.7.1",
+    "version": "1.8.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "snakethai",
@@ -15,7 +15,7 @@
     },
     "android": {
       "package": "com.snakethai.app",
-      "versionCode": 1007001,
+      "versionCode": 1008000,
       "adaptiveIcon": {
         "backgroundColor": "#0D0D0D",
         "foregroundImage": "./assets/android-icon-foreground.png",
