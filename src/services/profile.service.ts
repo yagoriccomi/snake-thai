@@ -264,23 +264,34 @@ export async function resetStudentPassword(userId: string): Promise<void> {
 }
 
 /**
- * Promove ou rebaixa um usuário entre aluno e administrador.
+ * Promove um professor a administrador, ou devolve um administrador ao quadro
+ * de professores.
  *
- * A trava contra ficar sem administrador vive no banco (trigger
- * `prevent_last_admin_removal`), não aqui: validar só no app deixaria a brecha
- * aberta para qualquer outro cliente da API. O erro do banco sobe para a UI.
+ * **Aluno não entra aqui.** Administrador sai da equipe — decisão de
+ * 2026-09-22 — e o banco recusa qualquer transição que envolva o papel de
+ * aluno (trigger `enforce_role_change_rules`).
  *
- * @param userId Id do usuário alvo.
- * @param role   Novo papel.
- * @throws Quando é a última conta de administrador ativa.
+ * A cor viaja junto porque a constraint `profiles_color_only_for_professor`
+ * exige cor de professor e a proíbe em qualquer outro papel: promover sem
+ * limpar a cor, ou rebaixar sem escolher uma, é recusado pelo banco.
+ *
+ * As travas vivem no banco, não aqui: validar só no app deixaria a brecha
+ * aberta para qualquer outro cliente da API.
+ *
+ * @param userId Id da pessoa.
+ * @param role   `'admin'` para promover, `'professor'` para devolver à equipe.
+ * @param corDoProfessor Cor do professor ao rebaixar; ignorada ao promover.
+ * @throws Quando é a última conta de administrador ativa, quando a pessoa é
+ *         aluno, ou quando a cor não acompanha o papel.
  */
 export async function updateUserRole(
   userId: string,
-  role: Database['public']['Enums']['user_role'],
+  role: Extract<Database['public']['Enums']['user_role'], 'admin' | 'professor'>,
+  corDoProfessor?: string,
 ): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ role })
+    .update({ role, color: role === 'professor' ? corDoProfessor ?? null : null })
     .eq('id', userId);
   if (error !== null) {
     throw error;

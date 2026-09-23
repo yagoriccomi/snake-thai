@@ -27,7 +27,6 @@ import {
   setStudentActive,
   updateStudentGroup,
   updateStudentPlan,
-  updateUserRole,
 } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Profile } from '@/types/models';
@@ -222,41 +221,6 @@ export function GerenciarAlunosScreen({
     [load],
   );
 
-  /**
-   * Promove a administrador ou rebaixa a aluno. A trava contra ficar sem
-   * administrador vive no banco; aqui apenas traduzimos a recusa.
-   */
-  const handleToggleRole = useCallback(
-    (student: Profile) => {
-      const willPromote = student.role !== 'admin';
-      const label = student.name ?? 'este aluno';
-      Alert.alert(
-        willPromote ? 'Promover a administrador?' : 'Rebaixar a aluno?',
-        willPromote
-          ? `${label} passa a gerenciar alunos, planos, aulas e configuracoes.`
-          : `${label} perde o acesso administrativo.`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: willPromote ? 'Promover' : 'Rebaixar',
-            style: willPromote ? 'default' : 'destructive',
-            onPress: () => {
-              void updateUserRole(student.id, willPromote ? 'admin' : 'user')
-                .then(load)
-                .catch(() => {
-                  Alert.alert(
-                    'Nao foi possivel alterar',
-                    'Se este e o ultimo administrador ativo, promova outro antes de rebaixa-lo.',
-                  );
-                });
-            },
-          },
-        ],
-      );
-    },
-    [load],
-  );
-
   const renderItem = useCallback<ListRenderItem<Profile>>(
     ({ item }) => {
       const isAdmin = item.role === 'admin';
@@ -293,24 +257,6 @@ export function GerenciarAlunosScreen({
                 accessibilityLabel={`Editar dados de ${item.name ?? 'aluno pendente'}`}
               >
                 <Ionicons name="create-outline" size={20} color={colors.textSecondary} />
-              </Pressable>
-              <Pressable
-                onPress={() => handleToggleRole(item)}
-                hitSlop={HIT_SLOP}
-                style={styles.action}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isAdmin }}
-                accessibilityLabel={
-                  isAdmin
-                    ? `Rebaixar ${item.name ?? 'aluno'} a aluno`
-                    : `Promover ${item.name ?? 'aluno'} a administrador`
-                }
-              >
-                <Ionicons
-                  name={isAdmin ? 'shield-checkmark' : 'shield-outline'}
-                  size={20}
-                  color={isAdmin ? colors.primary : colors.textSecondary}
-                />
               </Pressable>
               <Pressable
                 onPress={() => handleToggleActive(item)}
@@ -370,7 +316,6 @@ export function GerenciarAlunosScreen({
       handleEdit,
       handleResetPassword,
       handleToggleActive,
-      handleToggleRole,
       resettingId,
     ],
   );
