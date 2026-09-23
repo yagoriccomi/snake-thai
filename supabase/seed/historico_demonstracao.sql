@@ -49,13 +49,28 @@ begin;
 -- ----------------------------------------------------------------------------
 -- Trava: recusa rodar se houver sinal de uso real
 -- ----------------------------------------------------------------------------
+-- ⚠️ A CHAVE DA TRAVA ⚠️
+--
+-- Troque para 'sim' quando tiver CERTEZA de que este banco não tem dado real
+-- de ninguém. É a única linha que você precisa editar.
+--
+-- A trava abaixo olha comprovantes enviados e, achando algum, para. Ela erra
+-- para o lado seguro: um teste que você mesmo fez pelo app conta como sinal
+-- de uso real, e ela não tem como saber a diferença. Quem sabe é você.
+select set_config('demonstracao.e_banco_de_teste', 'nao', false);
+
 do $$
 declare
   v_reais integer;
 begin
-  -- Um comprovante de verdade é a marca mais confiável de uso real. Os que
-  -- este pacote gera ficam em `.../demonstracao-*.png` e são ignorados — sem
-  -- essa exceção, rodar o gerador de comprovantes trancaria o próprio script.
+  if current_setting('demonstracao.e_banco_de_teste', true) = 'sim' then
+    raise notice 'Trava dispensada: você confirmou que este banco é de teste.';
+    return;
+  end if;
+
+  -- Um comprovante enviado é a marca mais confiável de uso real. Os que este
+  -- pacote gera ficam em `.../demonstracao-*.png` e são ignorados — sem essa
+  -- exceção, rodar o gerador de comprovantes trancaria o próprio script.
   select count(*) into v_reais
     from public.payments
    where proof_public_id is not null
@@ -63,7 +78,7 @@ begin
 
   if v_reais > 0 then
     raise exception
-      'RECUSADO: existem % pagamento(s) com comprovante enviado de verdade. Este banco tem uso real — não escreva histórico fictício aqui.',
+      'PAROU: % pagamento(s) com comprovante enviado. Se foram testes seus, troque a linha `demonstracao.e_banco_de_teste` para ''sim'' no topo deste arquivo e rode de novo.',
       v_reais
       using errcode = '42501';
   end if;
