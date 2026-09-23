@@ -26,6 +26,13 @@
 
 ## 0. Antes de tudo (só você)
 
+- [ ] **Girar a `service_role` key** (Project Settings → API → service_role).
+  Ela apareceu inteira no chat em 2026-09-23. Essa chave ignora todas as regras
+  de proteção do banco: quem a tem lê, altera e apaga tudo pela API, sem login.
+  Adiado de propósito enquanto o banco só tem dados fictícios — **mas isto
+  precisa estar feito antes do primeiro aluno real entrar.**
+  Ao girar, atualize a variável no **Render** (snake-server) e redeploye; o
+  `.env` local também.
 - [ ] **Trocar a senha do banco de produção** (painel da Supabase → Database → Settings).
   Ela foi colada no chat.
 - [ ] **Revogar o token de acesso da Supabase** que foi colado no chat (Account → Access
