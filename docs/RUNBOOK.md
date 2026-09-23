@@ -107,6 +107,12 @@ scripts\db-dev test
 # 3. Recriar com dados de demonstração e testar no app DEV
 scripts\db-dev reset
 
+#    Vai testar cadastro de aluno, de equipe, troca de e-mail ou exclusão de
+#    conta? Essas são Edge Functions, e o `db-dev start` NÃO as sobe. Em outro
+#    terminal, deixe rodando — senão o app responde "não foi possível" e o
+#    motivo é só que a função não existe localmente:
+scripts\db-dev funcoes
+
 # 4. Sincronizar os tipos do TypeScript com o banco local e commitar
 scripts\db-dev types
 
