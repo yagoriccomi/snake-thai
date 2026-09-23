@@ -35,6 +35,11 @@
 --
 --   docker cp supabase/seed/historico_demonstracao.sql supabase_db_snake-thai:/tmp/historico.sql
 --   docker exec supabase_db_snake-thai psql "postgresql://..." -f /tmp/historico.sql
+--
+-- Caminho mais simples, sem rede nem cliente instalado: o **SQL Editor** do
+-- painel da Supabase. Cole todo este arquivo MENOS a linha `\set` abaixo (ela
+-- é comando do psql, não SQL) e execute. O begin/commit garante que ou tudo
+-- entra ou nada entra.
 -- ============================================================================
 
 \set ON_ERROR_STOP on
