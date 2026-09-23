@@ -13,9 +13,22 @@
 -- É idempotente: roda de novo sem duplicar (as chaves únicas do banco cuidam
 -- disso, e o que já existe é ignorado).
 --
--- Uso:
+-- Uso no banco LOCAL:
 --   docker exec -i supabase_db_snake-thai psql -U postgres -d postgres \
 --     < supabase/seed/historico_demonstracao.sql
+--
+-- Uso em OUTRO banco (o de demonstração). Duas armadilhas já pagas:
+--
+--   1. O PowerShell não aceita `<` para redirecionar entrada. Por isso o
+--      arquivo é COPIADO para dentro do contêiner e rodado com -f: sem pipe,
+--      e sem risco de a acentuação chegar corrompida.
+--   2. A string de conexão NÃO é a chave de API. Ela começa com
+--      `postgresql://` e está em Project Settings > Database >
+--      Connection string > URI. Um valor `sbp_...` ou `eyJ...` é chave, e
+--      não serve aqui.
+--
+--   docker cp supabase/seed/historico_demonstracao.sql supabase_db_snake-thai:/tmp/historico.sql
+--   docker exec supabase_db_snake-thai psql "postgresql://..." -f /tmp/historico.sql
 -- ============================================================================
 
 \set ON_ERROR_STOP on
