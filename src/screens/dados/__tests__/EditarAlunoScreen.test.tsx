@@ -46,6 +46,7 @@ function perfil(parcial: Partial<Profile> = {}): Profile {
     updated_at: '2026-01-01T00:00:00Z',
     group_id: null,
     group_since: null,
+    access_channel: 'app',
     plan_id: null,
     status: 'active',
     deactivated_at: null,

@@ -981,6 +981,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          access_channel: string
           anonymized_at: string | null
           color: string | null
           cpf: string | null
@@ -999,6 +1000,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_channel?: string
           anonymized_at?: string | null
           color?: string | null
           cpf?: string | null
@@ -1017,6 +1019,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_channel?: string
           anonymized_at?: string | null
           color?: string | null
           cpf?: string | null
