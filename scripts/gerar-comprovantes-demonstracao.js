@@ -83,15 +83,37 @@ async function main() {
     process.exit(1);
   }
 
+  // Dizer em voz alta onde vai escrever. Sem isto, esquecer de definir
+  // SUPABASE_URL faz o script agir no banco local em silêncio, e a mensagem
+  // "nada a fazer" parece resposta sobre o banco que você queria — não é.
+  const ehLocal = url.includes('localhost') || url.includes('127.0.0.1');
+  console.log(`Banco alvo: ${url}${ehLocal ? '  (LOCAL)' : '  (REMOTO)'}`);
+
   const cabecalhos = { apikey: chave, Authorization: `Bearer ${chave}` };
 
+  // A chave precisa ser a SERVICE ROLE (um JWT `eyJ...` ou `sb_secret_...`),
+  // não o token pessoal da CLI (`sbp_...`). Com a errada, a API responde um
+  // objeto de erro; sem checar, o script o trataria como "lista vazia" e diria
+  // "nada a fazer" — escondendo a causa real.
   const resposta = await fetch(
     `${url}/rest/v1/payments?status=eq.pending_approval&proof_storage_path=is.null&select=id,user_id,amount_cents,due_date`,
     { headers: cabecalhos },
   );
   const pagamentos = await resposta.json();
-  if (!Array.isArray(pagamentos) || pagamentos.length === 0) {
-    console.log('Nenhum pagamento aguardando aprovação sem comprovante. Nada a fazer.');
+  if (!resposta.ok || !Array.isArray(pagamentos)) {
+    console.error(`O banco recusou a consulta (HTTP ${resposta.status}).`);
+    console.error(JSON.stringify(pagamentos));
+    if (String(chave).startsWith('sbp_')) {
+      console.error('');
+      console.error('A chave comeca com "sbp_", que e o token pessoal da CLI.');
+      console.error('O que este script precisa e a SERVICE ROLE KEY, em');
+      console.error('Project Settings > API > service_role. Ela e um JWT longo.');
+    }
+    process.exit(1);
+  }
+  if (pagamentos.length === 0) {
+    console.log('Nenhum pagamento aguardando aprovação sem comprovante neste banco. Nada a fazer.');
+    console.log('Era outro banco que você queria? Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY nesta mesma janela antes de rodar.');
     return;
   }
 
