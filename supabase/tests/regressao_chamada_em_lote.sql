@@ -88,7 +88,7 @@ begin
   update public.payments
      set status = 'pending_approval',
          proof_provider = 'cloudinary',
-         proof_public_id = 'comprovantes/e0000000-0000-4000-8000-000000000001/d002'
+         proof_public_id = 'comprovantes/e0000000-0000-4000-8000-000000000001/e0000000-0000-4000-8000-00000000d002'
    where id = 'e0000000-0000-4000-8000-00000000d002';
   get diagnostics n = row_count;
   if n <> 1 then
@@ -214,6 +214,8 @@ end $$;
 -- Sistema: força um momento de conclusão conhecido
 -- =====================================================================
 reset role;
+-- Sistema = sem usuário: as claims do bloco anterior não podem ficar.
+set local request.jwt.claims = '{}';
 update public.classes set attendance_taken_at = timestamptz '2026-01-01 10:00-03'
  where id = 'e0000000-0000-4000-8000-00000000b001';
 
