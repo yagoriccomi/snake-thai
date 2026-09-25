@@ -850,4 +850,320 @@ begin
   raise notice 'OK F5.6: período fechado pela exclusão da turma é group_closed';
 end $$;
 
+-- =====================================================================
+-- F6.1 — quem lê cada motivo (§ 8, § 0.1, T21, T49, D20, D22)
+-- =====================================================================
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at) values
+  ('e3000000-0000-4000-8000-000000000007','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-prof2@t.invalid','x',now(),now(),now()),
+  ('e3000000-0000-4000-8000-000000000008','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-prof3@t.invalid','x',now(),now(),now());
+insert into public.profiles (id, role, name, cpf, is_first_login, status, color) values
+  ('e3000000-0000-4000-8000-000000000007','professor','Prof Fora V3','93000000007',false,'active','#223344'),
+  ('e3000000-0000-4000-8000-000000000008','professor','Prof Tardio V3','93000000008',false,'active','#334455');
+
+insert into public.classes (id, title, type, date_time, group_id) values
+  ('e3000000-0000-4000-8000-00000000c030', 'Aula X', 'routine', now() - interval '1 day', 'turma-v3'),
+  ('e3000000-0000-4000-8000-00000000c031', 'Aula nova da permanente', 'routine', now() + interval '6 days', 'turma-v3');
+-- Prof V3 (…05) está nas duas desde antes do pedido; o Prof Tardio (…08)
+-- se incluiu na aula nova DEPOIS do pedido de troca permanente.
+insert into public.class_teachers (class_id, teacher_id, created_at) values
+  ('e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-000000000005', now() - interval '2 hours'),
+  ('e3000000-0000-4000-8000-00000000c031', 'e3000000-0000-4000-8000-000000000005', now() - interval '2 hours'),
+  ('e3000000-0000-4000-8000-00000000c031', 'e3000000-0000-4000-8000-000000000008', now());
+
+insert into public.action_reasons (id, kind, class_id, author_id, body) values
+  ('e3000000-0000-4000-8000-00000000a030', 'roll_call_edit', 'e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-000000000005', 'Corrigi a presença'),
+  ('e3000000-0000-4000-8000-00000000a031', 'class_cancel', 'e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-000000000001', 'Chuva forte'),
+  ('e3000000-0000-4000-8000-00000000a032', 'request_evidence', 'e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-000000000002', 'Eu estava lá'),
+  ('e3000000-0000-4000-8000-00000000a033', 'class_swap_evidence', null, 'e3000000-0000-4000-8000-000000000004', 'Atestado: fisioterapia de manhã');
+insert into public.roll_call_requests (kind, class_id, requester_id, subject_id, motivo_id) values
+  ('student_was_present', 'e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-000000000002',
+   'e3000000-0000-4000-8000-000000000002', 'e3000000-0000-4000-8000-00000000a032');
+insert into public.class_swaps (id, user_id, kind, from_class_id, to_class_id, motivo_id, created_at) values
+  ('e3000000-0000-4000-8000-00000000f030', 'e3000000-0000-4000-8000-000000000004', 'permanent',
+   'e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-00000000c031',
+   'e3000000-0000-4000-8000-00000000a033', now() - interval '1 hour');
+insert into public.action_reason_attachments (id, reason_id, uploaded_by, provider, public_id) values
+  ('e3000000-0000-4000-8000-0000000b0033', 'e3000000-0000-4000-8000-00000000a033', 'e3000000-0000-4000-8000-000000000004', 'cloudinary',
+   'motivos/e3000000-0000-4000-8000-000000000004/e3000000-0000-4000-8000-0000000b0033');
+
+-- Enxerga(pessoa, motivo): o que cada token lê, sem nenhum 42501 (§ 0.1).
+create temporary table f6_leitura (pessoa text, motivo uuid) on commit drop;
+grant insert on f6_leitura to authenticated;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000001","role":"authenticated"}';
+insert into f6_leitura select 'admin', id from public.action_reasons;
+insert into f6_leitura select 'admin-anexo', reason_id from public.action_reason_attachments;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000005","role":"authenticated"}';
+insert into f6_leitura select 'prof-da-aula', id from public.action_reasons;
+insert into f6_leitura select 'prof-da-aula-anexo', reason_id from public.action_reason_attachments;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000007","role":"authenticated"}';
+insert into f6_leitura select 'prof-de-fora', id from public.action_reasons;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000008","role":"authenticated"}';
+insert into f6_leitura select 'prof-tardio', id from public.action_reasons;
+insert into f6_leitura select 'prof-tardio-anexo', reason_id from public.action_reason_attachments;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+insert into f6_leitura select 'aluno-autor-pedido', id from public.action_reasons;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000004","role":"authenticated"}';
+insert into f6_leitura select 'aluno-autor-troca', id from public.action_reasons;
+insert into f6_leitura select 'aluno-autor-troca-anexo', reason_id from public.action_reason_attachments;
+reset role;
+
+do $$
+declare
+  v_edit uuid := 'e3000000-0000-4000-8000-00000000a030';
+  v_cancel uuid := 'e3000000-0000-4000-8000-00000000a031';
+  v_pedido uuid := 'e3000000-0000-4000-8000-00000000a032';
+  v_troca uuid := 'e3000000-0000-4000-8000-00000000a033';
+  function_resultado text;
+begin
+  if (select count(*) from f6_leitura where pessoa = 'admin' and motivo in (v_edit, v_cancel, v_pedido, v_troca)) <> 4 then
+    raise exception 'FALHOU F6.1: admin não leu os 4 tipos de motivo';
+  end if;
+  -- Retificação: só o admin (D20), nem o professor que a escreveu.
+  if exists (select 1 from f6_leitura where pessoa <> 'admin' and motivo = v_edit) then
+    raise exception 'FALHOU F6.1: alguém além do admin leu o motivo de retificação';
+  end if;
+  -- Cancelamento: a equipe da aula lê (T21); o professor de fora e o aluno não.
+  if not exists (select 1 from f6_leitura where pessoa = 'prof-da-aula' and motivo = v_cancel)
+     or exists (select 1 from f6_leitura where pessoa in ('prof-de-fora', 'aluno-autor-pedido') and motivo = v_cancel) then
+    raise exception 'FALHOU F6.1: leitura do motivo de cancelamento errada';
+  end if;
+  -- "Eu estava na aula" pendente: o autor e a equipe da aula.
+  if not exists (select 1 from f6_leitura where pessoa = 'aluno-autor-pedido' and motivo = v_pedido)
+     or not exists (select 1 from f6_leitura where pessoa = 'prof-da-aula' and motivo = v_pedido)
+     or exists (select 1 from f6_leitura where pessoa = 'prof-de-fora' and motivo = v_pedido) then
+    raise exception 'FALHOU F6.1: leitura do motivo da solicitação errada';
+  end if;
+  -- Troca permanente pendente: o autor e quem pode decidir. O professor que se
+  -- incluiu na aula nova DEPOIS do pedido não lê (T49), nem o anexo.
+  if not exists (select 1 from f6_leitura where pessoa = 'aluno-autor-troca' and motivo = v_troca)
+     or not exists (select 1 from f6_leitura where pessoa = 'prof-da-aula' and motivo = v_troca)
+     or not exists (select 1 from f6_leitura where pessoa = 'prof-da-aula-anexo' and motivo = v_troca)
+     or exists (select 1 from f6_leitura where pessoa in ('prof-tardio', 'prof-tardio-anexo') and motivo = v_troca)
+     or exists (select 1 from f6_leitura where pessoa = 'aluno-autor-pedido' and motivo = v_troca) then
+    raise exception 'FALHOU F6.1: leitura da justificativa da troca permanente errada (T49)';
+  end if;
+  raise notice 'OK F6.1: cada motivo lido só por quem pode, sem nenhum 42501';
+end $$;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000008","role":"authenticated"}';
+do $$
+begin
+  if public.pode_decidir_troca('e3000000-0000-4000-8000-00000000f030') then
+    raise exception 'FALHOU F6.2: professor que se incluiu depois do pedido pode decidir a permanente (T49)';
+  end if;
+  raise notice 'OK F6.2: pode_decidir_troca = false para quem se incluiu depois do pedido (T49)';
+end $$;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000005","role":"authenticated"}';
+do $$
+begin
+  if not public.pode_decidir_troca('e3000000-0000-4000-8000-00000000f030') then
+    raise exception 'FALHOU F6.2: professor vinculado antes do pedido não pode decidir';
+  end if;
+  raise notice 'OK F6.2: professor vinculado antes do pedido decide';
+end $$;
+reset role;
+
+-- Decidida a troca, a justificativa volta a ser só do autor e do admin (D22).
+update public.class_swaps
+   set status = 'rejected', decided_via = 'review', decided_at = now()
+ where id = 'e3000000-0000-4000-8000-00000000f030';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000005","role":"authenticated"}';
+do $$
+begin
+  if exists (select 1 from public.action_reasons where id = 'e3000000-0000-4000-8000-00000000a033')
+     or exists (select 1 from public.action_reason_attachments where reason_id = 'e3000000-0000-4000-8000-00000000a033') then
+    raise exception 'FALHOU F6.3: professor ainda lê a justificativa da troca decidida';
+  end if;
+  raise notice 'OK F6.3: decidida a troca, o professor deixa de ler a justificativa';
+end $$;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000004","role":"authenticated"}';
+do $$
+begin
+  if not exists (select 1 from public.action_reasons where id = 'e3000000-0000-4000-8000-00000000a033') then
+    raise exception 'FALHOU F6.3: o autor deixou de ler a própria justificativa';
+  end if;
+  raise notice 'OK F6.3: o autor continua lendo a própria justificativa';
+end $$;
+reset role;
+
+-- =====================================================================
+-- F6.4 — grade efetiva do fixo (T33, T3, T5, T37, T51)
+-- =====================================================================
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at) values
+  ('e3000000-0000-4000-8000-000000000009','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-grade@t.invalid','x',now(),now(),now());
+insert into public.groups (id, name) values ('turma-ge', 'Turma Grade'), ('turma-ge2', 'Turma Grade 2');
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, created_at, group_since) values
+  ('e3000000-0000-4000-8000-000000000009','user','Aluno Grade','93000000009',false,'active','turma-ge',
+   now() - interval '60 days', now() - interval '60 days');
+
+do $$
+declare
+  v_seg uuid;
+  v_qua2 uuid;
+  v_semana_livre date := date_trunc('week', (now() - interval '35 days') at time zone 'America/Sao_Paulo')::date;
+  v_plano_livre uuid;
+  v_grade record;
+  v_esperado text[];
+  v_obtido text[];
+begin
+  insert into public.class_schedules (title, weekday, start_time, valid_from, group_id)
+  values ('Seg GE', 1, '07:00', current_date - 90, 'turma-ge') returning id into v_seg;
+  insert into public.class_schedules (title, weekday, start_time, valid_from, group_id)
+  values ('Qua GE2', 3, '07:00', current_date - 90, 'turma-ge2') returning id into v_qua2;
+
+  insert into public.classes (id, title, type, date_time, group_id, schedule_id, occurrence_date, audience) values
+    -- turma, antes da permanente: é dele
+    ('e3000000-0000-4000-8000-0000000d0001', 'k1 turma', 'routine', now() - interval '7 days', 'turma-ge', v_seg, current_date - 7, 'both'),
+    -- aula só de livres da turma: não é da grade do fixo
+    ('e3000000-0000-4000-8000-0000000d0002', 'k2 só livres', 'routine', now() - interval '6 days', 'turma-ge', null, null, 'free'),
+    -- destino da permanente, em outra turma: é dele
+    ('e3000000-0000-4000-8000-0000000d0003', 'k3 destino', 'routine', now() + interval '2 days', 'turma-ge2', v_qua2, current_date + 2, 'both'),
+    -- horário de origem depois da permanente: sai
+    ('e3000000-0000-4000-8000-0000000d0004', 'k4 origem', 'routine', now() + interval '1 day', 'turma-ge', v_seg, current_date + 1, 'both'),
+    -- original de troca avulsa aprovada: sai; destino: entra
+    ('e3000000-0000-4000-8000-0000000d0005', 'k5 original', 'routine', now() - interval '3 days', 'turma-ge', null, null, 'both'),
+    ('e3000000-0000-4000-8000-0000000d0006', 'k6 troca', 'routine', now() - interval '2 days', 'turma-ge2', null, null, 'free'),
+    -- durante o trancamento: sai
+    ('e3000000-0000-4000-8000-0000000d0007', 'k7 trancado', 'routine', now() - interval '17 days', 'turma-ge', null, null, 'both'),
+    -- antes de ele entrar na turma: sai (T51)
+    ('e3000000-0000-4000-8000-0000000d0008', 'k8 antes da turma', 'routine', now() - interval '90 days', 'turma-ge', null, null, 'both'),
+    -- na semana em que o plano era livre: sai (T3)
+    ('e3000000-0000-4000-8000-0000000d0009', 'k9 semana livre', 'routine',
+     (v_semana_livre + 2)::timestamp at time zone 'America/Sao_Paulo' + interval '12 hours', 'turma-ge', null, null, 'both'),
+    -- evento: nunca é da grade
+    ('e3000000-0000-4000-8000-0000000d0010', 'k10 evento', 'event', now() - interval '5 days', 'turma-ge', null, null, 'both');
+
+  insert into public.class_swap_periods (user_id, from_schedule_id, to_schedule_id, started_at)
+  values ('e3000000-0000-4000-8000-000000000009', v_seg, v_qua2, now() - interval '1 day');
+  insert into public.class_swaps (user_id, kind, from_class_id, to_class_id, status, decided_via, decided_at, decided_by)
+  values ('e3000000-0000-4000-8000-000000000009', 'once',
+          'e3000000-0000-4000-8000-0000000d0005', 'e3000000-0000-4000-8000-0000000d0006',
+          'approved', 'review', now() - interval '4 days', 'e3000000-0000-4000-8000-000000000001');
+  insert into public.inactive_periods (user_id, started_at, ended_at)
+  values ('e3000000-0000-4000-8000-000000000009', now() - interval '20 days', now() - interval '15 days');
+
+  insert into public.plans (name, price_cents, billing_period, due_day, schedule_mode, weekly_quota)
+  values ('Livre 2x GE', 10000, 'monthly', 10, 'free', 2) returning id into v_plano_livre;
+  insert into public.plan_periods (user_id, plan_id, started_at, ended_at)
+  values ('e3000000-0000-4000-8000-000000000009', v_plano_livre,
+          v_semana_livre::timestamp at time zone 'America/Sao_Paulo' - interval '1 hour',
+          (v_semana_livre + 7)::timestamp at time zone 'America/Sao_Paulo');
+
+  select array_agg(c.title || ':' || g.fonte order by c.title) into v_obtido
+    from public.grade_efetiva_do_fixo(array['e3000000-0000-4000-8000-000000000009'::uuid],
+                                      now() - interval '120 days', now() + interval '30 days') g
+    join public.classes c on c.id = g.class_id;
+  v_esperado := array['k1 turma:turma', 'k3 destino:permanente', 'k6 troca:troca'];
+
+  if v_obtido is distinct from v_esperado then
+    raise exception 'FALHOU F6.4: grade efetiva = %, esperado %', v_obtido, v_esperado;
+  end if;
+  raise notice 'OK F6.4: grade efetiva = turma + permanente + troca, sem só livres, origem, original, trancado, antes da turma, semana livre nem evento';
+end $$;
+
+-- =====================================================================
+-- F6.5 — a grade efetiva e a modalidade são internas (§ 9.4)
+-- =====================================================================
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000009","role":"authenticated"}';
+do $$
+begin
+  begin
+    perform * from public.grade_efetiva_do_fixo(array['e3000000-0000-4000-8000-000000000009'::uuid], now() - interval '1 day', now());
+    raise exception 'FALHOU F6.5: aluno chamou grade_efetiva_do_fixo';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform public.modalidade_da_semana('e3000000-0000-4000-8000-000000000009', current_date);
+    raise exception 'FALHOU F6.5: aluno chamou modalidade_da_semana';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'OK F6.5: grade efetiva e modalidade só para o banco';
+end $$;
+
+-- =====================================================================
+-- F6.6 — prazo de guarda dos anexos só muda com nova Política (§ 5.2, § 0.1)
+-- =====================================================================
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000001","role":"authenticated"}';
+do $$
+begin
+  begin
+    update public.academy_settings set attachment_retention_days = 90;
+    raise exception 'FALHOU F6.6: admin mudou o prazo de guarda dos anexos';
+  exception when insufficient_privilege then null;
+  end;
+  -- O resto das Configurações continua livre para o admin.
+  update public.academy_settings set contact_email = 'outro@academia.test';
+  raise notice 'OK F6.6: admin recebe 42501 no prazo de guarda e segue salvando o resto';
+end $$;
+reset role;
+-- Sistema = sem usuário (como numa migration): sem as claims do admin.
+set local request.jwt.claims = '{}';
+
+do $$
+begin
+  update public.academy_settings set attachment_retention_days = 200;
+  if (select attachment_retention_days from public.academy_settings) <> 200 then
+    raise exception 'FALHOU F6.6: o sistema (migration) não conseguiu mudar o prazo';
+  end if;
+  raise notice 'OK F6.6: o sistema muda o prazo (migration com nova Política)';
+end $$;
+
+-- =====================================================================
+-- F6.7 — class_teachers lido pelas três colunas (§ 6, § 15)
+-- =====================================================================
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+do $$
+declare
+  n int;
+begin
+  select count(*) into n from (select class_id, teacher_id, created_at from public.class_teachers) t;
+  if n = 0 then
+    raise exception 'FALHOU F6.7: aluno não leu class_teachers pelas três colunas';
+  end if;
+  raise notice 'OK F6.7: o select de class_teachers do APK 1.8 continua funcionando';
+end $$;
+reset role;
+
+-- =====================================================================
+-- G1 — a conferência do portão (contrato § 14)
+-- =====================================================================
+do $$
+begin
+  if (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'public' and c.relname in (
+         'plan_periods','inactive_periods','weekly_goals','action_reasons','action_reason_attachments',
+         'roll_call_requests','attendance_audit','class_teacher_presence','class_audit',
+         'absence_justification_reviews','absence_justification_attempts','class_swaps',
+         'class_swap_reviews','class_swap_periods','student_group_periods')) <> 15 then
+    raise exception 'FALHOU G1: as 15 tabelas não estão todas lá';
+  end if;
+  if (select count(*) from pg_enum where enumlabel in ('anexo_de_motivo_removido','class_swap_evidence','troca_pendente')) <> 3 then
+    raise exception 'FALHOU G1: os 3 valores de enum não estão todos lá';
+  end if;
+  if not exists (select 1 from information_schema.columns
+                  where table_schema = 'public' and table_name = 'academy_settings' and column_name = 'contact_whatsapp') then
+    raise exception 'FALHOU G1: academy_settings.contact_whatsapp não existe';
+  end if;
+  if not exists (select 1 from pg_proc where proname = 'pode_ler_motivo') then
+    raise exception 'FALHOU G1: pode_ler_motivo não existe';
+  end if;
+  if (select count(*) from pg_trigger where tgname = 'registrar_periodo_de_turma' and tgrelid = 'public.profiles'::regclass) <> 1 then
+    raise exception 'FALHOU G1: o gatilho registrar_periodo_de_turma não está em profiles';
+  end if;
+  if (select count(*) from public.profiles p
+       where p.group_id is not null
+         and not exists (select 1 from public.student_group_periods g
+                          where g.user_id = p.id and g.ended_at is null and g.group_id = p.group_id)) <> 0 then
+    raise exception 'FALHOU G1: há aluno com turma sem período aberto (backfill)';
+  end if;
+  raise notice 'OK G1: 15 tabelas · 3 valores de enum · contact_whatsapp · pode_ler_motivo · gatilho · backfill 0';
+end $$;
+
 rollback;

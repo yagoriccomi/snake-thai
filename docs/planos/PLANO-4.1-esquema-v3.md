@@ -76,7 +76,8 @@ deste bloco sozinho.
 | 3 | ✅ aplicada no local (25/09); F3.1–F3.5 verdes (5 anexos, caminho do autor, fila com o motivo certo, auditoria só do admin, cascata da aula cancelada) |
 | 4 | ✅ aplicada no local (25/09); F4.1–F4.4 verdes (aula apagada: reposição aprovada pelo sistema, pendente futura cancelada, aprovada segue; uma ativa por aula; período coerente; sem acesso para aluno e anon) |
 | 5 | ✅ aplicada no local (25/09); backfill conferido (0 alunos sem período aberto na turma atual; 50 períodos); F5.1–F5.6 verdes (plano com histórico travado, `signup`, update direto do admin com a T53, mudança desfeita, leitura por papel, exclusão que arquiva com `group_closed`) |
-| 6 | — |
+| 6a | ✅ aplicada no local (25/09): `pode_decidir_troca`, `pode_ler_motivo` e as políticas; `modalidade_da_semana` (interna, T3/T5); `grade_efetiva_do_fixo`; trava do prazo de guarda; grant por coluna em `class_teachers`. F6.1–F6.7 e a **conferência do G1** verdes no local |
+| 6b | — travas de § 6, § 7.1 e § 9.1, com a compatibilidade da `salvar_chamada`/`concluir_chamada` |
 
 ## Achados durante a execução
 
@@ -101,3 +102,12 @@ deste bloco sozinho.
 6. **Testes na mesma transação e a regra "mudança desfeita antes de valer".** Um aluno cadastrado
    e mudado de turma no mesmo `now()` tem o período apagado, não fechado (§ 5.2). As fixtures
    que testam o fechamento cadastram o aluno com `created_at`/`group_since` no passado.
+7. **Fatia 6 dividida em 6a e 6b.** A trava nova da chamada (§ 7.1) recusa escrever `status`
+   fora das RPCs de chamada, e isso inclui a `salvar_chamada` de hoje, que o APK 1.8 e o app DEV
+   usam. A 6b leva as travas **junto** do ajuste mínimo de compatibilidade (ligar
+   `snake.chamada_rpc`/`snake.aula_rpc` dentro de `salvar_chamada` e `concluir_chamada`), para a
+   chamada não quebrar entre o 4.1 e o 4.6.
+8. **`pode_decidir_troca` nasceu na 6a**, e não no 4.9b: `pode_ler_motivo` depende exatamente
+   dessa regra (T49). Assinatura e regra idênticas às da § 9.4.
+9. **`modalidade_da_semana(p_user_id, p_segunda)`** é interna (sem grant): o contrato não a
+   nomeia porque ela não cruza a fronteira. É a T3/T5 num lugar só, e a conta (4.5) vai usá-la.
