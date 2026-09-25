@@ -73,8 +73,8 @@ deste bloco sozinho.
 | --- | --- |
 | 1 | ✅ aplicada no local (25/09); os 12 valores conferidos |
 | 2 | ✅ aplicada no local (25/09); `regressao_esquema_v3.sql` F2.1–F2.8 verde; fixtures antigas com caminho fictício ajustadas ao formato real |
-| 3 | — |
-| 4 | — |
+| 3 | ✅ aplicada no local (25/09); F3.1–F3.5 verdes (5 anexos, caminho do autor, fila com o motivo certo, auditoria só do admin, cascata da aula cancelada) |
+| 4 | ✅ aplicada no local (25/09); F4.1–F4.4 verdes (aula apagada: reposição aprovada pelo sistema, pendente futura cancelada, aprovada segue; uma ativa por aula; período coerente; sem acesso para aluno e anon) |
 | 5 | — |
 | 6 | — |
 
