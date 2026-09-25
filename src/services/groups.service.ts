@@ -66,9 +66,11 @@ export async function fetchGroupsOverview(hojeIso: string): Promise<GroupOvervie
 
   const horariosPorTurma = new Map<string, number>();
   for (const horario of horarios) {
-    if (horarioEstaAtivo(horario.valid_until, hojeIso)) {
-      horariosPorTurma.set(horario.group_id, (horariosPorTurma.get(horario.group_id) ?? 0) + 1);
+    // Horário "só livres" pode não ter turma (contrato v3, T7): não conta para nenhuma.
+    if (horario.group_id === null || !horarioEstaAtivo(horario.valid_until, hojeIso)) {
+      continue;
     }
+    horariosPorTurma.set(horario.group_id, (horariosPorTurma.get(horario.group_id) ?? 0) + 1);
   }
 
   return turmas.map(({ profiles, ...group }) => ({
