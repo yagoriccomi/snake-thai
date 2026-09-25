@@ -58,7 +58,7 @@ Sem superfície visual (saída de terminal de uma linha por item).
 
 ## Definição de pronto
 
-- [ ] Testes da lib passando
-- [ ] `node scripts/version.js check` na branch sem migration: sem aviso
-- [ ] Simulação com uma migration nova num commit temporário: aviso com o nome do arquivo
-- [ ] `VERSIONAMENTO.md` atualizado
+- [x] Testes da lib passando (38)
+- [x] `node scripts/version.js check` na branch sem migration: sem aviso
+- [x] Simulação com uma migration nova num commit temporário: aviso com o nome do arquivo (também no commit de uma tag v1.9.0 local, apagada depois)
+- [x] `VERSIONAMENTO.md` atualizado
