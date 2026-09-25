@@ -28,7 +28,7 @@
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **1.9.0**, com o aviso de atualização (Fase 3A) |
 | **`main`** | Em `384f715` (merge do PR #38, 24/09). **CI vermelho nesse merge:** o job de regressão SQL não conseguiu instalar a CLI do Supabase ("rate limit exceeded" ao resolver `version: latest`); os outros dois jobs passaram. É falha de infraestrutura, não de código (item 0.6) |
-| **Branches** | Nenhuma aberta. `feat/dados-de-demonstracao` e `feat/sentry-regiao-ue` já foram mescladas e ainda existem (item 0.3) |
+| **Branches** | **PRs abertos em 25/09, aguardando seu merge:** #41 (Fase 0), #42 (1.5) e #43 (Fase 3A); #44 com este andamento. As locais já mescladas foram apagadas (0.3) |
 | **Banco local** | De pé, com um ano de histórico de demonstração |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
 | **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v3**, revisada em 25/09. Nenhum chat implementou nada dela ainda |
@@ -79,10 +79,10 @@ A lista junta os três repositórios, porque o marco é um só.
 | --- | --- | --- | --- |
 | 0.1 | [x] ~~Commitar a alteração pendente em `scripts/gerar-comprovantes-demonstracao.js` na branch do PR #38~~ — **feito em 24/09** (`dc2f5bd`) | `git-flow-projeto` | 🤖 |
 | 0.2 | [x] ~~Mergear o PR #38 (merge commit, como todos os outros)~~ — **feito em 24/09** (`384f715`) | — | 👤 |
-| 0.3 | Apagar as branches locais `feat/sentry-regiao-ue` e `feat/dados-de-demonstracao`, já mescladas. A `main` local já está em `384f715`, igual à remota | `git-flow-projeto` | 🤖 |
-| 0.4 | Subir o Node do `ci.yml` de 20 para 22 (o `release.yml` já está no 22) | `executar-projeto` | 🤖 com seu aval |
-| 0.5 | Deixar no topo do `PLANO-DE-TAREFAS.md` um ponteiro para este arquivo | `documentar-projeto` | 🤖 |
-| 0.6 | **CI da `main` vermelho desde o merge do PR #38:** rerodar o job "Regressão de segurança no banco"; se falhar de novo, fixar a versão da CLI do Supabase no `ci.yml` (hoje `version: latest`) | `executar-projeto` | 🤖 com seu aval |
+| 0.3 | [x] ~~Apagar as branches locais `feat/sentry-regiao-ue` e `feat/dados-de-demonstracao`, já mescladas~~ — **feito em 25/09** (`git branch -d`, só locais) | `git-flow-projeto` | 🤖 |
+| 0.4 | [x] ~~Subir o Node do `ci.yml` de 20 para 22~~ — **PR #41 (25/09)**; o merge é o seu aval | `executar-projeto` | 🤖 com seu aval |
+| 0.5 | [x] ~~Deixar no topo do `PLANO-DE-TAREFAS.md` um ponteiro para este arquivo~~ — **PR #41 (25/09)** | `documentar-projeto` | 🤖 |
+| 0.6 | [x] ~~**CI da `main` vermelho desde o merge do PR #38**~~ — **resolvido sozinho:** os merges dos PRs #39 e #40 (run `36176537979`) passaram nos três jobs, inclusive o de banco. Sem mudança no `ci.yml`; fixar a CLI só se voltar a falhar | `executar-projeto` | 🤖 com seu aval |
 
 **Detalhes:**
 
@@ -151,7 +151,7 @@ mudou em `supabase/` desde a 1.7.0.
   - [ ] cadastrar um aluno de teste com "Não usa": o nome aparece na lista e na chamada;
   - [ ] tentar promover um aluno: o banco recusa;
   - [ ] apagar o aluno de teste.
-- [ ] **1.5** 🤖 `executar-projeto`: fazer o `npm run versao:verificar` **avisar quando há
+- [x] **1.5** — **PR #42 (25/09)**, aguardando seu merge. 🤖 `executar-projeto`: fazer o `npm run versao:verificar` **avisar quando há
   migration ou Edge Function nova desde a última tag**, com a lembrança "publique em
   produção antes da APK". É um `git diff <última tag>..HEAD -- supabase/`, sem rede e sem
   token. Foi exatamente esse passo que escapou na 1.8.0. Registrar a regra também no
@@ -253,7 +253,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 - [x] **3A.1** 👤 Aprovar os **textos da § 12.3** (aprovados em 25/09, com a linha H) (linha H dos mockups). Anote no Registro:
   "Textos da § 12.3 aprovados em dd/mm". **Não é o G0:** libera só esta fase.
-- [ ] **3A.2** 🤖 `executar-projeto` (+ `design-de-interface-projeto` e `testes-projeto`): a
+- [x] **3A.2** — **PR #43 (25/09)**, aguardando seu merge; duas perguntas para você em `docs/planos/ENTREGA-3A-aviso-de-atualizacao.md`. 🤖 `executar-projeto` (+ `design-de-interface-projeto` e `testes-projeto`): a
   checagem e a folha, exatamente como a § 12.3:
   - **Fonte:** `GET https://api.github.com/repos/yagoriccomi/snake-thai/releases/latest`, com
     `Accept: application/vnd.github+json`, **sem token** (o repositório é público) e tempo
@@ -286,7 +286,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
     asset ausente ou com
     `browser_download_url` diferente leva à página da tag; a segunda abertura no mesmo dia não
     consulta. [#41][#46]
-- [ ] **3A.3** 🤖 `documentar-projeto`: registrar no `docs/VERSIONAMENTO.md` a **convenção de
+- [x] **3A.3** — **PR #43 (25/09)**. 🤖 `documentar-projeto`: registrar no `docs/VERSIONAMENTO.md` a **convenção de
   release** que o aviso pressupõe, valendo para o `release.yml` e para a publicação local
   (`gh release create`):
   - tag `vX.Y.Z`, sem sufixo, como hoje;
@@ -1087,3 +1087,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-25 | **Roadmap atualizado para a v3.** Fase 1 marcada com os fatos de 24/09; `service_role` sem urgência, no M1; **Fase 3A** criada para o APK 1.9.0 com o aviso de atualização, a única exceção ao G0; Fase 4 com o mapa da v3, o bloco 4.9 dividido em 4.9a (Solicitações) e 4.9b (Troca de aula, abre G3), e a 2.0.0 dependendo da 1.9.0. Conferido nesta atualização: o CI da `main` ficou vermelho no merge do PR #38 porque a instalação da CLI do Supabase estourou o limite da API do GitHub (item 0.6), e o `release.yml` já usa Node 22 (o 0.4 fica só com o `ci.yml`). |
 | 2026-09-25 | **Servidor, só como informação:** o lote de dependências do `snake-server` (PR #22) foi mesclado em 25/09. O detalhe está no [`snake-server/ROADMAP-server.md`](../snake-server/ROADMAP-server.md). O G2 continua pendente. |
 | 2026-09-25 | **G0 aberto.** O dono aprovou as linhas G e H dos mockups (versão 8; A–F aprovadas em 24/09) e, com elas, os textos da § 12.3 (3A.1) e o contrato v3 com a revisão de 25/09. P23–P25 valem como escolhidas, sem veto. A versão 8 tirou do menu do fixo o cartão "Suas aulas", que nenhuma coluna do contrato traz. No mesmo dia, o dono decidiu que o 4.1 e o 4.8 do `snake-server` (correções do worker que valem para a produção de hoje) vêm primeiro. |
+| 2026-09-25 | **Primeira rodada deste chat depois do G0** (sem merge ainda; nada foi para produção). **Fase 0:** 0.3 feito (branches locais apagadas); 0.4 e 0.5 no **PR #41**; 0.6 resolvido sem mudança (a `main` voltou ao verde nos merges dos PRs #39 e #40). **1.5** no **PR #42**: o `versao:verificar` avisa das migrations e Edge Functions a publicar antes da APK. **Fase 3A:** 3A.2 e 3A.3 no **PR #43** (aviso de atualização, 64 testes novos, `npm run ci` verde). Perguntas ao dono na entrega da 3A: a 2ª dica do mockup, que não está no contrato, e uma mensagem para quando o navegador não abre. **Contrato sem mudança (continua v3). Nenhum portão novo aberto:** G1 espera o 4.1. |
