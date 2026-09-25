@@ -75,7 +75,7 @@ deste bloco sozinho.
 | 2 | ✅ aplicada no local (25/09); `regressao_esquema_v3.sql` F2.1–F2.8 verde; fixtures antigas com caminho fictício ajustadas ao formato real |
 | 3 | ✅ aplicada no local (25/09); F3.1–F3.5 verdes (5 anexos, caminho do autor, fila com o motivo certo, auditoria só do admin, cascata da aula cancelada) |
 | 4 | ✅ aplicada no local (25/09); F4.1–F4.4 verdes (aula apagada: reposição aprovada pelo sistema, pendente futura cancelada, aprovada segue; uma ativa por aula; período coerente; sem acesso para aluno e anon) |
-| 5 | — |
+| 5 | ✅ aplicada no local (25/09); backfill conferido (0 alunos sem período aberto na turma atual; 50 períodos); F5.1–F5.6 verdes (plano com histórico travado, `signup`, update direto do admin com a T53, mudança desfeita, leitura por papel, exclusão que arquiva com `group_closed`) |
 | 6 | — |
 
 ## Achados durante a execução
@@ -95,3 +95,9 @@ deste bloco sozinho.
 4. **`regressao_frequencia_fundacao.sql` falha no banco local com dados de demonstração**
    (`profiles_cpf_key`): colide com um CPF da demonstração, não com as fatias. Precisa passar no
    `scripts\db-dev test` (banco limpo), no fim.
+5. **`is_staff()` nasceu na fatia 5**, e não no 4.2: as políticas de `inactive_periods`,
+   `weekly_goals` e `student_group_periods` já a usam. É exatamente a da § 4; o resto do § 4
+   (cor do admin, gatilhos de papel, `diretorio_perfis`) continua no 4.2.
+6. **Testes na mesma transação e a regra "mudança desfeita antes de valer".** Um aluno cadastrado
+   e mudado de turma no mesmo `now()` tem o período apagado, não fechado (§ 5.2). As fixtures
+   que testam o fechamento cadastram o aluno com `created_at`/`group_since` no passado.

@@ -605,4 +605,249 @@ begin
   raise notice 'OK F3.5: aula cancelada apagada leva motivo e auditoria juntos';
 end $$;
 
+-- =====================================================================
+-- F5.1 — plano com histórico não muda de modalidade nem é apagado (T4)
+-- =====================================================================
+do $$
+declare
+  v_usado uuid;
+  v_livre uuid;
+begin
+  insert into public.plans (name, price_cents, billing_period, due_day) values ('Fixo usado V3', 10000, 'monthly', 10)
+  returning id into v_usado;
+  insert into public.plans (name, price_cents, billing_period, due_day) values ('Fixo novo V3', 10000, 'monthly', 10)
+  returning id into v_livre;
+  insert into public.plan_periods (user_id, plan_id, started_at)
+  values ('e3000000-0000-4000-8000-000000000003', v_usado, now() - interval '30 days');
+
+  begin
+    update public.plans set schedule_mode = 'free', weekly_quota = 2 where id = v_usado;
+    raise exception 'FALHOU F5.1: plano com histórico mudou de modalidade';
+  exception when check_violation then null;
+  end;
+  begin
+    delete from public.plans where id = v_usado;
+    raise exception 'FALHOU F5.1: plano com histórico apagado';
+  exception when check_violation then null;
+  end;
+
+  -- O que não mexe na conta continua livre: nome e preço.
+  update public.plans set name = 'Fixo usado V3 (renomeado)', price_cents = 12000 where id = v_usado;
+  -- Plano sem histórico muda à vontade.
+  update public.plans set schedule_mode = 'free', weekly_quota = 3 where id = v_livre;
+  raise notice 'OK F5.1: plano com histórico travado na modalidade; nome, preço e plano novo livres';
+end $$;
+
+-- =====================================================================
+-- F5.2 — cadastro com turma abre o período como 'signup' (T51)
+-- =====================================================================
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at) values
+  ('e3000000-0000-4000-8000-000000000004','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-alu4@t.invalid','x',now(),now(),now()),
+  ('e3000000-0000-4000-8000-000000000005','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-prof@t.invalid','x',now(),now(),now());
+insert into public.groups (id, name) values ('turma-v3b', 'Turma V3 B');
+-- Cadastrado há 30 dias: numa mudança no mesmo instante do cadastro, o período
+-- seria desfeito em vez de fechado (F5.4).
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color, created_at, group_since) values
+  ('e3000000-0000-4000-8000-000000000004','user','Aluno Troca V3','93000000004',false,'active','turma-v3', null,
+   now() - interval '30 days', now() - interval '30 days'),
+  ('e3000000-0000-4000-8000-000000000005','professor','Prof V3','93000000005',false,'active', null, '#112233', now(), null);
+
+do $$
+begin
+  if not exists (select 1 from public.student_group_periods
+                  where user_id = 'e3000000-0000-4000-8000-000000000004'
+                    and group_id = 'turma-v3' and start_reason = 'signup' and ended_at is null) then
+    raise exception 'FALHOU F5.2: cadastro com turma não abriu o período signup';
+  end if;
+  raise notice 'OK F5.2: cadastro com turma abre o período signup';
+end $$;
+
+-- =====================================================================
+-- F5.3 — admin muda a turma por update direto (caminho do APK 1.8):
+-- histórico gravado e T53 aplicada às trocas (§ 0.1, § 5.2)
+-- =====================================================================
+insert into public.classes (id, title, type, date_time, group_id) values
+  ('e3000000-0000-4000-8000-00000000c020', 'Futura da turma antiga', 'routine', now() + interval '1 day', 'turma-v3'),
+  ('e3000000-0000-4000-8000-00000000c021', 'Destino A', 'routine', now() + interval '2 days', 'turma-v3'),
+  ('e3000000-0000-4000-8000-00000000c022', 'Passada da turma antiga', 'routine', now() - interval '1 day', 'turma-v3'),
+  ('e3000000-0000-4000-8000-00000000c023', 'Reposição', 'routine', now() + interval '3 days', 'turma-v3');
+insert into public.action_reasons (id, kind, class_id, author_id, body, used_at) values
+  ('e3000000-0000-4000-8000-00000000a020', 'class_swap_evidence', null, 'e3000000-0000-4000-8000-000000000004', 'Mudei de emprego', now());
+
+do $$
+declare
+  v_seg uuid;
+  v_qua uuid;
+begin
+  insert into public.class_schedules (title, weekday, start_time, valid_from, group_id)
+  values ('Seg T53', 1, '07:00', current_date, 'turma-v3') returning id into v_seg;
+  insert into public.class_schedules (title, weekday, start_time, valid_from, group_id)
+  values ('Qua T53', 3, '07:00', current_date, 'turma-v3') returning id into v_qua;
+
+  insert into public.class_swaps (id, user_id, kind, from_class_id, to_class_id) values
+    ('e3000000-0000-4000-8000-00000000f020', 'e3000000-0000-4000-8000-000000000004', 'once',
+     'e3000000-0000-4000-8000-00000000c020', 'e3000000-0000-4000-8000-00000000c021');
+  insert into public.class_swaps (id, user_id, kind, from_class_id, to_class_id, status, decided_via, decided_at, decided_by) values
+    ('e3000000-0000-4000-8000-00000000f021', 'e3000000-0000-4000-8000-000000000004', 'once',
+     'e3000000-0000-4000-8000-00000000c022', 'e3000000-0000-4000-8000-00000000c023', 'approved', 'review', now(),
+     'e3000000-0000-4000-8000-000000000001');
+  insert into public.class_swaps (id, user_id, kind, from_class_id, to_class_id, from_schedule_id, to_schedule_id, motivo_id) values
+    ('e3000000-0000-4000-8000-00000000f022', 'e3000000-0000-4000-8000-000000000004', 'permanent',
+     'e3000000-0000-4000-8000-00000000c020', 'e3000000-0000-4000-8000-00000000c021', v_seg, v_qua,
+     'e3000000-0000-4000-8000-00000000a020');
+  -- Um período permanente vigente, com fim já marcado no futuro: encerra do mesmo jeito.
+  insert into public.class_swap_periods (id, user_id, from_schedule_id, to_schedule_id, started_at, ended_at, end_reason) values
+    ('e3000000-0000-4000-8000-0000000fa020', 'e3000000-0000-4000-8000-000000000004', v_seg, v_qua,
+     now() - interval '10 days', now() + interval '20 days', 'schedule_ended');
+end $$;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000001","role":"authenticated"}';
+update public.profiles set group_id = 'turma-v3b' where id = 'e3000000-0000-4000-8000-000000000004';
+reset role;
+
+do $$
+begin
+  if not exists (select 1 from public.student_group_periods
+                  where user_id = 'e3000000-0000-4000-8000-000000000004' and group_id = 'turma-v3'
+                    and ended_at = now() and end_reason = 'group_changed') then
+    raise exception 'FALHOU F5.3: o período da turma antiga não foi fechado em now()';
+  end if;
+  if not exists (select 1 from public.student_group_periods
+                  where user_id = 'e3000000-0000-4000-8000-000000000004' and group_id = 'turma-v3b'
+                    and started_at = now() and start_reason = 'group_changed' and ended_at is null) then
+    raise exception 'FALHOU F5.3: o período da turma nova não foi aberto em now()';
+  end if;
+  if (select group_since from public.profiles where id = 'e3000000-0000-4000-8000-000000000004') <> now() then
+    raise exception 'FALHOU F5.3: group_since deixou de acompanhar o período aberto (T51)';
+  end if;
+
+  -- T53
+  if (select status from public.class_swaps where id = 'e3000000-0000-4000-8000-00000000f020') <> 'cancelled' then
+    raise exception 'FALHOU F5.3: avulsa saindo de aula futura da turma antiga não foi cancelada';
+  end if;
+  if (select status from public.class_swaps where id = 'e3000000-0000-4000-8000-00000000f021') <> 'approved' then
+    raise exception 'FALHOU F5.3: reposição de aula que já passou foi cancelada (devolveria a falta)';
+  end if;
+  if (select status from public.class_swaps where id = 'e3000000-0000-4000-8000-00000000f022') <> 'cancelled' then
+    raise exception 'FALHOU F5.3: permanente pendente não foi cancelada';
+  end if;
+  if (select end_reason from public.class_swap_periods where id = 'e3000000-0000-4000-8000-0000000fa020') <> 'group_changed'
+     or (select ended_at from public.class_swap_periods where id = 'e3000000-0000-4000-8000-0000000fa020') <> now() then
+    raise exception 'FALHOU F5.3: período permanente vigente (com fim futuro) não foi encerrado na mudança';
+  end if;
+  raise notice 'OK F5.3: update direto do admin grava o histórico e aplica a T53';
+end $$;
+
+-- =====================================================================
+-- F5.4 — mudança desfeita no mesmo instante não deixa período vazio
+-- =====================================================================
+do $$
+begin
+  update public.profiles set group_id = 'turma-v3' where id = 'e3000000-0000-4000-8000-000000000004';
+  if exists (select 1 from public.student_group_periods
+              where user_id = 'e3000000-0000-4000-8000-000000000004' and group_id = 'turma-v3b') then
+    raise exception 'FALHOU F5.4: ficou um período da turma B que nunca valeu';
+  end if;
+  if (select count(*) from public.student_group_periods
+       where user_id = 'e3000000-0000-4000-8000-000000000004' and ended_at is null) <> 1 then
+    raise exception 'FALHOU F5.4: aluno ficou sem exatamente um período aberto';
+  end if;
+  raise notice 'OK F5.4: mudança desfeita antes de valer apaga o período vazio';
+end $$;
+
+-- =====================================================================
+-- F5.5 — quem lê o histórico de turma (§ 5.2, § 0.1)
+-- =====================================================================
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+do $$
+begin
+  if exists (select 1 from public.student_group_periods where user_id <> 'e3000000-0000-4000-8000-000000000002') then
+    raise exception 'FALHOU F5.5: aluno leu o histórico de turma de outro aluno';
+  end if;
+  if not exists (select 1 from public.student_group_periods where user_id = 'e3000000-0000-4000-8000-000000000002') then
+    raise exception 'FALHOU F5.5: aluno não leu o próprio histórico';
+  end if;
+  if exists (select 1 from public.plan_periods where user_id <> 'e3000000-0000-4000-8000-000000000002') then
+    raise exception 'FALHOU F5.5: aluno leu o plano de outro aluno';
+  end if;
+  if public.is_staff() then
+    raise exception 'FALHOU F5.5: aluno passou por is_staff()';
+  end if;
+  raise notice 'OK F5.5: aluno lê só o próprio histórico e não é equipe';
+end $$;
+
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000005","role":"authenticated"}';
+do $$
+begin
+  if not public.is_staff() then
+    raise exception 'FALHOU F5.5: professor não passou por is_staff()';
+  end if;
+  if not exists (select 1 from public.student_group_periods where user_id = 'e3000000-0000-4000-8000-000000000004') then
+    raise exception 'FALHOU F5.5: professor não leu o histórico de turma do aluno';
+  end if;
+  -- O plano leva ao preço: professor não lê.
+  if exists (select 1 from public.plan_periods) then
+    raise exception 'FALHOU F5.5: professor leu o histórico de plano';
+  end if;
+  raise notice 'OK F5.5: professor lê o histórico de turma, mas não o de plano';
+end $$;
+
+set local role anon;
+set local request.jwt.claims = '{}';
+do $$
+begin
+  begin
+    perform public.is_staff();
+    raise exception 'FALHOU F5.5: anon executou is_staff()';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    perform 1 from public.student_group_periods;
+    raise exception 'FALHOU F5.5: anon leu student_group_periods';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'OK F5.5: anon não chega a is_staff nem ao histórico';
+end $$;
+reset role;
+
+-- =====================================================================
+-- F5.6 — excluir turma com histórico arquiva e marca 'group_closed' (§ 5.2)
+-- =====================================================================
+-- Um aluno na turma B há 30 dias (numa turma sem aula nenhuma, só o
+-- histórico decide entre apagar e arquivar).
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at) values
+  ('e3000000-0000-4000-8000-000000000006','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-alu6@t.invalid','x',now(),now(),now());
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, created_at, group_since) values
+  ('e3000000-0000-4000-8000-000000000006','user','Aluna Turma B','93000000006',false,'active','turma-v3b',
+   now() - interval '30 days', now() - interval '30 days');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000001","role":"authenticated"}';
+do $$
+declare
+  v_resultado jsonb;
+begin
+  if (public.previa_exclusao_turma('turma-v3b') ->> 'pode_apagar_de_vez')::boolean then
+    raise exception 'FALHOU F5.6: a prévia diz que turma com histórico pode ser apagada';
+  end if;
+  v_resultado := public.excluir_turma('turma-v3b', null, true);
+  if v_resultado ->> 'acao' <> 'arquivada' then
+    raise exception 'FALHOU F5.6: turma com histórico foi %', v_resultado ->> 'acao';
+  end if;
+  raise notice 'OK F5.6: turma com histórico é arquivada';
+end $$;
+reset role;
+
+do $$
+begin
+  if not exists (select 1 from public.student_group_periods
+                  where user_id = 'e3000000-0000-4000-8000-000000000006' and group_id = 'turma-v3b'
+                    and end_reason = 'group_closed') then
+    raise exception 'FALHOU F5.6: o período fechado pela exclusão não virou group_closed';
+  end if;
+  raise notice 'OK F5.6: período fechado pela exclusão da turma é group_closed';
+end $$;
+
 rollback;
