@@ -81,10 +81,25 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------
--- TESTE 4 — professor gerencia (insere presença) só nas SUAS aulas
+-- TESTE 4 — presença só pela chamada (contrato v3, § 7.1): o professor não
+-- grava `status` direto nem na própria aula; a inclusão é pela RPC de chamada
+-- (que liga snake.chamada_rpc, como abaixo).
 -- ---------------------------------------------------------------------
+do $$
+begin
+  begin
+    insert into public.attendance (class_id, user_id, status)
+    values ('c0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000004', 'present');
+    raise exception 'FALHOU T4: professor gravou presença direto, fora da chamada';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'OK T4: presença direta recusada; só pela chamada';
+end $$;
+
+select set_config('snake.chamada_rpc', 'on', true);
 insert into public.attendance (class_id, user_id, status)
 values ('c0000000-0000-4000-8000-000000000002', 'a0000000-0000-4000-8000-000000000004', 'present');
+select set_config('snake.chamada_rpc', 'off', true);
 
 do $$
 begin

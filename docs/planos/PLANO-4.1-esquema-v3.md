@@ -77,7 +77,7 @@ deste bloco sozinho.
 | 4 | ✅ aplicada no local (25/09); F4.1–F4.4 verdes (aula apagada: reposição aprovada pelo sistema, pendente futura cancelada, aprovada segue; uma ativa por aula; período coerente; sem acesso para aluno e anon) |
 | 5 | ✅ aplicada no local (25/09); backfill conferido (0 alunos sem período aberto na turma atual; 50 períodos); F5.1–F5.6 verdes (plano com histórico travado, `signup`, update direto do admin com a T53, mudança desfeita, leitura por papel, exclusão que arquiva com `group_closed`) |
 | 6a | ✅ aplicada no local (25/09): `pode_decidir_troca`, `pode_ler_motivo` e as políticas; `modalidade_da_semana` (interna, T3/T5); `grade_efetiva_do_fixo`; trava do prazo de guarda; grant por coluna em `class_teachers`. F6.1–F6.7 e a **conferência do G1** verdes no local |
-| 6b | — travas de § 6, § 7.1 e § 9.1, com a compatibilidade da `salvar_chamada`/`concluir_chamada` |
+| 6b | ✅ aplicada no local (25/09): travas de aula (§ 6), equipe da aula, chamada (§ 7.1) e justificativa (§ 9.1) reescrita; `week_start not null`; `salvar_chamada`/`concluir_chamada` ligando as variáveis; `plano_da_semana` e `cota_da_semana` (internas, T3/T8/T17). F7.1–F7.10 verdes |
 
 ## Achados durante a execução
 
@@ -111,3 +111,13 @@ deste bloco sozinho.
    dessa regra (T49). Assinatura e regra idênticas às da § 9.4.
 9. **`modalidade_da_semana(p_user_id, p_segunda)`** é interna (sem grant): o contrato não a
    nomeia porque ela não cruza a fronteira. É a T3/T5 num lugar só, e a conta (4.5) vai usá-la.
+10. **Testes antigos que descreviam caminhos que o contrato fechou**, ajustados:
+    `regressao_professores` T4 (professor gravava presença direto; agora recusa, § 7.1);
+    `regressao_chamada_em_lote` e `regressao_lgpd_exclusao` (blocos de "sistema" e de
+    `service_role` herdavam as claims de um usuário; um servidor de verdade não carrega).
+11. **A decisão de justificativa pelo APK 1.8 passa a responder "Atualize o aplicativo para
+    decidir justificativas."** (§ 15, intencional). O caminho novo é o `decidir_justificativa` do
+    4.8. No app DEV, decidir justificativa fica indisponível até lá.
+12. **Uma variável de sessão para as RPCs de justificativa** (`reenviar`, `anexar`, `decidir`)
+    será necessária no 4.8, como as de aula e de chamada. É nome interno do banco (não cruza
+    repositório); entra no 4.8 e anota-se na § 0.1 na próxima versão do contrato.

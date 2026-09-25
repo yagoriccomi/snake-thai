@@ -214,6 +214,8 @@ end $$;
 -- Sistema: força um momento de conclusão conhecido
 -- =====================================================================
 reset role;
+-- Sistema = sem usuário: as claims do bloco anterior não podem ficar.
+set local request.jwt.claims = '{}';
 update public.classes set attendance_taken_at = timestamptz '2026-01-01 10:00-03'
  where id = 'e0000000-0000-4000-8000-00000000b001';
 

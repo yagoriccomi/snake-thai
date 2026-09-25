@@ -14,10 +14,12 @@ insert into auth.users (id, instance_id, aud, role, email, encrypted_password, e
 
 insert into public.groups (id, name) values ('turma-v3', 'Turma V3');
 
-insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id) values
-  ('e3000000-0000-4000-8000-000000000001','admin','Admin V3','93000000001',false,'active', null),
-  ('e3000000-0000-4000-8000-000000000002','user','Aluna V3','93000000002',false,'active','turma-v3'),
-  ('e3000000-0000-4000-8000-000000000003','user','Aluno V3','93000000003',false,'active','turma-v3');
+-- Cadastrados há 30 dias: pela T51, a aula de ontem só é da grade de quem
+-- já estava na turma quando ela aconteceu.
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, created_at, group_since) values
+  ('e3000000-0000-4000-8000-000000000001','admin','Admin V3','93000000001',false,'active', null, now() - interval '30 days', null),
+  ('e3000000-0000-4000-8000-000000000002','user','Aluna V3','93000000002',false,'active','turma-v3', now() - interval '30 days', now() - interval '30 days'),
+  ('e3000000-0000-4000-8000-000000000003','user','Aluno V3','93000000003',false,'active','turma-v3', now() - interval '30 days', now() - interval '30 days');
 
 insert into public.classes (id, title, type, date_time, group_id) values
   ('e3000000-0000-4000-8000-00000000c001','Muay Thai V3','routine', now() - interval '1 day', 'turma-v3');
@@ -104,8 +106,9 @@ begin
   end;
 
   begin
-    insert into public.absence_justifications (class_id, user_id, message, scope)
-    values ('e3000000-0000-4000-8000-00000000c001', 'e3000000-0000-4000-8000-000000000002', 'Semana com aula', 'week');
+    insert into public.absence_justifications (class_id, user_id, message, scope, week_start)
+    values ('e3000000-0000-4000-8000-00000000c001', 'e3000000-0000-4000-8000-000000000002', 'Semana com aula', 'week',
+            date_trunc('week', now())::date);
     raise exception 'FALHOU F2.3: justificativa semanal com aula aceita';
   exception when check_violation then null;
   end;
@@ -853,6 +856,8 @@ end $$;
 -- =====================================================================
 -- F6.1 — quem lê cada motivo (§ 8, § 0.1, T21, T49, D20, D22)
 -- =====================================================================
+-- Montagem como sistema: sem as claims de quem veio antes.
+set local request.jwt.claims = '{}';
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at) values
   ('e3000000-0000-4000-8000-000000000007','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-prof2@t.invalid','x',now(),now(),now()),
   ('e3000000-0000-4000-8000-000000000008','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-prof3@t.invalid','x',now(),now(),now());
@@ -1130,6 +1135,276 @@ begin
   raise notice 'OK F6.7: o select de class_teachers do APK 1.8 continua funcionando';
 end $$;
 reset role;
+
+-- =====================================================================
+-- F7.1 — a chamada do APK 1.8 continua funcionando (§ 15)
+-- =====================================================================
+set local request.jwt.claims = '{}';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000005","role":"authenticated"}';
+do $$
+declare
+  v_concluida timestamptz;
+begin
+  v_concluida := public.salvar_chamada('e3000000-0000-4000-8000-00000000c030',
+                                       array['e3000000-0000-4000-8000-000000000002'::uuid], '{}');
+  if v_concluida is null
+     or (select status from public.attendance
+          where class_id = 'e3000000-0000-4000-8000-00000000c030' and user_id = 'e3000000-0000-4000-8000-000000000002') <> 'present' then
+    raise exception 'FALHOU F7.1: salvar_chamada do APK 1.8 deixou de gravar';
+  end if;
+  if current_setting('snake.chamada_rpc', true) = 'on' or current_setting('snake.aula_rpc', true) = 'on' then
+    raise exception 'FALHOU F7.1: a RPC deixou a variável de sessão ligada';
+  end if;
+  raise notice 'OK F7.1: a chamada do APK 1.8 grava e desliga as variáveis ao sair';
+end $$;
+
+-- =====================================================================
+-- F7.2 — fora da RPC, a presença não muda nem sai (§ 7.1)
+-- =====================================================================
+do $$
+begin
+  begin
+    update public.attendance set status = 'absent'
+     where class_id = 'e3000000-0000-4000-8000-00000000c030' and user_id = 'e3000000-0000-4000-8000-000000000002';
+    raise exception 'FALHOU F7.2: professor mudou a presença direto na tabela';
+  exception when insufficient_privilege then null;
+  end;
+  -- Sem política de DELETE: o professor não apaga nada.
+  delete from public.attendance where class_id = 'e3000000-0000-4000-8000-00000000c030';
+  if not exists (select 1 from public.attendance
+                  where class_id = 'e3000000-0000-4000-8000-00000000c030' and status = 'present') then
+    raise exception 'FALHOU F7.2: presença apagada fora da chamada';
+  end if;
+  raise notice 'OK F7.2: presença não muda nem sai fora da chamada';
+end $$;
+
+-- =====================================================================
+-- F7.3 — equipe da aula: aula já iniciada só pela chamada (§ 6)
+-- =====================================================================
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000007","role":"authenticated"}';
+do $$
+begin
+  begin
+    insert into public.class_teachers (class_id, teacher_id)
+    values ('e3000000-0000-4000-8000-00000000c030', 'e3000000-0000-4000-8000-000000000007');
+    raise exception 'FALHOU F7.3: professor entrou numa aula que já começou';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK F7.3: equipe de aula já iniciada só muda pela chamada';
+end $$;
+
+-- =====================================================================
+-- F7.4 — cancelamento só pelas RPCs; aula cancelada: só o admin mexe na equipe
+-- =====================================================================
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000001","role":"authenticated"}';
+do $$
+begin
+  begin
+    update public.classes set cancelled_at = now() where id = 'e3000000-0000-4000-8000-00000000c031';
+    raise exception 'FALHOU F7.4: admin cancelou a aula por update direto';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'OK F7.4: cancelamento direto recusado até para o admin';
+end $$;
+reset role;
+set local request.jwt.claims = '{}';
+update public.classes set cancelled_at = now() where id = 'e3000000-0000-4000-8000-00000000c031';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000007","role":"authenticated"}';
+do $$
+begin
+  begin
+    insert into public.class_teachers (class_id, teacher_id)
+    values ('e3000000-0000-4000-8000-00000000c031', 'e3000000-0000-4000-8000-000000000007');
+    raise exception 'FALHOU F7.4: professor entrou numa aula cancelada';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK F7.4: aula cancelada não aceita professor novo';
+end $$;
+reset role;
+set local request.jwt.claims = '{}';
+
+-- =====================================================================
+-- F7.5 — aula com chamada: não volta a pendente e não é apagada (§ 6)
+-- =====================================================================
+do $$
+begin
+  begin
+    update public.classes set attendance_taken_at = null where id = 'e3000000-0000-4000-8000-00000000c030';
+    raise exception 'FALHOU F7.5: a chamada concluída voltou a nulo';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.classes set date_time = date_time + interval '1 day' where id = 'e3000000-0000-4000-8000-00000000c030';
+    raise exception 'FALHOU F7.5: aula com chamada mudou de data';
+  exception when check_violation then null;
+  end;
+  begin
+    delete from public.classes where id = 'e3000000-0000-4000-8000-00000000c030';
+    raise exception 'FALHOU F7.5: aula com chamada apagada';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK F7.5: aula com chamada fica: não volta a pendente, não muda de data, não é apagada';
+end $$;
+
+-- =====================================================================
+-- F7.6 — justificativa: semana, prazo, troca, decisão e escopo (§ 9.1)
+-- =====================================================================
+insert into public.classes (id, title, type, date_time, group_id) values
+  ('e3000000-0000-4000-8000-00000000c040', 'Aula de 9 dias atrás', 'routine', now() - interval '9 days', 'turma-v3'),
+  ('e3000000-0000-4000-8000-00000000c041', 'Aula de 2 dias atrás', 'routine', now() - interval '2 days', 'turma-v3'),
+  ('e3000000-0000-4000-8000-00000000c042', 'Nova da troca', 'routine', now() + interval '1 day', 'turma-v3');
+insert into public.class_swaps (user_id, kind, from_class_id, to_class_id)
+values ('e3000000-0000-4000-8000-000000000002', 'once',
+        'e3000000-0000-4000-8000-00000000c041', 'e3000000-0000-4000-8000-00000000c042');
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+do $$
+begin
+  if (select week_start from public.absence_justifications
+       where class_id = 'e3000000-0000-4000-8000-00000000c001' and user_id = 'e3000000-0000-4000-8000-000000000002')
+     <> (select date_trunc('week', c.date_time at time zone 'America/Sao_Paulo')::date
+           from public.classes c where c.id = 'e3000000-0000-4000-8000-00000000c001') then
+    raise exception 'FALHOU F7.6: o upsert do APK 1.8 não recebeu a segunda-feira da aula';
+  end if;
+
+  begin
+    insert into public.absence_justifications (class_id, user_id, message)
+    values ('e3000000-0000-4000-8000-00000000c040', 'e3000000-0000-4000-8000-000000000002', 'Esqueci de justificar');
+    raise exception 'FALHOU F7.6: justificativa fora do prazo de 7 dias aceita (D13)';
+  exception when check_violation then null;
+  end;
+
+  begin
+    insert into public.absence_justifications (class_id, user_id, message)
+    values ('e3000000-0000-4000-8000-00000000c041', 'e3000000-0000-4000-8000-000000000002', 'Fiquei doente');
+    raise exception 'FALHOU F7.6: justificativa na original de troca pendente aceita (T38)';
+  exception when check_violation then
+    if sqlerrm <> 'Esta aula foi trocada. Se faltar à aula nova, justifique a aula nova.' then
+      raise exception 'FALHOU F7.6: mensagem da T38 errada: %', sqlerrm;
+    end if;
+  end;
+
+  begin
+    insert into public.absence_justifications (class_id, user_id, message, scope, week_start)
+    values (null, 'e3000000-0000-4000-8000-000000000002', 'Semana difícil', 'week', date_trunc('week', now() - interval '7 days')::date);
+    raise exception 'FALHOU F7.6: fixo enviou justificativa por semana';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK F7.6: semana preenchida, prazo, troca e escopo conferidos';
+end $$;
+
+-- A decisão por update direto (APK 1.8) recebe o pedido de atualizar o app.
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000001","role":"authenticated"}';
+do $$
+begin
+  begin
+    update public.absence_justifications set status = 'approved'
+     where class_id = 'e3000000-0000-4000-8000-00000000c001' and user_id = 'e3000000-0000-4000-8000-000000000002';
+    raise exception 'FALHOU F7.7: decisão por update direto aceita';
+  exception when invalid_parameter_value then
+    if sqlerrm <> 'Atualize o aplicativo para decidir justificativas.' then
+      raise exception 'FALHOU F7.7: mensagem errada: %', sqlerrm;
+    end if;
+  end;
+  raise notice 'OK F7.7: decidir pelo APK 1.8 pede para atualizar o aplicativo (§ 15)';
+end $$;
+reset role;
+set local request.jwt.claims = '{}';
+
+-- Decidida pelo sistema (como o decidir_justificativa fará), a linha trava.
+update public.absence_justifications set status = 'rejected', reviewed_at = now()
+ where class_id = 'e3000000-0000-4000-8000-00000000c001' and user_id = 'e3000000-0000-4000-8000-000000000002';
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+do $$
+begin
+  begin
+    update public.absence_justifications set message = 'Outro texto'
+     where class_id = 'e3000000-0000-4000-8000-00000000c001' and user_id = 'e3000000-0000-4000-8000-000000000002';
+    raise exception 'FALHOU F7.8: aluno alterou justificativa decidida';
+  exception when insufficient_privilege then null;
+  end;
+  -- Sem política de DELETE para a decidida: nada sai.
+  delete from public.absence_justifications
+   where class_id = 'e3000000-0000-4000-8000-00000000c001' and user_id = 'e3000000-0000-4000-8000-000000000002';
+  if not exists (select 1 from public.absence_justifications
+                  where class_id = 'e3000000-0000-4000-8000-00000000c001' and user_id = 'e3000000-0000-4000-8000-000000000002') then
+    raise exception 'FALHOU F7.8: justificativa decidida apagada (D15)';
+  end if;
+  raise notice 'OK F7.8: decidida não muda nem sai';
+end $$;
+reset role;
+set local request.jwt.claims = '{}';
+
+-- =====================================================================
+-- F7.9 — justificativa por semana do livre: no máximo a cota (T17)
+-- =====================================================================
+insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at) values
+  ('e3000000-0000-4000-8000-000000000010','00000000-0000-0000-0000-000000000000','authenticated','authenticated','v3-livre@t.invalid','x',now(),now(),now());
+insert into public.profiles (id, role, name, cpf, is_first_login, status, created_at) values
+  ('e3000000-0000-4000-8000-000000000010','user','Aluna Livre','93000000010',false,'active', now() - interval '30 days');
+do $$
+declare
+  v_plano uuid;
+begin
+  insert into public.plans (name, price_cents, billing_period, due_day, schedule_mode, weekly_quota)
+  values ('Livre 1x V3', 10000, 'monthly', 10, 'free', 1) returning id into v_plano;
+  insert into public.plan_periods (user_id, plan_id, started_at)
+  values ('e3000000-0000-4000-8000-000000000010', v_plano, now() - interval '30 days');
+end $$;
+
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000010","role":"authenticated"}';
+do $$
+declare
+  v_semana date := date_trunc('week', (now() - interval '7 days') at time zone 'America/Sao_Paulo')::date;
+begin
+  insert into public.absence_justifications (class_id, user_id, message, scope, week_start)
+  values (null, 'e3000000-0000-4000-8000-000000000010', 'Viagem a trabalho', 'week', v_semana);
+  begin
+    insert into public.absence_justifications (class_id, user_id, message, scope, week_start)
+    values (null, 'e3000000-0000-4000-8000-000000000010', 'Mais uma', 'week', v_semana);
+    raise exception 'FALHOU F7.9: segunda justificativa semanal aceita com cota 1x (T17)';
+  exception when check_violation then null;
+  end;
+  begin
+    insert into public.absence_justifications (class_id, user_id, message, scope, week_start)
+    values (null, 'e3000000-0000-4000-8000-000000000010', 'Semana futura', 'week',
+            date_trunc('week', (now() + interval '7 days') at time zone 'America/Sao_Paulo')::date);
+    raise exception 'FALHOU F7.9: justificativa de semana futura aceita';
+  exception when invalid_parameter_value then null;
+  end;
+  raise notice 'OK F7.9: o livre justifica a semana até a cota, nunca uma semana futura';
+end $$;
+
+-- =====================================================================
+-- F7.10 — "Vou" carimba declared_at; "Não vou" limpa (T29)
+-- =====================================================================
+set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+do $$
+begin
+  insert into public.attendance (class_id, user_id, declared_status)
+  values ('e3000000-0000-4000-8000-00000000c042', 'e3000000-0000-4000-8000-000000000002', 'present')
+  on conflict (class_id, user_id) do update set declared_status = excluded.declared_status;
+  if (select declared_at from public.attendance
+       where class_id = 'e3000000-0000-4000-8000-00000000c042' and user_id = 'e3000000-0000-4000-8000-000000000002') is null then
+    raise exception 'FALHOU F7.10: "Vou" não carimbou declared_at';
+  end if;
+  update public.attendance set declared_status = 'absent'
+   where class_id = 'e3000000-0000-4000-8000-00000000c042' and user_id = 'e3000000-0000-4000-8000-000000000002';
+  if (select declared_at from public.attendance
+       where class_id = 'e3000000-0000-4000-8000-00000000c042' and user_id = 'e3000000-0000-4000-8000-000000000002') is not null then
+    raise exception 'FALHOU F7.10: "Não vou" deixou declared_at';
+  end if;
+  raise notice 'OK F7.10: declared_at segue a declaração';
+end $$;
+reset role;
+set local request.jwt.claims = '{}';
 
 -- =====================================================================
 -- G1 — a conferência do portão (contrato § 14)

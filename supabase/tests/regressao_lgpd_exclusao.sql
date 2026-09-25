@@ -199,6 +199,8 @@ end $$;
 -- Servidor (service_role): anonimização
 -- =====================================================================
 set local role service_role;
+-- Como o servidor chega de verdade: token de serviço, sem usuário.
+set local request.jwt.claims = '{"role":"service_role"}';
 
 -- T1..T5 — aluna com comprovantes, justificativa e consentimento
 do $$
