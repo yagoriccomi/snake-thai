@@ -28,7 +28,7 @@
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **1.9.0**, com o aviso de atualização (Fase 3A) |
 | **`main`** | Em `384f715` (merge do PR #38, 24/09). **CI vermelho nesse merge:** o job de regressão SQL não conseguiu instalar a CLI do Supabase ("rate limit exceeded" ao resolver `version: latest`); os outros dois jobs passaram. É falha de infraestrutura, não de código (item 0.6) |
-| **Branches** | Nenhuma aberta. `feat/dados-de-demonstracao` e `feat/sentry-regiao-ue` já foram mescladas e ainda existem (item 0.3) |
+| **Branches** | **PRs abertos em 25/09, aguardando seu merge:** #41 (Fase 0), #42 (1.5), #43 (Fase 3A), #45 (2.4), #46 (4.1, esquema v3), #47 (3.5) e #48 (documentação); #44 com este andamento. As locais já mescladas foram apagadas (0.3) |
 | **Banco local** | De pé, com um ano de histórico de demonstração |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
 | **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v3**, revisada em 25/09. Nenhum chat implementou nada dela ainda |
@@ -79,10 +79,10 @@ A lista junta os três repositórios, porque o marco é um só.
 | --- | --- | --- | --- |
 | 0.1 | [x] ~~Commitar a alteração pendente em `scripts/gerar-comprovantes-demonstracao.js` na branch do PR #38~~ — **feito em 24/09** (`dc2f5bd`) | `git-flow-projeto` | 🤖 |
 | 0.2 | [x] ~~Mergear o PR #38 (merge commit, como todos os outros)~~ — **feito em 24/09** (`384f715`) | — | 👤 |
-| 0.3 | Apagar as branches locais `feat/sentry-regiao-ue` e `feat/dados-de-demonstracao`, já mescladas. A `main` local já está em `384f715`, igual à remota | `git-flow-projeto` | 🤖 |
-| 0.4 | Subir o Node do `ci.yml` de 20 para 22 (o `release.yml` já está no 22) | `executar-projeto` | 🤖 com seu aval |
-| 0.5 | Deixar no topo do `PLANO-DE-TAREFAS.md` um ponteiro para este arquivo | `documentar-projeto` | 🤖 |
-| 0.6 | **CI da `main` vermelho desde o merge do PR #38:** rerodar o job "Regressão de segurança no banco"; se falhar de novo, fixar a versão da CLI do Supabase no `ci.yml` (hoje `version: latest`) | `executar-projeto` | 🤖 com seu aval |
+| 0.3 | [x] ~~Apagar as branches locais `feat/sentry-regiao-ue` e `feat/dados-de-demonstracao`, já mescladas~~ — **feito em 25/09** (`git branch -d`, só locais) | `git-flow-projeto` | 🤖 |
+| 0.4 | [x] ~~Subir o Node do `ci.yml` de 20 para 22~~ — **PR #41 (25/09)**; o merge é o seu aval | `executar-projeto` | 🤖 com seu aval |
+| 0.5 | [x] ~~Deixar no topo do `PLANO-DE-TAREFAS.md` um ponteiro para este arquivo~~ — **PR #41 (25/09)** | `documentar-projeto` | 🤖 |
+| 0.6 | [x] ~~**CI da `main` vermelho desde o merge do PR #38**~~ — **resolvido sozinho:** os merges dos PRs #39 e #40 (run `36176537979`) passaram nos três jobs, inclusive o de banco. Sem mudança no `ci.yml`; fixar a CLI só se voltar a falhar | `executar-projeto` | 🤖 com seu aval |
 
 **Detalhes:**
 
@@ -151,7 +151,7 @@ mudou em `supabase/` desde a 1.7.0.
   - [ ] cadastrar um aluno de teste com "Não usa": o nome aparece na lista e na chamada;
   - [ ] tentar promover um aluno: o banco recusa;
   - [ ] apagar o aluno de teste.
-- [ ] **1.5** 🤖 `executar-projeto`: fazer o `npm run versao:verificar` **avisar quando há
+- [x] **1.5** — **PR #42 (25/09)**, aguardando seu merge. 🤖 `executar-projeto`: fazer o `npm run versao:verificar` **avisar quando há
   migration ou Edge Function nova desde a última tag**, com a lembrança "publique em
   produção antes da APK". É um `git diff <última tag>..HEAD -- supabase/`, sem rede e sem
   token. Foi exatamente esse passo que escapou na 1.8.0. Registrar a regra também no
@@ -176,7 +176,7 @@ tela vermelha "Unable to load script", que parece defeito e não é. As portas s
 | 2.1 | **Cadastro de aluno sem app em tela pequena**: rolar o formulário inteiro com o teclado aberto, com "Não usa" marcado e desmarcado, até alcançar o botão | Configurações do Android → fonte grande, ou emulador de tela pequena | 👤 |
 | 2.2 | **Chamada como professor** e rascunho: marcar metade, matar o app, reabrir, recuperar, salvar. Provocar o conflito com outra pessoa salvando | [`ENTREGA-T11`](docs/planos/ENTREGA-T11.md) | 👤 |
 | 2.3 | **Exclusão de conta**: senha errada é recusada; senha certa exclui; o login antigo deixa de funcionar | [`ENTREGA-T7`](docs/planos/ENTREGA-T7.md) — **só com conta de teste** | 👤 |
-| 2.4 | **Achado: senha padrão no primeiro acesso** (abaixo) | — | 🤖 `executar-projeto` + `testes-projeto` |
+| 2.4 | [x] **Achado: senha padrão no primeiro acesso** (abaixo) — **PR #45 (25/09)**, aguardando seu merge e o teste no aparelho | — | 🤖 `executar-projeto` + `testes-projeto` |
 
 ### 2.4 Achado: o primeiro acesso pode deixar a senha padrão valendo para sempre
 
@@ -218,7 +218,7 @@ por chat, e-mail ou Git.
 | 3.2 | ⚠️ Trocar a **senha do banco** e **revogar o token da CLI** que foram colados no chat | 👤 | Gere um token novo só na hora de usar |
 | 3.3 | Trocar a **senha de primeiro acesso** em Configurações e **redefinir** as contas que nunca entraram | 👤 | A atual é pública no repositório. Consulta no [`RUNBOOK`](docs/RUNBOOK.md) |
 | 3.4 | **Chave FCM de produção** | 👤 | `npx eas-cli@latest credentials -p android` num terminal interativo, **perfil `prod`**, pacote `com.snakethai.app`. Depois: ativar, receber e tocar com o app fechado e aberto |
-| 3.5 | ⚠️ **Dados de demonstração fora de produção** | 🤖 `executar-projeto` + `banco-de-dados-projeto`, depois 👤 | **O `demo_seed_limpar.sql` não basta.** Ele apaga só as contas `@demo.snakethai.com` e deixa, de propósito, as aulas e as contas de teste. Só que o ano de histórico gravado em produção em 23/09 (785 aulas, 463 mensalidades, presenças e justificativas) criou aulas **sem marca própria** (título "<turma> — treino") e lançamentos para todos os alunos ativos. É preciso um script de limpeza desse pacote, ou uma decisão de "zerar o operacional e manter a configuração" (planos, turmas, grade, textos legais). Backup primeiro. Diga qual e-mail é a conta real de admin |
+| 3.5 | ⚠️ **Dados de demonstração fora de produção** — 🤖 **script no PR #47 (25/09)**; falta a sua escolha (abaixo) e rodar em produção (👤) | 🤖 `executar-projeto` + `banco-de-dados-projeto`, depois 👤 | **O `demo_seed_limpar.sql` não basta.** Ele apaga só as contas `@demo.snakethai.com` e deixa, de propósito, as aulas e as contas de teste. Só que o ano de histórico gravado em produção em 23/09 (785 aulas, 463 mensalidades, presenças e justificativas) criou aulas **sem marca própria** (título "<turma> — treino") e lançamentos para todos os alunos ativos. É preciso um script de limpeza desse pacote, ou uma decisão de "zerar o operacional e manter a configuração" (planos, turmas, grade, textos legais). Backup primeiro. Diga qual e-mail é a conta real de admin |
 | 3.6 | **Configuração real**: chave PIX, grade semanal de cada turma e prazo de guarda do comprovante | 👤 | Prazo recomendado: 90 dias (`update public.academy_settings set proof_retention_days = 90;`), só com aprovação |
 | 3.7 | **Dados dos termos** preenchidos em produção → `npm run legal:publicar` → migration de publicação | 👤 + 🤖 | Push e Sentry só depois de publicado. O item 5.2 facilita este; se o aluno real estiver perto, puxe o 5.2 para antes |
 | 3.8 | **Aluno menor de idade**: como colher o consentimento do responsável (LGPD, art. 14) | 👤 | Decisão com o jurídico. Hoje o app não cadastra responsável |
@@ -253,7 +253,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 - [x] **3A.1** 👤 Aprovar os **textos da § 12.3** (aprovados em 25/09, com a linha H) (linha H dos mockups). Anote no Registro:
   "Textos da § 12.3 aprovados em dd/mm". **Não é o G0:** libera só esta fase.
-- [ ] **3A.2** 🤖 `executar-projeto` (+ `design-de-interface-projeto` e `testes-projeto`): a
+- [x] **3A.2** — **PR #43 (25/09)**, aguardando seu merge; duas perguntas para você em `docs/planos/ENTREGA-3A-aviso-de-atualizacao.md`. 🤖 `executar-projeto` (+ `design-de-interface-projeto` e `testes-projeto`): a
   checagem e a folha, exatamente como a § 12.3:
   - **Fonte:** `GET https://api.github.com/repos/yagoriccomi/snake-thai/releases/latest`, com
     `Accept: application/vnd.github+json`, **sem token** (o repositório é público) e tempo
@@ -286,7 +286,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
     asset ausente ou com
     `browser_download_url` diferente leva à página da tag; a segunda abertura no mesmo dia não
     consulta. [#41][#46]
-- [ ] **3A.3** 🤖 `documentar-projeto`: registrar no `docs/VERSIONAMENTO.md` a **convenção de
+- [x] **3A.3** — **PR #43 (25/09)**. 🤖 `documentar-projeto`: registrar no `docs/VERSIONAMENTO.md` a **convenção de
   release** que o aviso pressupõe, valendo para o `release.yml` e para a publicação local
   (`gh release create`):
   - tag `vX.Y.Z`, sem sufixo, como hoje;
@@ -407,7 +407,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 ### 4.1 Esquema completo (abre G1)
 
-- [ ] Plano · [ ] Banco · [ ] Testes · [ ] Tipos gerados · [ ] **G1 anotado no Registro**
+- [x] Plano · [x] Banco · [x] Testes · [x] Tipos gerados · [ ] **G1 anotado no Registro** — **PR #46 (25/09)**; o G1 abre com o merge
 
 **O que entra, numa série de migrations e sem as RPCs de comportamento:**
 
@@ -991,7 +991,7 @@ preenchidos, e o admin só confere, ajusta e completa a identificação.
 | Item | Skill | Quando |
 | --- | --- | --- |
 | Acessibilidade das telas novas (Pessoas, ficha, chamada, solicitações, menu de aulas, Trocar aula, Revisar troca, Falar com a academia, aviso de atualização, central, recado) | `acessibilidade-projeto` | Depois dos itens 3A.2, 4.9b, 4.10 e 5.1c |
-| **Documentação desatualizada:** a seção 10 do `CLAUDE.md` ainda diz "Migração para Cloudinary (em andamento)", com uma branch que já não existe; `docs/ARQUITETURA.md` e `docs/BACKEND.md` não citam o `snake-web` como segundo cliente do esquema | `documentar-projeto` | Junto da Fase 0 ou 1 |
+| [x] ~~**Documentação desatualizada**~~ — **PR #48 (25/09)**: `CLAUDE.md` seção 10, `docs/ARQUITETURA.md` (os três repositórios) e `docs/BACKEND.md` (a web como segundo cliente) | `documentar-projeto` | Junto da Fase 0 ou 1 |
 | `docs/MANUAL-DO-ADMINISTRADOR.md`, `docs/FUNCIONALIDADES.md` e `docs/FREQUENCIA.md` com as modalidades, o menu de aulas, a troca, a extra, o histórico de turma, o contato da academia, a conta nova, a chamada auditável, as solicitações, Pessoas, avisos e recado | `documentar-projeto` | Ao fim de cada bloco da Fase 4 e da Fase 5 |
 | README pelo protocolo da seção 9 do `CLAUDE.md` | `documentar-projeto` | Ao fechar cada módulo |
 | Performance | — | **Nada planejado.** Não há gargalo medido [#99]. A paginação (item médio do `REVIEW.md`) volta à mesa se a lista de Pessoas crescer a ponto de pesar |
@@ -1087,3 +1087,8 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-25 | **Roadmap atualizado para a v3.** Fase 1 marcada com os fatos de 24/09; `service_role` sem urgência, no M1; **Fase 3A** criada para o APK 1.9.0 com o aviso de atualização, a única exceção ao G0; Fase 4 com o mapa da v3, o bloco 4.9 dividido em 4.9a (Solicitações) e 4.9b (Troca de aula, abre G3), e a 2.0.0 dependendo da 1.9.0. Conferido nesta atualização: o CI da `main` ficou vermelho no merge do PR #38 porque a instalação da CLI do Supabase estourou o limite da API do GitHub (item 0.6), e o `release.yml` já usa Node 22 (o 0.4 fica só com o `ci.yml`). |
 | 2026-09-25 | **Servidor, só como informação:** o lote de dependências do `snake-server` (PR #22) foi mesclado em 25/09. O detalhe está no [`snake-server/ROADMAP-server.md`](../snake-server/ROADMAP-server.md). O G2 continua pendente. |
 | 2026-09-25 | **G0 aberto.** O dono aprovou as linhas G e H dos mockups (versão 8; A–F aprovadas em 24/09) e, com elas, os textos da § 12.3 (3A.1) e o contrato v3 com a revisão de 25/09. P23–P25 valem como escolhidas, sem veto. A versão 8 tirou do menu do fixo o cartão "Suas aulas", que nenhuma coluna do contrato traz. No mesmo dia, o dono decidiu que o 4.1 e o 4.8 do `snake-server` (correções do worker que valem para a produção de hoje) vêm primeiro. |
+| 2026-09-25 | **Primeira rodada deste chat depois do G0** (sem merge ainda; nada foi para produção). **Fase 0:** 0.3 feito (branches locais apagadas); 0.4 e 0.5 no **PR #41**; 0.6 resolvido sem mudança (a `main` voltou ao verde nos merges dos PRs #39 e #40). **1.5** no **PR #42**: o `versao:verificar` avisa das migrations e Edge Functions a publicar antes da APK. **Fase 3A:** 3A.2 e 3A.3 no **PR #43** (aviso de atualização, 64 testes novos, `npm run ci` verde). Perguntas ao dono na entrega da 3A: a 2ª dica do mockup, que não está no contrato, e uma mensagem para quando o navegador não abre. **Contrato sem mudança (continua v3). Nenhum portão novo aberto:** G1 espera o 4.1. |
+| 2026-09-25 | **2.4 no PR #45:** o primeiro acesso só baixa `is_first_login` **depois** de a senha nova valer. **Regra para a web (item 3.1 do `ROADMAP-web.md`), a mesma do app:** aceite → dados **sem** a flag → troca de senha → **só então** `is_first_login = false`; se só a flag falhar, repetir o envio não troca a senha de novo. No app, o laço que motivava a ordem antiga (o `USER_UPDATED` recarregava o perfil com "Carregando" e desmontava o Onboarding) saiu com uma recarga silenciosa no `AuthProvider`. A `testes-projeto` revisou os testes da 3A e acrescentou dois (PR #43). Nenhum portão novo. |
+| 2026-09-25 | **4.1 no PR #46 (esquema completo da v3), G1 AINDA FECHADO.** Sete migrations (enums; colunas e constraints; motivos, solicitações e auditoria; trocas; históricos de plano, trancamento, meta e turma com backfills e `registrar_periodo_de_turma`; `pode_ler_motivo` e `grade_efetiva_do_fixo`; travas de aula, chamada e justificativa). A conferência do G1 do § 14 dá **15 · 3 · `contact_whatsapp` · `pode_ler_motivo` · gatilho · 0 no banco local**; o portão abre quando o PR estiver na `main`. **Para o servidor e a web, já no banco local:** as 15 tabelas, `pode_ler_motivo`, `is_staff()` e `pode_decidir_troca` (antecipadas; mesmas assinaturas do contrato). **Efeito no APK 1.8 e no app DEV:** a chamada continua; decidir justificativa passa a pedir para atualizar o app (§ 15). Errata proposta ao contrato: `plans_cota_coerente` (o texto deixaria passar o livre sem cota). |
+| 2026-09-25 | **4.1: CI do PR #46 verde** depois de corrigir o `regressao_frequencia_fundacao.sql` (a colisão de CPF com os dados de demonstração escondia, no banco local, três caminhos que a v3 fechou). Suíte SQL: 0 falhas em 19 arquivos. **3.5 no PR #47:** `supabase/seed/historico_demonstracao_limpar.sql` apaga só o que o pacote de 23/09 criou, reconhecendo cada execução dele (no banco local foram três), com relatório por padrão e roteiro no `RUNBOOK.md`. **Decisão pendente do dono:** o pacote também reescreveu datas de cadastro e trocou presenças por faltas, sem desfazer; a recomendação é zerar o operacional e manter a configuração (precisa do e-mail da conta real de admin). |
+| 2026-09-25 | **Fase 6, documentação no PR #48** (`CLAUDE.md`, `ARQUITETURA.md`, `BACKEND.md`). **Tudo o que não depende de merge ou de decisão está feito.** Esperando: merge dos PRs #41–#48 (o #46 abre o G1 e destrava o 4.2 em diante), a errata `plans_cota_coerente`, a escolha do 3.5 (limpar só o pacote ou zerar o operacional) e o momento do `db-dev reset` no banco local. |
