@@ -28,7 +28,7 @@
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **1.9.0**, com o aviso de atualização (Fase 3A) |
 | **`main`** | Em `384f715` (merge do PR #38, 24/09). **CI vermelho nesse merge:** o job de regressão SQL não conseguiu instalar a CLI do Supabase ("rate limit exceeded" ao resolver `version: latest`); os outros dois jobs passaram. É falha de infraestrutura, não de código (item 0.6) |
-| **Branches** | **PRs abertos em 25/09, aguardando seu merge:** #41 (Fase 0), #42 (1.5), #43 (Fase 3A) e #45 (2.4); #44 com este andamento. As locais já mescladas foram apagadas (0.3) |
+| **Branches** | **PRs abertos em 25/09, aguardando seu merge:** #41 (Fase 0), #42 (1.5), #43 (Fase 3A), #45 (2.4) e #46 (4.1, esquema v3); #44 com este andamento. As locais já mescladas foram apagadas (0.3) |
 | **Banco local** | De pé, com um ano de histórico de demonstração |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
 | **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v3**, revisada em 25/09. Nenhum chat implementou nada dela ainda |
@@ -407,7 +407,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 ### 4.1 Esquema completo (abre G1)
 
-- [ ] Plano · [ ] Banco · [ ] Testes · [ ] Tipos gerados · [ ] **G1 anotado no Registro**
+- [x] Plano · [x] Banco · [x] Testes · [x] Tipos gerados · [ ] **G1 anotado no Registro** — **PR #46 (25/09)**; o G1 abre com o merge
 
 **O que entra, numa série de migrations e sem as RPCs de comportamento:**
 
@@ -1089,3 +1089,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-25 | **G0 aberto.** O dono aprovou as linhas G e H dos mockups (versão 8; A–F aprovadas em 24/09) e, com elas, os textos da § 12.3 (3A.1) e o contrato v3 com a revisão de 25/09. P23–P25 valem como escolhidas, sem veto. A versão 8 tirou do menu do fixo o cartão "Suas aulas", que nenhuma coluna do contrato traz. No mesmo dia, o dono decidiu que o 4.1 e o 4.8 do `snake-server` (correções do worker que valem para a produção de hoje) vêm primeiro. |
 | 2026-09-25 | **Primeira rodada deste chat depois do G0** (sem merge ainda; nada foi para produção). **Fase 0:** 0.3 feito (branches locais apagadas); 0.4 e 0.5 no **PR #41**; 0.6 resolvido sem mudança (a `main` voltou ao verde nos merges dos PRs #39 e #40). **1.5** no **PR #42**: o `versao:verificar` avisa das migrations e Edge Functions a publicar antes da APK. **Fase 3A:** 3A.2 e 3A.3 no **PR #43** (aviso de atualização, 64 testes novos, `npm run ci` verde). Perguntas ao dono na entrega da 3A: a 2ª dica do mockup, que não está no contrato, e uma mensagem para quando o navegador não abre. **Contrato sem mudança (continua v3). Nenhum portão novo aberto:** G1 espera o 4.1. |
 | 2026-09-25 | **2.4 no PR #45:** o primeiro acesso só baixa `is_first_login` **depois** de a senha nova valer. **Regra para a web (item 3.1 do `ROADMAP-web.md`), a mesma do app:** aceite → dados **sem** a flag → troca de senha → **só então** `is_first_login = false`; se só a flag falhar, repetir o envio não troca a senha de novo. No app, o laço que motivava a ordem antiga (o `USER_UPDATED` recarregava o perfil com "Carregando" e desmontava o Onboarding) saiu com uma recarga silenciosa no `AuthProvider`. A `testes-projeto` revisou os testes da 3A e acrescentou dois (PR #43). Nenhum portão novo. |
+| 2026-09-25 | **4.1 no PR #46 (esquema completo da v3), G1 AINDA FECHADO.** Sete migrations (enums; colunas e constraints; motivos, solicitações e auditoria; trocas; históricos de plano, trancamento, meta e turma com backfills e `registrar_periodo_de_turma`; `pode_ler_motivo` e `grade_efetiva_do_fixo`; travas de aula, chamada e justificativa). A conferência do G1 do § 14 dá **15 · 3 · `contact_whatsapp` · `pode_ler_motivo` · gatilho · 0 no banco local**; o portão abre quando o PR estiver na `main`. **Para o servidor e a web, já no banco local:** as 15 tabelas, `pode_ler_motivo`, `is_staff()` e `pode_decidir_troca` (antecipadas; mesmas assinaturas do contrato). **Efeito no APK 1.8 e no app DEV:** a chamada continua; decidir justificativa passa a pedir para atualizar o app (§ 15). Errata proposta ao contrato: `plans_cota_coerente` (o texto deixaria passar o livre sem cota). |
