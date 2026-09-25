@@ -633,5 +633,9 @@ create policy absence_justifications_delete_own_pending on public.absence_justif
   using ((select auth.uid()) = user_id and status = 'pending');
 
 -- A semana, preenchida pelo gatilho desde o INSERT e pelo backfill da fatia 2.
+-- O padrão (a segunda-feira desta semana, em SP) existe para os tipos gerados
+-- não exigirem a coluna no insert: na justificativa de aula o gatilho a
+-- sobrescreve sempre, e a semanal a informa (enviar_justificativa, 4.8).
 alter table public.absence_justifications
+  alter column week_start set default (date_trunc('week', now() at time zone 'America/Sao_Paulo'))::date,
   alter column week_start set not null;
