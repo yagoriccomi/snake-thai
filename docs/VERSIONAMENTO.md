@@ -130,6 +130,31 @@ A conferência oficial é a impressão digital do certificado, em
 [`RELEASE-SIGNING.md`](RELEASE-SIGNING.md), que as notas do release repetem a
 cada versão.
 
+### Convenção de release (o aviso de atualização depende dela)
+
+A partir da 1.9.0, o app consulta uma vez por dia a **última release publicada** do
+GitHub (`releases/latest`) e, se ela for mais nova que a instalada, mostra o aviso
+"Nova versão disponível" com o link do APK (contrato § 12.3). O app **não confia no
+que a release diz**: ele monta o link a partir da tag e só oferece o APK se encontrar o
+arquivo com o nome exato. Por isso, nos **dois caminhos** (workflow `Release Android` e
+publicação local com `gh release create`):
+
+| Regra | Se quebrar |
+| --- | --- |
+| Tag `vX.Y.Z`, sem sufixo (nada de `v2.0.0-rc.1` nem `2.0.0`) | O app ignora a release: ninguém é avisado |
+| Asset `snake-thai-vX.Y.Z.apk`, com esse nome exato | O botão leva à página da tag, e não ao download |
+| Release **publicada**: nem rascunho nem pré-lançamento | O GitHub não a entrega como `latest`: ninguém é avisado |
+| Release marcada **Latest** | O aviso aponta para a versão errada |
+| Correção de uma linha antiga, se um dia existir: `gh release create … --latest=false` | A correção antiga vira a `latest`: a versão mais nova deixa de ser anunciada, e quem está numa bem antiga é mandado para a linha velha |
+
+O `SHA256SUMS.txt` não é mais publicado (desde `3e437e5`), e o aviso não depende dele.
+O workflow `Release Android` já cumpre tudo isso (`gh release create` sem `--draft` nem
+`--prerelease`, asset `snake-thai-v${versao}.apk`); a contingência local acima também.
+
+**Quem quebrar a convenção quebra o aviso em todos os aparelhos.** O aviso só existe
+em quem tem a 1.9.0 ou mais nova: quem ficou na 1.8.0 precisa ser avisado por outro
+canal.
+
 ### Tag publicada não se move
 
 Uma tag que já foi para o GitHub não é apagada nem movida (nada de `push --force`):

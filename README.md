@@ -52,6 +52,11 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   seguinte. A unicidade `(aluno, competência)` impede cobrança duplicada.
 - Página **"Meu plano"** para o aluno: plano contratado, benefícios e a
   mensalidade do mês — só leitura (criar e editar é exclusivo do admin).
+- **Aviso de atualização** (desde a 1.9.0): uma vez por dia, o app confere a última
+  release do GitHub e, se houver versão mais nova, mostra "Nova versão disponível"
+  com o link do APK, em qualquer tela. Só informa, nunca bloqueia; sem rede ou no app
+  DEV, não aparece. Depende da convenção de release de
+  [`docs/VERSIONAMENTO.md`](docs/VERSIONAMENTO.md).
 
 ## 🛠️ Tecnologias
 
@@ -270,7 +275,9 @@ versão está no [CHANGELOG](CHANGELOG.md); o passo a passo, em
 
 O **push da tag** (`git push origin v1.7.0`) dispara o workflow **Release Android** no
 GitHub Actions, que compila, confere a assinatura de produção e publica o APK no
-GitHub Release. Para um ensaio sem publicar: *Actions → Release Android → Run workflow*
+GitHub Release. O **nome do APK e a tag seguem uma convenção fixa**: o aviso de
+atualização dos aparelhos depende dela (ver "Convenção de release" em
+`docs/VERSIONAMENTO.md`). Para um ensaio sem publicar: *Actions → Release Android → Run workflow*
 na `main`. Os segredos ficam no Environment `release` do GitHub
 ([`docs/RELEASE-SIGNING.md`](docs/RELEASE-SIGNING.md)); o `ci.yml` não mudou.
 
