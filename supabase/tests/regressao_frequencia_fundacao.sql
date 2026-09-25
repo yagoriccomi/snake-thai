@@ -19,13 +19,15 @@ values
   ('d0000000-0000-4000-8000-000000000004','00000000-0000-0000-0000-000000000000','authenticated','authenticated','f-prof2@t.invalid','x',now(),now(),now()),
   ('d0000000-0000-4000-8000-000000000005','00000000-0000-0000-0000-000000000000','authenticated','authenticated','f-admin@t.invalid','x',now(),now(),now());
 
-insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color)
+-- Os alunos entraram na turma há 30 dias: pela T51 (contrato v3), a aula só é
+-- da grade de quem já estava na turma quando ela aconteceu.
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color, created_at, group_since)
 values
-  ('d0000000-0000-4000-8000-000000000001','user','Aluno Um','70000000001',false,'active','d0000000-0000-4000-8000-0000000000a1',null),
-  ('d0000000-0000-4000-8000-000000000002','user','Aluno Dois','70000000002',false,'active','d0000000-0000-4000-8000-0000000000a1',null),
-  ('d0000000-0000-4000-8000-000000000003','professor','Prof Um','70000000003',false,'active',null,'#111111'),
-  ('d0000000-0000-4000-8000-000000000004','professor','Prof Dois','70000000004',false,'active',null,'#222222'),
-  ('d0000000-0000-4000-8000-000000000005','admin','Admin F','70000000005',false,'active',null,null);
+  ('d0000000-0000-4000-8000-000000000001','user','Aluno Um','71900000001',false,'active','d0000000-0000-4000-8000-0000000000a1',null, now() - interval '30 days', now() - interval '30 days'),
+  ('d0000000-0000-4000-8000-000000000002','user','Aluno Dois','71900000002',false,'active','d0000000-0000-4000-8000-0000000000a1',null, now() - interval '30 days', now() - interval '30 days'),
+  ('d0000000-0000-4000-8000-000000000003','professor','Prof Um','71900000003',false,'active',null,'#111111', now(), null),
+  ('d0000000-0000-4000-8000-000000000004','professor','Prof Dois','71900000004',false,'active',null,'#222222', now(), null),
+  ('d0000000-0000-4000-8000-000000000005','admin','Admin F','71900000005',false,'active',null,null, now(), null);
 
 insert into public.classes (id, title, type, date_time, group_id)
 values
@@ -107,10 +109,24 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
--- T4 — professor da aula confirma a presença
+-- T4 — professor da aula confirma a presença, e só pela chamada (contrato v3,
+-- § 7.1): o update direto é recusado; a RPC de chamada liga snake.chamada_rpc.
+do $$
+begin
+  begin
+    update public.attendance set status = 'present'
+     where class_id = 'd0000000-0000-4000-8000-0000000000c1'
+       and user_id = 'd0000000-0000-4000-8000-000000000001';
+    raise exception 'FALHOU T4: professor gravou presença direto, fora da chamada';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+select set_config('snake.chamada_rpc', 'on', true);
 update public.attendance set status = 'present'
  where class_id = 'd0000000-0000-4000-8000-0000000000c1'
    and user_id = 'd0000000-0000-4000-8000-000000000001';
+select set_config('snake.chamada_rpc', 'off', true);
 
 do $$
 declare v public.attendance_status;
@@ -150,16 +166,19 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000002","role":"authenticated"}';
 
--- T6 — sem declarar ausência, não há o que justificar
+-- T6 — contrato v3, § 9.1 (a): justificar deixou de exigir a declaração de
+-- ausência (quem faltou sem avisar também justifica). Pendente, o dono apaga.
 do $$
 begin
-  begin
-    insert into public.absence_justifications (class_id, user_id, message)
-    values ('d0000000-0000-4000-8000-0000000000c1','d0000000-0000-4000-8000-000000000002','Sem declarar');
-    raise exception 'FALHOU T6: justificativa aceita sem declaração de ausência';
-  exception when check_violation then
-    raise notice 'OK T6: justificativa exige declaração de ausência';
-  end;
+  insert into public.absence_justifications (class_id, user_id, message)
+  values ('d0000000-0000-4000-8000-0000000000c2','d0000000-0000-4000-8000-000000000002','Sem declarar');
+  delete from public.absence_justifications
+   where class_id = 'd0000000-0000-4000-8000-0000000000c2' and user_id = 'd0000000-0000-4000-8000-000000000002';
+  if exists (select 1 from public.absence_justifications
+              where class_id = 'd0000000-0000-4000-8000-0000000000c2' and user_id = 'd0000000-0000-4000-8000-000000000002') then
+    raise exception 'FALHOU T6: o dono não apagou a própria justificativa pendente';
+  end if;
+  raise notice 'OK T6: justifica sem ter declarado ausência; pendente, o dono apaga';
 end $$;
 
 -- T7 — declara ausência e justifica: nasce pendente
@@ -214,7 +233,8 @@ begin
     update public.absence_justifications set status = 'approved'
      where id = 'd0000000-0000-4000-8000-0000000000e1';
     raise exception 'FALHOU T10: aluno se autoaprovou';
-  exception when insufficient_privilege then
+  -- Contrato v3, § 9.1 (h): toda decisão por update direto pede o app novo.
+  exception when invalid_parameter_value then
     raise notice 'OK T10: aluno não revisa a própria justificativa';
   end;
 end $$;
@@ -234,9 +254,10 @@ end $$;
 -- T14a — prepara a troca de anexo (ainda como aluno 2, pendente)
 insert into public.absence_justifications (id, class_id, user_id, proof_provider, proof_public_id)
 values ('d0000000-0000-4000-8000-0000000000e2','d0000000-0000-4000-8000-0000000000c2',
-        'd0000000-0000-4000-8000-000000000002','cloudinary','justificativas/teste/anexo-antigo');
+        'd0000000-0000-4000-8000-000000000002','cloudinary','justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000c2');
 
-update public.absence_justifications set proof_public_id = 'justificativas/teste/anexo-novo'
+-- Caminhos reais (contrato v3, § 9.1): o formato antigo, por aula, e o novo, por justificativa.
+update public.absence_justifications set proof_public_id = 'justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000e2'
  where id = 'd0000000-0000-4000-8000-0000000000e2';
 
 -- =====================================================================
@@ -298,23 +319,30 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
--- T11 — aprova, tentando forjar outro revisor: o carimbo é automático
-update public.absence_justifications
-   set status = 'approved',
-       reviewed_by = 'd0000000-0000-4000-8000-000000000005'
- where id = 'd0000000-0000-4000-8000-0000000000e1';
-
+-- T11 — contrato v3, § 9.1 (h) e § 15: o APK 1.8 decide por update direto, e
+-- o banco responde pedindo o app novo. O carimbo do revisor passa a ser regra
+-- da RPC decidir_justificativa (bloco 4.8), que grava quem decidiu à parte.
 do $$
-declare v_por uuid; v_em timestamptz;
 begin
-  select reviewed_by, reviewed_at into v_por, v_em
-    from public.absence_justifications
-   where id = 'd0000000-0000-4000-8000-0000000000e1';
-  if v_por is distinct from 'd0000000-0000-4000-8000-000000000003'::uuid or v_em is null then
-    raise exception 'FALHOU T11: carimbo de revisão errado (por %, em %)', v_por, v_em;
-  end if;
-  raise notice 'OK T11: aprovação carimba o revisor real, sem forja';
+  begin
+    update public.absence_justifications
+       set status = 'approved',
+           reviewed_by = 'd0000000-0000-4000-8000-000000000005'
+     where id = 'd0000000-0000-4000-8000-0000000000e1';
+    raise exception 'FALHOU T11: decisão por update direto aceita';
+  exception when invalid_parameter_value then
+    raise notice 'OK T11: decidir pelo APK 1.8 pede para atualizar o aplicativo';
+  end;
 end $$;
+
+-- A decisão entra como a RPC fará (sistema), para os casos seguintes.
+reset role;
+set local request.jwt.claims = '{}';
+update public.absence_justifications
+   set status = 'approved', reviewed_by = 'd0000000-0000-4000-8000-000000000003', reviewed_at = now()
+ where id = 'd0000000-0000-4000-8000-0000000000e1';
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
 -- T11c — quem revisa não reescreve o que o aluno enviou
 do $$
@@ -357,7 +385,7 @@ set local request.jwt.claims = '';
 do $$
 begin
   if not exists (select 1 from public.media_deletion_queue
-                  where asset_ref = 'justificativas/teste/anexo-antigo'
+                  where asset_ref = 'justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000c2'
                     and justification_id = 'd0000000-0000-4000-8000-0000000000e2'
                     and motivo = 'justificativa_removida'
                     and processado_em is null) then
