@@ -33,7 +33,8 @@ import {
   updateStudentByAdmin,
   updateUserEmail,
   type StudentAdminInput,
-  finishStaffOnboarding,
+  finishOnboarding,
+  saveOnboardingProfile,
   resetStudentPassword,
   setStudentActive,
   updateOwnColor,
@@ -304,11 +305,35 @@ describe('createStudent', () => {
   });
 });
 
-describe('finishStaffOnboarding', () => {
+describe('saveOnboardingProfile', () => {
+  const DADOS = { name: '  Aluna Teste  ', cpf: '12345678909', phone: '11987654321', dob: '2000-01-31' };
+
+  it('deveGravarOsDadosSemConcluirOPrimeiroAcesso', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await saveOnboardingProfile(PROFESSOR_ID, DADOS);
+    // A flag só cai depois de a senha nova valer (ROADMAP-thai 2.4): se viajasse
+    // aqui, uma troca de senha que falha deixaria a senha padrão valendo.
+    expect(chain.update).toHaveBeenCalledWith({
+      name: 'Aluna Teste',
+      cpf: '12345678909',
+      phone: '11987654321',
+      dob: '2000-01-31',
+    });
+    expect(chain.update.mock.calls[0]?.[0]).not.toHaveProperty('is_first_login');
+    expect(chain.eq).toHaveBeenCalledWith('id', PROFESSOR_ID);
+  });
+
+  it('devePropagarARecusaDoBanco', async () => {
+    mockQuery(NETWORK_FAILURE);
+    await expect(saveOnboardingProfile(PROFESSOR_ID, DADOS)).rejects.toEqual(NETWORK_FAILURE.error);
+  });
+});
+
+describe('finishOnboarding', () => {
   it('deveApenasBaixarAFlagSemRegravarCadastro', async () => {
     const chain = mockQuery({ data: null, error: null });
-    await finishStaffOnboarding(PROFESSOR_ID);
-    // Nome/CPF vieram do admin e não podem ser sobrescritos aqui; e o papel
+    await finishOnboarding(PROFESSOR_ID);
+    // Nome/CPF já foram gravados (aluno) ou vieram do admin (equipe); e o papel
     // JAMAIS pode viajar neste update — seria uma autopromoção disfarçada de
     // "concluir cadastro".
     expect(chain.update).toHaveBeenCalledWith({ is_first_login: false });
@@ -318,9 +343,7 @@ describe('finishStaffOnboarding', () => {
   it('devePropagarOErroEmVezDeLiberarOAppComOnboardingPendente', async () => {
     mockQuery(NETWORK_FAILURE);
     // Engolir o erro deixaria a conta na senha padrão achando que concluiu.
-    await expect(finishStaffOnboarding(PROFESSOR_ID)).rejects.toEqual(
-      NETWORK_FAILURE.error,
-    );
+    await expect(finishOnboarding(PROFESSOR_ID)).rejects.toEqual(NETWORK_FAILURE.error);
   });
 });
 
