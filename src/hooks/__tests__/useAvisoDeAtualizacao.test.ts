@@ -185,6 +185,25 @@ describe('useAvisoDeAtualizacao', () => {
     expect(mockWarn).toHaveBeenCalledTimes(2);
   });
 
+  it('naoDeveConsultarDeNovoAoVoltarNoMesmoDiaDepoisDeUmaConsultaComResposta', async () => {
+    // Memória de verdade: o que a primeira consulta grava é o que a volta lê.
+    let memoria: unknown = null;
+    mockLerMemoria.mockImplementation(async () => memoria);
+    mockGravarMemoria.mockImplementation(async (valor: unknown) => {
+      memoria = valor;
+    });
+    const { result } = montar();
+    await esperarAConsulta();
+    act(() => result.current.dispensar());
+
+    act(() => ouvintesDoAppState.forEach((ouvinte) => ouvinte('active')));
+    await esperarAConsulta();
+
+    // Uma consulta e um aviso por dia (§ 12.3): o "Agora não" vale até amanhã.
+    expect(mockBuscar).toHaveBeenCalledTimes(1);
+    expect(result.current.atualizacao).toBeNull();
+  });
+
   it('deveFecharAoDispensar', async () => {
     const { result } = montar();
     await esperarAConsulta();

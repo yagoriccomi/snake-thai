@@ -5,6 +5,7 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import {
+  TEMPO_MAXIMO_DA_CONSULTA_MS,
   buscarUltimaRelease,
   gravarMemoriaDoAviso,
   lerMemoriaDoAviso,
@@ -71,6 +72,10 @@ describe('buscarUltimaRelease', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('deveUsarOLimiteDeCincoSegundosDoContrato', () => {
+    expect(TEMPO_MAXIMO_DA_CONSULTA_MS).toBe(5_000);
   });
 
   it('deveTratarCorpoInvalidoComoFalha', async () => {
