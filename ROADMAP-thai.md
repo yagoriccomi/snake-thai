@@ -5,8 +5,8 @@
 > **Substitui** o [`docs/PLANO-DE-TAREFAS.md`](docs/PLANO-DE-TAREFAS.md) como fila viva: aquele
 > checklist (2026-09-16) está todo feito do lado do código, e as pendências dele que ainda
 > valem foram trazidas para cá.
-> **Repositórios irmãos:** [`snake-server/ROADMAP.md`](../snake-server/ROADMAP.md) ·
-> [`snake-web/ROADMAP.md`](../snake-web/ROADMAP.md)
+> **Repositórios irmãos:** [`snake-server/ROADMAP-server.md`](../snake-server/ROADMAP-server.md) ·
+> [`snake-web/ROADMAP-web.md`](../snake-web/ROADMAP-web.md)
 
 **Como usar**
 
@@ -68,8 +68,8 @@ A lista junta os três repositórios, porque o marco é um só.
 - [ ] Dados de demonstração removidos de produção, com backup — item 3.5
 - [ ] Política e Termos publicados com os dados reais da academia — item 3.7
 - [ ] Auditoria de segurança feita no que mudou desde a última rodada — item 3.10
-- [ ] Servidor aceita o domínio da web e o CI dele está verde — [`snake-server/ROADMAP.md`](../snake-server/ROADMAP.md)
-- [ ] Web conferida tela por tela e com um envio real de comprovante em produção — [`snake-web/ROADMAP.md`](../snake-web/ROADMAP.md)
+- [ ] Servidor aceita o domínio da web e o CI dele está verde — [`snake-server/ROADMAP-server.md`](../snake-server/ROADMAP-server.md)
+- [ ] Web conferida tela por tela e com um envio real de comprovante em produção — [`snake-web/ROADMAP-web.md`](../snake-web/ROADMAP-web.md)
 
 ---
 
@@ -202,7 +202,7 @@ está em andamento. A outra opção é deixar o banco marcar a conclusão quando
 
 **Teste obrigatório:** o caminho de falha. A troca de senha rejeita, e a flag continua `true`. [#41][#46]
 
-**Mesma correção na web:** [`snake-web/ROADMAP.md`](../snake-web/ROADMAP.md), item 3.1. Corrigir
+**Mesma correção na web:** [`snake-web/ROADMAP-web.md`](../snake-web/ROADMAP-web.md), item 3.1. Corrigir
 os dois juntos, com a mesma regra.
 
 ---
@@ -358,7 +358,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 5. **Portões que este chat abre:** G1, G3, G4 e G5. O G0 é aberto por você, e este chat o anota.
    Ao abrir,
    **anote no Registro:** "G1 aberto em dd/mm". **É ali que os outros chats olham.** O G2 é do
-   servidor: leia o Registro do [`snake-server/ROADMAP.md`](../snake-server/ROADMAP.md) antes de
+   servidor: leia o Registro do [`snake-server/ROADMAP-server.md`](../snake-server/ROADMAP-server.md) antes de
    usar anexo.
 6. **Produção:** tudo sai **junto**, numa versão só, na ordem do § 14: servidor (G2) →
    `send-push` com os **dez** tipos novos e o `default` → migrations → `create-staff` → APK no
@@ -965,7 +965,7 @@ entrega só.** São quatro PRs, nesta ordem, cada um publicável sozinho.
 
 > **Aluno de iPhone não recebe o recado.** A web não tem push nem central, e o aluno de iPhone
 > é exatamente quem perderia "sem aula na quinta". Decisão sua, registrada em
-> [`snake-web/ROADMAP.md`](../snake-web/ROADMAP.md), item 7.1. **Decida antes do 5.1c**, para a
+> [`snake-web/ROADMAP-web.md`](../snake-web/ROADMAP-web.md), item 7.1. **Decida antes do 5.1c**, para a
 > central nascer com o formato que as duas interfaces vão ler.
 
 ### 5.2 Dados dos termos com valores recomendados prontos
@@ -1085,5 +1085,5 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-24 | **Contrato v3** (D43–D55): menu de escolher aulas, troca de aula avulsa e permanente, aula extra do fixo, contato da academia, aviso de atualização do app, guarda dos anexos em 180 dias e média do Painel sem teto; T21 e T30 confirmadas, T10 vetada na média. Revisado no mesmo dia por 3 lentes adversariais (conta, segurança/LGPD, nomes; 35 achados) antes de chegar aos roadmaps. **Mockups versão 6**, com as linhas G e H novas. **Linhas A–F aprovadas pelo dono.** |
 | 2026-09-25 | **Revisão da v3 com as respostas do dono às P1–P22** (continua v3, porque nenhum chat implementou nada dela): D56 (extra em qualquer aula), D57 (troca aprovada com a aula nova cancelada vira abono), D58 (histórico de turma nesta rodada: `student_group_periods`, gatilho `registrar_periodo_de_turma`, backfill pela T52, T53 nas trocas, `excluir_turma` arquiva), T41 confirmada, T50–T53; P23–P25 abertas, valendo se não houver veto até o G0. **Mockups versão 7** (36 telas; "Treino livre — noite" com Extra, "Troca abonada" em Meus pedidos, "Admin — mudar o aluno de turma"). G1 passa a 15 tabelas e G3 a 23 RPCs. |
 | 2026-09-25 | **Roadmap atualizado para a v3.** Fase 1 marcada com os fatos de 24/09; `service_role` sem urgência, no M1; **Fase 3A** criada para o APK 1.9.0 com o aviso de atualização, a única exceção ao G0; Fase 4 com o mapa da v3, o bloco 4.9 dividido em 4.9a (Solicitações) e 4.9b (Troca de aula, abre G3), e a 2.0.0 dependendo da 1.9.0. Conferido nesta atualização: o CI da `main` ficou vermelho no merge do PR #38 porque a instalação da CLI do Supabase estourou o limite da API do GitHub (item 0.6), e o `release.yml` já usa Node 22 (o 0.4 fica só com o `ci.yml`). |
-| 2026-09-25 | **Servidor, só como informação:** o lote de dependências do `snake-server` (PR #22) foi mesclado em 25/09. O detalhe está no [`snake-server/ROADMAP.md`](../snake-server/ROADMAP.md). O G2 continua pendente. |
+| 2026-09-25 | **Servidor, só como informação:** o lote de dependências do `snake-server` (PR #22) foi mesclado em 25/09. O detalhe está no [`snake-server/ROADMAP-server.md`](../snake-server/ROADMAP-server.md). O G2 continua pendente. |
 | 2026-09-25 | **G0 aberto.** O dono aprovou as linhas G e H dos mockups (versão 8; A–F aprovadas em 24/09) e, com elas, os textos da § 12.3 (3A.1) e o contrato v3 com a revisão de 25/09. P23–P25 valem como escolhidas, sem veto. A versão 8 tirou do menu do fixo o cartão "Suas aulas", que nenhuma coluna do contrato traz. No mesmo dia, o dono decidiu que o 4.1 e o 4.8 do `snake-server` (correções do worker que valem para a produção de hoje) vêm primeiro. |
