@@ -46,7 +46,7 @@ insert into public.attendance (class_id, user_id, declared_status, status) value
 
 insert into public.absence_justifications (id, class_id, user_id, message, proof_provider, proof_public_id) values
   ('f7000000-0000-4000-8000-00000000e001','f7000000-0000-4000-8000-00000000c001','f7000000-0000-4000-8000-000000000001',
-   'Consulta médica', 'cloudinary', 'justificativas/lgpd-a1/c001');
+   'Consulta médica', 'cloudinary', 'justificativas/f7000000-0000-4000-8000-000000000001/f7000000-0000-4000-8000-00000000c001');
 
 insert into public.attendance_monthly (user_id, reference_month, group_id, total_classes, counted_classes, attended, justified, frequency_percent)
 values ('f7000000-0000-4000-8000-000000000001', date '2030-01-01', 'turma-lgpd', 8, 8, 6, 1, 87.5);
@@ -62,11 +62,11 @@ select 'f7000000-0000-4000-8000-000000000001', id from public.legal_documents
 insert into public.payments (id, user_id, amount_cents, due_date, reference_month, status, paid_at,
                              proof_provider, proof_public_id, proof_storage_path) values
   ('f7000000-0000-4000-8000-00000000d001','f7000000-0000-4000-8000-000000000001',10000, date '2030-01-10', date '2030-01-01','paid', now(),
-   'cloudinary','comprovantes/lgpd-a1/d001', null),
+   'cloudinary','comprovantes/f7000000-0000-4000-8000-000000000001/f7000000-0000-4000-8000-00000000d001', null),
   ('f7000000-0000-4000-8000-00000000d002','f7000000-0000-4000-8000-000000000001',12000, date '2030-02-10', date '2030-02-01','pending_approval', null,
-   'supabase_storage', null, 'lgpd-a1/d002.jpg'),
+   'supabase_storage', null, 'f7000000-0000-4000-8000-000000000001/d002.jpg'),
   ('f7000000-0000-4000-8000-00000000d003','f7000000-0000-4000-8000-000000000002',10000, date '2030-01-10', date '2030-01-01','pending_approval', null,
-   'cloudinary','comprovantes/lgpd-a2/d003', null);
+   'cloudinary','comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d003', null);
 
 -- =====================================================================
 -- T10 — export do titular traz frequência mensal e justificativas, só dele
@@ -80,7 +80,7 @@ begin
   if jsonb_array_length(v->'frequencia_mensal') <> 1 or jsonb_array_length(v->'justificativas') <> 1 then
     raise exception 'FALHOU T10: export sem frequência mensal ou justificativas: %', v;
   end if;
-  if (v->'pagamentos')::text like '%lgpd-a2%' or (v->'perfil'->>'id') <> 'f7000000-0000-4000-8000-000000000001' then
+  if (v->'pagamentos')::text like '%f7000000-0000-4000-8000-000000000002%' or (v->'perfil'->>'id') <> 'f7000000-0000-4000-8000-000000000001' then
     raise exception 'FALHOU T10: export trouxe dado de outro titular';
   end if;
   raise notice 'OK T10: export completo e só do titular';
@@ -188,7 +188,7 @@ declare
   n integer;
 begin
   select count(*) into n from public.media_deletion_queue
-   where asset_ref = 'comprovantes/lgpd-a2/d003' and motivo = 'comprovante_recusado';
+   where asset_ref = 'comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d003' and motivo = 'comprovante_recusado';
   if n <> 1 then
     raise exception 'FALHOU T13: recusa gerou % itens', n;
   end if;
@@ -229,9 +229,9 @@ begin
   raise notice 'OK T2: pagamentos preservados, sem imagem de comprovante';
 
   select count(*) into n from public.media_deletion_queue
-   where asset_ref in ('comprovantes/lgpd-a1/d001', 'lgpd-a1/d002.jpg');
+   where asset_ref in ('comprovantes/f7000000-0000-4000-8000-000000000001/f7000000-0000-4000-8000-00000000d001', 'f7000000-0000-4000-8000-000000000001/d002.jpg');
   if n <> 2 or exists (select 1 from public.media_deletion_queue
-                        where asset_ref in ('comprovantes/lgpd-a1/d001', 'lgpd-a1/d002.jpg')
+                        where asset_ref in ('comprovantes/f7000000-0000-4000-8000-000000000001/f7000000-0000-4000-8000-00000000d001', 'f7000000-0000-4000-8000-000000000001/d002.jpg')
                           and motivo <> 'conta_excluida') then
     raise exception 'FALHOU T3: fila com % itens ou motivo errado', n;
   end if;
@@ -239,7 +239,7 @@ begin
 
   if exists (select 1 from public.absence_justifications where user_id = 'f7000000-0000-4000-8000-000000000001')
      or not exists (select 1 from public.media_deletion_queue
-                     where asset_ref = 'justificativas/lgpd-a1/c001' and motivo = 'justificativa_removida') then
+                     where asset_ref = 'justificativas/f7000000-0000-4000-8000-000000000001/f7000000-0000-4000-8000-00000000c001' and motivo = 'justificativa_removida') then
     raise exception 'FALHOU T4: justificativa ou anexo ficaram';
   end if;
   raise notice 'OK T4: justificativa apagada, anexo na fila';
@@ -332,17 +332,17 @@ end $$;
 insert into public.payments (id, user_id, amount_cents, due_date, reference_month, status, paid_at,
                              proof_provider, proof_public_id) values
   ('f7000000-0000-4000-8000-00000000d101','f7000000-0000-4000-8000-000000000002',10000, date '2031-01-10', date '2031-01-01','paid', now() - interval '100 days',
-   'cloudinary','comprovantes/lgpd-a2/antigo'),
+   'cloudinary','comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d101'),
   ('f7000000-0000-4000-8000-00000000d102','f7000000-0000-4000-8000-000000000002',10000, date '2031-02-10', date '2031-02-01','paid', now() - interval '10 days',
-   'cloudinary','comprovantes/lgpd-a2/recente'),
+   'cloudinary','comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d102'),
   ('f7000000-0000-4000-8000-00000000d103','f7000000-0000-4000-8000-000000000002',10000, date '2031-03-10', date '2031-03-01','pending_approval', null,
-   'cloudinary','comprovantes/lgpd-a2/pendente');
+   'cloudinary','comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d103');
 
 -- R1 — desligado (prazo nulo) não faz nada
 do $$
 begin
   if public.enfileirar_comprovantes_expirados() <> 0
-     or exists (select 1 from public.media_deletion_queue where asset_ref like 'comprovantes/lgpd-a2/%' and motivo = 'retencao_expirada') then
+     or exists (select 1 from public.media_deletion_queue where asset_ref like 'comprovantes/f7000000-0000-4000-8000-000000000002/%' and motivo = 'retencao_expirada') then
     raise exception 'FALHOU R1: com o prazo desligado, algo foi enfileirado';
   end if;
   raise notice 'OK R1: desligado por padrão';
@@ -359,13 +359,13 @@ declare
 begin
   n := public.enfileirar_comprovantes_expirados();
   if n <> 1
-     or not exists (select 1 from public.media_deletion_queue where asset_ref = 'comprovantes/lgpd-a2/antigo' and motivo = 'retencao_expirada')
-     or exists (select 1 from public.media_deletion_queue where asset_ref in ('comprovantes/lgpd-a2/recente', 'comprovantes/lgpd-a2/pendente'))
+     or not exists (select 1 from public.media_deletion_queue where asset_ref = 'comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d101' and motivo = 'retencao_expirada')
+     or exists (select 1 from public.media_deletion_queue where asset_ref in ('comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d102', 'comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d103'))
      or exists (select 1 from public.payments where id = 'f7000000-0000-4000-8000-00000000d101' and proof_provider is not null)
      or not exists (select 1 from public.payments where id = 'f7000000-0000-4000-8000-00000000d102' and proof_provider is not null) then
     raise exception 'FALHOU R2: varredura errada (enfileirados: %)', n;
   end if;
-  select count(*) into n from public.media_deletion_queue where asset_ref = 'comprovantes/lgpd-a2/antigo';
+  select count(*) into n from public.media_deletion_queue where asset_ref = 'comprovantes/f7000000-0000-4000-8000-000000000002/f7000000-0000-4000-8000-00000000d101';
   if n <> 1 then
     raise exception 'FALHOU R2: % itens para o mesmo arquivo', n;
   end if;

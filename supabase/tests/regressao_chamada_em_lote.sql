@@ -88,7 +88,7 @@ begin
   update public.payments
      set status = 'pending_approval',
          proof_provider = 'cloudinary',
-         proof_public_id = 'comprovantes/e0000000-0000-4000-8000-000000000001/d002'
+         proof_public_id = 'comprovantes/e0000000-0000-4000-8000-000000000001/e0000000-0000-4000-8000-00000000d002'
    where id = 'e0000000-0000-4000-8000-00000000d002';
   get diagnostics n = row_count;
   if n <> 1 then
