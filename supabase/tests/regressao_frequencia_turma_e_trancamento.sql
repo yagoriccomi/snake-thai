@@ -1,6 +1,7 @@
 -- Regressão da correção de frequência (migration
--- 20260918200000_frequencia_turma_e_trancamento): conta a partir da entrada na
--- turma e para no trancamento. Roda numa transação e termina em ROLLBACK;
+-- 20260918200000_frequencia_turma_e_trancamento), no modelo do contrato v4
+-- (20260929130000_frequencia_nova): a turma conta pelo histórico de turma
+-- (D58, T51) e para no trancamento (T8). Roda numa transação e termina em ROLLBACK;
 -- mesmo assim, rode SÓ no banco local (scripts\db-dev test).
 \set ON_ERROR_STOP on
 
@@ -62,21 +63,25 @@ begin
 end $$;
 
 -- =====================================================================
--- F2 — aulas anteriores à entrada na turma não viram falta
+-- F2 — D58 (contrato v4, § 0.1 regra 8): a turma antiga conta até a mudança,
+-- e as aulas da turma nova anteriores à entrada nunca viram falta
 -- =====================================================================
 do $$
 declare v record;
 begin
-  -- A aluna acabou de entrar na turma B; as duas aulas de B já aconteceram.
+  -- A aluna acabou de sair da turma A para a B. Em março/2024 ela estava na
+  -- A: as 4 aulas da A são dela; as 2 da B (antes da entrada) não.
+  select * into v from public.frequencia_do_mes(
+    array['f0000000-0000-4000-8000-000000000002']::uuid[], '2024-03-01', '2024-03-20 12:00-03');
+  if v.expected <> 4 or v.attended <> 2 then
+    raise exception 'FALHOU F2: esperava 4 aulas da turma antiga e 2 presenças, veio % e %', v.expected, v.attended;
+  end if;
   select * into v from public.frequencia_mensal(
     array['f0000000-0000-4000-8000-000000000002']::uuid[], '2024-03-20 12:00-03');
-  if v.counted_classes <> 0 then
-    raise exception 'FALHOU F2: % aulas da turma nova entraram na conta', v.counted_classes;
+  if v.counted_classes <> 4 or v.frequency_percent <> 50.00 then
+    raise exception 'FALHOU F2: legado com % aulas e %%%', v.counted_classes, v.frequency_percent;
   end if;
-  if v.frequency_percent <> 100.00 then
-    raise exception 'FALHOU F2: sem aula elegível o percentual deveria ser 100, veio %', v.frequency_percent;
-  end if;
-  raise notice 'OK F2: aula da turma nova anterior à entrada não conta como falta';
+  raise notice 'OK F2: a turma antiga conta até a mudança; a nova, só depois dela';
 end $$;
 
 -- =====================================================================
@@ -101,9 +106,14 @@ end $$;
 -- =====================================================================
 -- F4 — matrícula trancada para de contar no dia do trancamento
 -- =====================================================================
+-- O trancamento é um período (T8): o gatilho o abre em now(); aqui ele é
+-- levado para 07/03/2024, o dia em que o aluno trancou no cenário.
 update public.profiles
    set status = 'inactive', deactivated_at = '2024-03-07 00:00-03'
  where id = 'f0000000-0000-4000-8000-000000000003';
+update public.inactive_periods
+   set started_at = '2024-03-07 00:00-03'
+ where user_id = 'f0000000-0000-4000-8000-000000000003' and ended_at is null;
 
 do $$
 declare v record;
@@ -154,7 +164,8 @@ begin
 end $$;
 
 -- =====================================================================
--- F6 — a fórmula não mudou: justificada sai do denominador
+-- F6 — a justificada sai do esperado, pelo período de turma (a conta não lê
+-- mais group_since, T51; contrato v4, § 0.1 regra 8)
 -- =====================================================================
 insert into public.absence_justifications (class_id, user_id, message, status, reviewed_at, reviewed_by)
 values ('f0c00000-0000-4000-8000-00000000000c','f0000000-0000-4000-8000-000000000002','Atestado','approved',
@@ -163,24 +174,24 @@ values ('f0c00000-0000-4000-8000-00000000000c','f0000000-0000-4000-8000-00000000
 do $$
 declare v record;
 begin
-  -- Aluna de volta à turma A, entrando antes das quatro aulas.
-  update public.profiles set group_id = 'f0-turma-a' where id = 'f0000000-0000-4000-8000-000000000002';
-  update public.profiles set group_since = '2024-03-01' where id = 'f0000000-0000-4000-8000-000000000002';
   insert into public.attendance (class_id, user_id, status) values
     ('f0c00000-0000-4000-8000-00000000000c','f0000000-0000-4000-8000-000000000002','absent'),
     ('f0c00000-0000-4000-8000-00000000000d','f0000000-0000-4000-8000-000000000002','absent');
+  -- group_since gravado à mão (como o F6 antigo fazia) não muda nada.
+  update public.profiles set group_since = '2024-03-12 12:00-03' where id = 'f0000000-0000-4000-8000-000000000002';
 
   select * into v from public.frequencia_mensal(
     array['f0000000-0000-4000-8000-000000000002']::uuid[], '2024-03-20 12:00-03');
-  -- 4 aulas, 2 presenças, 1 falta justificada: 2 / (4 - 1) = 66,67%.
-  if v.counted_classes <> 4 or v.attended <> 2 or v.justified <> 1 then
-    raise exception 'FALHOU F6: base errada — % aulas, % presenças, % justificadas',
-      v.counted_classes, v.attended, v.justified;
+  -- Período na turma A desde 01/01/2024: 4 aulas, 1 justificada sem
+  -- presença → esperado 3; 2 presenças: 2 / 3 = 66,67%.
+  if v.total_classes <> 3 or v.counted_classes <> 3 or v.attended <> 2 or v.justified <> 1 then
+    raise exception 'FALHOU F6: base errada — total %, contadas %, presenças %, justificadas %',
+      v.total_classes, v.counted_classes, v.attended, v.justified;
   end if;
   if v.frequency_percent <> 66.67 then
     raise exception 'FALHOU F6: esperava 66,67%%, veio %', v.frequency_percent;
   end if;
-  raise notice 'OK F6: justificada continua saindo do denominador (2 de 3 = 66,67%%)';
+  raise notice 'OK F6: justificada sai do esperado, e group_since não entra na conta (2 de 3 = 66,67%%)';
 end $$;
 
 rollback;

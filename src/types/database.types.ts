@@ -328,13 +328,13 @@ isOneToOne: false
                   ]
                 },"attendance_monthly": {
                   Row: {
-                    "attended": number,"closed_at": string,"counted_classes": number,"frequency_percent": number,"group_id": string | null,"id": string,"justified": number,"reference_month": string,"total_classes": number,"user_id": string
+                    "attended": number,"cancelled": number,"closed_at": string,"counted_classes": number,"excused": number,"expected": number,"frequency_percent": number,"group_id": string | null,"id": string,"justified": number,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"total_classes": number,"user_id": string
                   }
                   Insert: {
-                    "attended": number,"closed_at"?: string,"counted_classes": number,"frequency_percent": number,"group_id"?: string | null,"id"?: string,"justified": number,"reference_month": string,"total_classes": number,"user_id": string
+                    "attended": number,"cancelled": number,"closed_at"?: string,"counted_classes": number,"excused": number,"expected": number,"frequency_percent": number,"group_id"?: string | null,"id"?: string,"justified": number,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"total_classes": number,"user_id": string
                   }
                   Update: {
-                    "attended"?: number,"closed_at"?: string,"counted_classes"?: number,"frequency_percent"?: number,"group_id"?: string | null,"id"?: string,"justified"?: number,"reference_month"?: string,"total_classes"?: number,"user_id"?: string
+                    "attended"?: number,"cancelled"?: number,"closed_at"?: string,"counted_classes"?: number,"excused"?: number,"expected"?: number,"frequency_percent"?: number,"group_id"?: string | null,"id"?: string,"justified"?: number,"reference_month"?: string,"schedule_mode"?: Database["public"]['Enums']["plan_schedule_mode"],"total_classes"?: number,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -351,6 +351,31 @@ isOneToOne: false
       referencedColumns: ["id"]
     },{
       foreignKeyName: "attendance_monthly_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"attendance_recalc_queue": {
+                  Row: {
+                    "id": number,"queued_at": string,"reference_month": string,"user_id": string | null
+                  }
+                  Insert: {
+                    "id"?: never,"queued_at"?: string,"reference_month": string,"user_id"?: string | null
+                  }
+                  Update: {
+                    "id"?: never,"queued_at"?: string,"reference_month"?: string,"user_id"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "attendance_recalc_queue_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "diretorio_perfis"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "attendance_recalc_queue_user_id_fkey"
       columns: ["user_id"]
 isOneToOne: false
       referencedRelation: "profiles"
@@ -1265,6 +1290,9 @@ isOneToOne: false
 "definir_senha_padrao_da_academia":
 { Args: { "p_senha": string }; Returns: undefined
                            },
+"dias_de_aula_da_semana":
+{ Args: { "p_segunda": string }; Returns: string[]
+                           },
 "disparar_envio_de_push":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
@@ -1302,6 +1330,9 @@ isOneToOne: false
 "enfileirar_notificacao":
 { Args: { "p_agora"?: string,"p_chave": string,"p_class_id"?: string,"p_data"?: Json,"p_destinatario": string,"p_justification_id"?: string,"p_payment_id"?: string,"p_tipo": Database["public"]['Enums']["notification_kind"] }; Returns: boolean
                            },
+"enfileirar_recalculo_de_frequencia":
+{ Args: { "p_quando": string,"p_user_id": string }; Returns: undefined
+                           },
 "enfileirar_resumo_aulas_sem_chamada":
 { Args: { "p_agora"?: string }; Returns: number
                            },
@@ -1314,12 +1345,38 @@ isOneToOne: false
 "fechar_frequencia_do_mes":
 { Args: { "p_agora"?: string,"p_mes"?: string }; Returns: number
                            },
+"fim_do_mes_de_frequencia":
+{ Args: { "p_mes": string }; Returns: string
+                           },
+"fim_do_prazo_da_semana":
+{ Args: { "p_segunda": string }; Returns: string
+                           },
 "fonte_da_aula_na_grade":
 { Args: { "p_class_id": string,"p_user_id": string }; Returns: string
+                           },
+"frequencia_do_mes":
+{ Args: { "p_mes": string,"p_referencia"?: string,"p_user_ids": (string)[] }; Returns: {
+              "attended": number,"attended_to_date": number,"cancelled": number,"closes_on": string,"excused": number,"expected": number,"expected_to_date": number,"frequency_percent": number,"is_closed": boolean,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"user_id": string
+            }[]
+                           },
+"frequencia_do_mes_interna":
+{ Args: { "p_mes": string,"p_referencia": string,"p_user_ids": (string)[] }; Returns: {
+              "attended": number,"attended_to_date": number,"cancelled": number,"closes_on": string,"excused": number,"expected": number,"expected_to_date": number,"frequency_percent": number,"is_closed": boolean,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"user_id": string
+            }[]
                            },
 "frequencia_mensal":
 { Args: { "p_referencia"?: string,"p_user_ids": (string)[] }; Returns: {
               "attended": number,"counted_classes": number,"frequency_percent": number,"justified": number,"reference_month": string,"total_classes": number,"user_id": string
+            }[]
+                           },
+"frequencia_por_semana":
+{ Args: { "p_primeira_segunda": string,"p_referencia": string,"p_ultima_segunda": string,"p_user_ids": (string)[] }; Returns: {
+              "attended_in_month": number,"attended_to_date": number,"attended_week": number,"cancelled_in_month": number,"cancelled_week": number,"excused_in_month": number,"excused_week": number,"expected_in_month": number,"expected_to_date": number,"expected_week": number,"is_split": boolean,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"user_id": string,"week_end": string,"week_start": string,"weekly_target": number
+            }[]
+                           },
+"frequencia_semanal":
+{ Args: { "p_ate": string,"p_de": string,"p_referencia"?: string,"p_user_ids": (string)[] }; Returns: {
+              "attended": number,"cancelled": number,"excused": number,"expected": number,"frequency_percent": number,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"user_id": string,"week_end": string,"week_start": string,"weekly_target": number
             }[]
                            },
 "gerar_aulas_da_grade":
@@ -1332,6 +1389,9 @@ isOneToOne: false
 { Args: { "p_ate": string,"p_de": string,"p_user_ids": (string)[] }; Returns: {
               "class_id": string,"fonte": string,"user_id": string
             }[]
+                           },
+"gravar_frequencia_do_mes":
+{ Args: { "p_agora": string,"p_mes": string,"p_user_ids": (string)[] }; Returns: number
                            },
 "horario_permitido_para_push":
 { Args: { "p_agora": string }; Returns: string
@@ -1363,6 +1423,11 @@ isOneToOne: false
 "menu_de_aulas":
 { Args: { "p_referencia"?: string,"p_semana": string }; Returns: {
               "audience": Database["public"]['Enums']["class_audience"],"can_cancel_swap": boolean,"can_contest": boolean,"can_justify": boolean,"can_mark_extra": boolean,"can_swap_from": boolean,"can_swap_from_permanent": boolean,"can_swap_to": boolean,"cancelled": boolean,"class_id": string,"contest_until": string,"date_time": string,"declared_status": Database["public"]['Enums']["attendance_status"],"group_id": string,"group_name": string,"is_recurring": boolean,"justification_id": string,"justification_status": Database["public"]['Enums']["justification_status"],"justify_until": string,"marked_in_week": number,"origem": string,"schedule_ends_on": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"status": Database["public"]['Enums']["attendance_status"],"swap_decided_via": string,"swap_id": string,"swap_kind": Database["public"]['Enums']["class_swap_kind"],"swap_other_class_id": string,"swap_other_date_time": string,"swap_role": string,"swap_status": Database["public"]['Enums']["class_swap_status"],"teachers": Json,"title": string,"type": Database["public"]['Enums']["class_type"],"weekly_target": number
+            }[]
+                           },
+"meses_da_semana":
+{ Args: { "p_segunda": string }; Returns: {
+              "mes_final": string,"mes_inicial": string
             }[]
                            },
 "meta_da_semana":
@@ -1430,6 +1495,9 @@ isOneToOne: false
 "pode_ser_original_permanente":
 { Args: { "p_class_id": string,"p_referencia": string,"p_user_id": string }; Returns: boolean
                            },
+"pode_ver_frequencia":
+{ Args: { "p_user_ids": (string)[] }; Returns: boolean
+                           },
 "previa_exclusao_turma":
 { Args: { "p_group_id": string }; Returns: Json
                            },
@@ -1483,6 +1551,11 @@ isOneToOne: false
 "sem_repeticao":
 { Args: { "p_valores": (number)[] }; Returns: boolean
                            },
+"semanas_do_mes":
+{ Args: { "p_mes": string,"p_referencia"?: string,"p_user_id": string }; Returns: {
+              "attended_in_month": number,"attended_week": number,"can_justify": boolean,"excused_week": number,"expected_in_month": number,"expected_week": number,"is_split": boolean,"justifications_left": number,"justificativas": Json,"justify_until": string,"label": string,"week_end": string,"week_percent": number,"week_start": string
+            }[]
+                           },
 "senha_padrao_da_academia":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
@@ -1490,6 +1563,9 @@ isOneToOne: false
 { Args: { "p_schedule_id": string }; Returns: {
               "papel": string,"started_at": string,"student_name": string,"user_id": string
             }[]
+                           },
+"ultimo_mes_de_frequencia_fechado":
+{ Args: { "p_referencia": string }; Returns: string
                            },
 "valor_proporcional":
 { Args: { "dia_entrada": number,"dias_no_mes": number,"preco_cents": number }; Returns: number

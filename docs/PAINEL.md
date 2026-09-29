@@ -28,8 +28,8 @@ o banco é.
 | **Faixas** | 1–30, 31–60 e 61+ dias, somadas por mensalidade |
 | **Contas encerradas** | Inadimplência de contas excluídas (LGPD): só o valor somado, sem nome |
 | **Faturamento** | Esperado × recebido por **competência**, últimos 12 meses |
-| **Frequência média** | Média do percentual dos alunos ativos que tiveram **ao menos uma aula contada** |
-| **Risco de evasão** | Aluno ativo abaixo de **70%** no mês atual (com pelo menos **4** aulas contadas) **ou** no último mês fechado |
+| **Frequência média** | Média simples, **sem teto por aluno** (D55), do **ritmo** do mês (feitas ÷ esperado até agora) dos alunos ativos com esperado até agora; no último mês fechado, do percentual gravado. O à vontade fica fora (D35) |
+| **Risco de evasão** | Aluno ativo (fora o à vontade) com **ritmo** abaixo de **70%** no mês atual (com pelo menos **4** aulas esperadas até agora) **ou** abaixo de 70% no último mês fechado (T10) |
 
 ## Decisões (2026-09-16, modo Loop, recomendações do plano)
 
@@ -54,9 +54,13 @@ o banco é.
 7. **Risco de evasão:** limite de 70% e mínimo de 4 aulas no mês atual, para uma
    falta no começo do mês não gerar alarme. Os dois valores são parâmetros da
    função e constantes no app (`src/constants/painel.ts`).
-8. **Frequência média sem denominador zero.** A regra da frequência devolve 100%
-   para quem não teve aula contada; incluir essas pessoas inflaria a média. A tela
-   mostra "média de N alunos".
+8. **Frequência média sem denominador zero.** Quem não tem esperado até agora
+   fica fora da média; incluir essas pessoas distorceria o número. A tela mostra
+   "média de N alunos".
+9. **(Contrato v4, 29/09) Frequência nova.** A média não limita ninguém a 100%
+   (D55) e pode passar de 100%. O "último mês fechado" é o anterior só depois do
+   domingo da Semana Extra dele (D10); antes disso, o de antes. Regra completa em
+   `docs/FREQUENCIA.md`.
 
 ## Rotinas automáticas (L3)
 

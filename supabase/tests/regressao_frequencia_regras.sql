@@ -18,8 +18,10 @@
 --   c7  30/11 23:30  rotina, futura → só no total (já é 01/12 em UTC)
 --   c8  01/12 00:30  rotina → fora (dezembro)
 --
---   Esperado para S: total 8 · contadas 4 · presenças 1 · justificadas 1
---                    frequência 1 / (4 − 1) = 33,33%
+--   Esperado para S (legado com o ritmo, contrato v4 § 15):
+--     total 7 (o esperado do mês: a justificada sai, § 11.2) · contadas 3
+--     (o esperado até agora com chamada: c1, c2, c6) · presenças 1 ·
+--     justificadas 1 · frequência 1 / 3 = 33,33%
 \set ON_ERROR_STOP on
 
 begin;
@@ -103,17 +105,17 @@ begin
   if r.reference_month <> date '2026-11-01' then
     raise exception 'FALHOU T1: mês de referência %', r.reference_month;
   end if;
-  if (r.total_classes, r.counted_classes, r.attended, r.justified) <> (8, 4, 1, 1) then
-    raise exception 'FALHOU T1: total %, contadas %, presenças %, justificadas % (esperado 8/4/1/1)',
+  if (r.total_classes, r.counted_classes, r.attended, r.justified) <> (7, 3, 1, 1) then
+    raise exception 'FALHOU T1: total %, contadas %, presenças %, justificadas % (esperado 7/3/1/1)',
       r.total_classes, r.counted_classes, r.attended, r.justified;
   end if;
   if r.frequency_percent <> 33.33 then
     raise exception 'FALHOU T1: frequência % (esperado 33.33)', r.frequency_percent;
   end if;
-  raise notice 'OK T1: 1/8 aulas e 33,33%% — aula sem chamada, futura, evento e justificada fora do denominador';
+  raise notice 'OK T1: 1 de 3 e 33,33%% — aula sem chamada, futura, evento e justificada fora do ritmo';
 end $$;
 
--- T5 — os cortes de fuso estão embutidos no total 8 do T1:
+-- T5 — os cortes de fuso estão embutidos no total 7 do T1:
 --      c7 (30/11 23:30 local, já 01/12 UTC) DENTRO; c8 e c9 FORA.
 do $$ begin raise notice 'OK T5: recorte do mês no fuso de São Paulo (coberto pelo total do T1)'; end $$;
 
@@ -303,59 +305,71 @@ end $$;
 reset role;
 set local request.jwt.claims = '';
 
--- T16 — não congela mês que ainda não terminou
+-- T16 — não fecha mês que ainda não terminou. Novembro/2026 termina numa
+-- Semana Extra (seg 30/11 em novembro, ter a sáb em dezembro): só fecha
+-- depois do domingo 06/12 (D10).
 do $$
 begin
   begin
     perform public.fechar_frequencia_do_mes(date '2026-11-01', timestamptz '2026-11-30 12:00-03');
     raise exception 'FALHOU T16: fechou mês em andamento';
   exception when invalid_parameter_value then
-    raise notice 'OK T16: mês em andamento não é congelado';
+    null;
+  end;
+  begin
+    perform public.fechar_frequencia_do_mes(date '2026-11-01', timestamptz '2026-12-06 23:00-03');
+    raise exception 'FALHOU T16: fechou novembro antes do fim da Semana Extra';
+  exception when invalid_parameter_value then
+    raise notice 'OK T16: mês em andamento e Semana Extra em curso não fecham';
   end;
 end $$;
 
--- T14 — fecha novembro com os mesmos números do cálculo ao vivo
+-- T14 — fecha novembro com os números do mês inteiro (§ 11.6): esperado 7
+-- (c1, c2, c4, c6, c10, c5, c7; a c3 justificada sai), 1 presença, 1/7.
 do $$
 declare n integer; r record;
 begin
-  n := public.fechar_frequencia_do_mes(date '2026-11-01', timestamptz '2026-12-01 04:00+00');
+  n := public.fechar_frequencia_do_mes(date '2026-11-01', timestamptz '2026-12-07 00:20-03');
   if n < 1 then
     raise exception 'FALHOU T14: fechamento gravou % linha(s)', n;
   end if;
   select * into r from public.attendance_monthly
    where user_id = 'f0000000-0000-4000-8000-000000000001' and reference_month = date '2026-11-01';
-  if (r.total_classes, r.counted_classes, r.attended, r.justified) <> (8, 4, 1, 1)
-     or r.frequency_percent <> 33.33 or r.group_id <> 'turma-freq2' then
-    raise exception 'FALHOU T14: retrato %/%/%/% % turma %',
-      r.total_classes, r.counted_classes, r.attended, r.justified, r.frequency_percent, r.group_id;
+  if (r.expected, r.attended, r.excused, r.cancelled) <> (7, 1, 1, 0)
+     or (r.total_classes, r.counted_classes, r.justified) <> (7, 7, 1)
+     or r.frequency_percent <> 14.29 or r.group_id <> 'turma-freq2' or r.schedule_mode <> 'fixed' then
+    raise exception 'FALHOU T14: retrato %/%/%/% (antigas %/%/%) % turma %',
+      r.expected, r.attended, r.excused, r.cancelled, r.total_classes, r.counted_classes, r.justified,
+      r.frequency_percent, r.group_id;
   end if;
-  raise notice 'OK T14: novembro congelado com os números do cálculo';
+  raise notice 'OK T14: novembro gravado com o mês inteiro e as colunas antigas preenchidas';
 end $$;
 
--- T15 — congelado de verdade: corrigir uma chamada antiga não muda o mês fechado
+-- T15 — o fechamento não congela um erro (T31): corrigida a chamada, o mês
+-- é regravado.
 do $$
 declare n integer; v numeric;
 begin
   update public.attendance set status = 'present'
    where class_id = 'f0000000-0000-4000-8000-00000000c006'
      and user_id = 'f0000000-0000-4000-8000-000000000001';
-  n := public.fechar_frequencia_do_mes(date '2026-11-01', timestamptz '2026-12-01 04:00+00');
+  n := public.fechar_frequencia_do_mes(date '2026-11-01', timestamptz '2026-12-07 00:20-03');
   select frequency_percent into v from public.attendance_monthly
    where user_id = 'f0000000-0000-4000-8000-000000000001' and reference_month = date '2026-11-01';
-  if n <> 0 or v <> 33.33 then
+  if n < 1 or v <> 28.57 then
     raise exception 'FALHOU T15: refechamento gravou % e a frequência virou %', n, v;
   end if;
-  raise notice 'OK T15: mês fechado não muda com edição posterior';
+  raise notice 'OK T15: mês fechado é regravado com a chamada corrigida (2/7)';
 end $$;
 
--- T17 — o cron do fechamento está agendado depois da meia-noite de São Paulo
+-- T17 — o fechamento roda todo dia, depois da meia-noite de São Paulo (§ 11.6)
 do $$
 begin
   if not exists (select 1 from cron.job
-                  where jobname = 'close-monthly-attendance' and schedule = '20 3 1 * *') then
-    raise exception 'FALHOU T17: cron do fechamento mensal ausente ou no horário errado';
+                  where jobname = 'close-monthly-attendance' and schedule = '20 3 * * *') then
+    raise exception 'FALHOU T17: cron do fechamento ausente ou no horário errado';
   end if;
-  raise notice 'OK T17: fechamento agendado para 00:20 de São Paulo do dia 1º';
+  raise notice 'OK T17: fechamento diário às 00:20 de São Paulo';
 end $$;
 
 rollback;

@@ -397,25 +397,28 @@ begin
   raise notice 'OK T14: anexo trocado entra na fila LGPD';
 end $$;
 
--- T17 — histórico mensal recusa contagens incoerentes
+-- T17 — histórico mensal só grava quem tem esperado (contrato v4, § 11.6).
+-- A frequência passa de 100% (D7): presenças acima do esperado são válidas.
 do $$
 begin
   begin
-    insert into public.attendance_monthly (user_id, reference_month, total_classes,
-                                           counted_classes, attended, justified, frequency_percent)
-    values ('d0000000-0000-4000-8000-000000000001', date '2026-08-01', 12, 5, 4, 3, 100);
-    raise exception 'FALHOU T17: aceitou presenças + justificadas acima das aulas contadas';
+    insert into public.attendance_monthly (user_id, reference_month, schedule_mode, expected, attended,
+                                           excused, cancelled, frequency_percent, total_classes,
+                                           counted_classes, justified)
+    values ('d0000000-0000-4000-8000-000000000001', date '2026-08-01', 'fixed', 0, 4, 0, 0, 100, 0, 0, 0);
+    raise exception 'FALHOU T17: aceitou linha sem esperado';
   exception when check_violation then
-    raise notice 'OK T17: histórico mensal recusa contagens incoerentes';
+    raise notice 'OK T17: histórico mensal recusa linha sem esperado';
   end;
 end $$;
 
 -- T15b/c — leitura do histórico: aluno só o próprio, professor o de todos
-insert into public.attendance_monthly (user_id, reference_month, total_classes,
-                                       counted_classes, attended, justified, frequency_percent)
+insert into public.attendance_monthly (user_id, reference_month, schedule_mode, expected, attended,
+                                       excused, cancelled, frequency_percent, total_classes,
+                                       counted_classes, justified)
 values
-  ('d0000000-0000-4000-8000-000000000001', date '2026-08-01', 12, 12, 11, 0, 91.67),
-  ('d0000000-0000-4000-8000-000000000002', date '2026-08-01', 12, 12, 9, 2, 90.00);
+  ('d0000000-0000-4000-8000-000000000001', date '2026-08-01', 'fixed', 12, 11, 0, 0, 91.67, 12, 12, 0),
+  ('d0000000-0000-4000-8000-000000000002', date '2026-08-01', 'fixed', 10, 9, 2, 0, 90.00, 10, 10, 2);
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000001","role":"authenticated"}';

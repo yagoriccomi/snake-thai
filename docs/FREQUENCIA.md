@@ -5,6 +5,54 @@
 > Decisões tomadas com o cliente em 2026-09-09; este documento é a fonte da
 > verdade das regras de cálculo.
 
+## Frequência nova — contrato v4 (bloco 4.5a, 2026-09-29)
+
+> Esta seção **substitui** a conta das seções antigas abaixo. A regra completa
+> está no `docs/CONTRATO.md`, § 11 e § 15; aqui fica o mapa para quem chega.
+
+**Uma conta só.** `frequencia_por_semana` (interna) calcula cada semana de cada
+aluno e a parte dela que vai para cada mês. Tudo o mais soma essa conta: se cada
+tela contasse do seu jeito, o fechamento divergiria do que o aluno vê.
+
+| Peça | Quem chama | O que devolve |
+| --- | --- | --- |
+| `frequencia_semanal(ids[], de, até)` | o próprio aluno, a equipe, o sistema | Uma linha por semana (seg–dom): esperado, feitas, abonos, canceladas e % (nulo com esperado 0) |
+| `frequencia_do_mes(ids[], mês)` | idem | O mês: esperado, feitas, %, `closes_on`, `is_closed` e o **ritmo** (esperado e feitas até agora) |
+| `semanas_do_mes(aluno, mês)` | idem | As semanas do mês (S1…S5 e a **Semana extra**), com a parte de cada uma no mês e a justificativa semanal do livre |
+| `frequencia_mensal(ids[])` | APK 1.8 e web atual (legado, até o G6) | Mesmas colunas de antes, com o ritmo: total = esperado do mês; contadas = esperado até agora; % = feitas ÷ esperado até agora, ou 100 |
+| `fechar_frequencia_do_mes()` | cron `close-monthly-attendance`, **todo dia** às 00:20 (Brasília) | Grava cada mês no dia seguinte ao `closes_on` e **regrava** o mês fechado que mudou (T31) |
+
+**A conta, em uma frase por modalidade:**
+
+- **Fixo:** esperado = as aulas da grade efetiva dele (a turma **em que ele
+  estava na data de cada aula**, mais trocas), menos as canceladas e as
+  justificadas sem presença. Feitas = presenças com chamada em **qualquer**
+  aula, desde o início da contagem (T52) e fora do trancamento.
+- **Livre:** por semana, teto = mínimo entre a cota (proporcional, T8) e as
+  aulas que aceitavam livres (T30); os abonos (justificativa semanal aprovada e
+  aula cancelada que ele tinha marcado entre as primeiras da cota, T29) só
+  cobrem o que faltou (T17).
+- **À vontade:** a conta do livre com a **meta** no lugar da cota e só as
+  canceladas como abono. Fica fora do Painel (D35).
+
+**O mês de cada semana (T2)** sai dos dias de aula configurados. Semana com dias
+de aula nos dois meses é a **Semana Extra**: no fixo, cada aula vai para o mês
+da sua data; no livre, as presenças preenchem as vagas em ordem, e o que sobra
+se divide ao meio, com a sobra ímpar no mês novo (D10). O mês só fecha depois
+do domingo dessa semana.
+
+**Sem teto:** a frequência passa de 100% (D7). Com esperado 0, o percentual é
+nulo e a tela mostra "—" (T9). O legado continua devolvendo 100 nesse caso.
+
+**Recálculo (T31):** gatilhos em presença, aula (cancelamento, reativação,
+chamada), justificativa, troca e período de troca permanente anotam o mês já
+fechado em `attendance_recalc_queue`; o fechamento diário regrava esses meses.
+Mudança de turma sozinha não dispara nada: o período de turma nunca é passado.
+
+**Regressão:** `supabase/tests/regressao_frequencia_nova.sql` confere a § 11.5
+inteira (o exemplo do dono, a Semana Extra, os casos-limite, Trocas e extra,
+Histórico de turma e o Painel).
+
 ### Entregue na Fase 1 (2026-09-14)
 
 - Migrations `20260914120000_motivo_justificativa_removida` (isolada) e
@@ -166,7 +214,10 @@ Regressões: `supabase/tests/regressao_turmas.sql` (13 casos),
 `supabase/tests/regressao_grade_semanal.sql` (16 casos) e
 `supabase/tests/regressao_frequencia_turma_e_trancamento.sql` (6 casos).
 
-## A conta
+## A conta (até o contrato v4 — hoje é o legado `frequencia_mensal`)
+
+> Substituída pela seção **Frequência nova**, acima. Fica aqui como registro do
+> que o APK 1.8 mostrava.
 
 ```
 presenças confirmadas pelo professor

@@ -102,10 +102,9 @@ union all
 select c.id, '9d000000-0000-4000-8000-000000000007'::uuid, 'absent'::public.attendance_status
   from public.classes c where c.group_id = 'painel-b' and c.id::text like '9d000000%';
 
--- Abril fechado: A6 com 25%; A1 sem aula contada (denominador zero).
-insert into public.attendance_monthly (user_id, reference_month, group_id, total_classes, counted_classes, attended, justified, frequency_percent) values
-  ('9d000000-0000-4000-8000-000000000008', date '2031-04-01', 'painel-c', 8, 8, 2, 0, 25),
-  ('9d000000-0000-4000-8000-000000000003', date '2031-04-01', 'painel-a', 0, 0, 0, 0, 100);
+-- Abril fechado: A6 com 25%. Quem não tinha esperado nem é gravado (§ 11.6).
+insert into public.attendance_monthly (user_id, reference_month, group_id, schedule_mode, expected, attended, excused, cancelled, frequency_percent, total_classes, counted_classes, justified) values
+  ('9d000000-0000-4000-8000-000000000008', date '2031-04-01', 'painel-c', 'fixed', 8, 2, 0, 0, 25, 8, 8, 0);
 
 -- =====================================================================
 -- T1, T2 — aluno e professor recebem 42501 nas 5 funções
@@ -290,7 +289,7 @@ begin
   raise notice 'OK T9: faturamento por competência, meses contínuos, entre 1 e 24';
 end $$;
 
--- T10 — frequência média sem os alunos de denominador zero
+-- T10 — frequência média pelo ritmo (T10), sem quem não tem esperado até agora
 do $$
 declare
   r record;
@@ -300,7 +299,7 @@ begin
   if r.frequencia_media_mes <> 40.00 or r.alunos_com_aula_no_mes <> 3 then
     raise exception 'FALHOU T10: média do mês % de % alunos (esperado 40 de 3)', r.frequencia_media_mes, r.alunos_com_aula_no_mes;
   end if;
-  -- Abril fechado: só A6 (25%); A1 com zero aulas fica fora.
+  -- Abril fechado: só A6 (25%).
   if r.ultimo_mes_fechado <> date '2031-04-01' or r.frequencia_media_ultimo_mes <> 25.00 or r.alunos_com_aula_ultimo_mes <> 1 then
     raise exception 'FALHOU T10: último mês % com média % de %', r.ultimo_mes_fechado, r.frequencia_media_ultimo_mes, r.alunos_com_aula_ultimo_mes;
   end if;
