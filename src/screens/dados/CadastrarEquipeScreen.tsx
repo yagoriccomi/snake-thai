@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { CampoDeCor } from '@/components/CampoDeCor';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import {
@@ -12,12 +13,9 @@ import {
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { createStaff, type StaffRole } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import { COR_SUGERIDA, MENSAGEM_COR_INVALIDA, ehCorValida } from '@/utils/cor';
 import { maskCpf, onlyDigits } from '@/utils/masks';
 import { isValidCpf, isValidEmail, isValidName } from '@/utils/validation';
-
-/** Cor padrão sugerida no seletor — só um ponto de partida, o admin troca. */
-const DEFAULT_COLOR = '#39FF14';
-const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
 const ROLE_OPTIONS: ReadonlyArray<SegmentOption<StaffRole>> = [
   { value: 'professor', label: 'Professor' },
@@ -33,8 +31,8 @@ type CadastroErrors = Partial<
  *
  * Diferente do cadastro de aluno: nasce COMPLETO (nome e CPF já informados
  * aqui) — não há onboarding depois, por decisão do usuário. Professor exige
- * uma cor hexadecimal (identidade visual nas aulas); administrador não tem
- * cor (a constraint do banco recusaria). [#55]
+ * uma cor hexadecimal (identidade visual nas aulas); para o administrador a
+ * cor é opcional: com cor, ele também dá aula (contrato § 4). [#55]
  */
 export function CadastrarEquipeScreen({
   navigation,
@@ -46,7 +44,7 @@ export function CadastrarEquipeScreen({
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [cpf, setCpf] = useState('');
-  const [color, setColor] = useState(DEFAULT_COLOR);
+  const [color, setColor] = useState(COR_SUGERIDA);
   const [errors, setErrors] = useState<CadastroErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -54,6 +52,15 @@ export function CadastrarEquipeScreen({
   const isProfessorRole = role === 'professor';
 
   const handleCpfChange = useCallback((value: string) => setCpf(maskCpf(value)), []);
+
+  // O admin começa sem cor (é opcional); o professor, com a sugerida.
+  const handleRoleChange = useCallback((novo: StaffRole) => {
+    setRole(novo);
+    setColor((atual) => {
+      if (novo === 'admin') return atual === COR_SUGERIDA ? '' : atual;
+      return atual === '' ? COR_SUGERIDA : atual;
+    });
+  }, []);
 
   const handleSubmit = useCallback(async () => {
     const next: CadastroErrors = {};
@@ -66,8 +73,9 @@ export function CadastrarEquipeScreen({
     if (!isValidCpf(cpf)) {
       next.cpf = 'CPF inválido.';
     }
-    if (isProfessorRole && !HEX_COLOR_REGEX.test(color)) {
-      next.color = 'Cor inválida — use o formato #RRGGBB.';
+    const corDigitada = color.trim().toUpperCase();
+    if ((isProfessorRole || corDigitada !== '') && !ehCorValida(corDigitada)) {
+      next.color = MENSAGEM_COR_INVALIDA;
     }
     setErrors(next);
     if (Object.keys(next).length > 0) {
@@ -81,7 +89,7 @@ export function CadastrarEquipeScreen({
         name,
         cpf: onlyDigits(cpf),
         role,
-        color: isProfessorRole ? color : null,
+        color: corDigitada === '' ? null : corDigitada,
       });
       setSuccess(true);
     } catch (submitError) {
@@ -100,7 +108,7 @@ export function CadastrarEquipeScreen({
     setEmail('');
     setName('');
     setCpf('');
-    setColor(DEFAULT_COLOR);
+    setColor(COR_SUGERIDA);
     setRole('professor');
     setSuccess(false);
     setErrors({});
@@ -135,7 +143,7 @@ export function CadastrarEquipeScreen({
         <AppText variant="label" style={styles.label}>
           Cargo
         </AppText>
-        <SegmentedControl options={ROLE_OPTIONS} value={role} onChange={setRole} />
+        <SegmentedControl options={ROLE_OPTIONS} value={role} onChange={handleRoleChange} />
 
         <Input
           label="E-mail"
@@ -166,30 +174,17 @@ export function CadastrarEquipeScreen({
           error={errors.cpf}
         />
 
-        {isProfessorRole && (
-          <>
-            <Input
-              label="Cor do professor"
-              placeholder="#39FF14"
-              autoCapitalize="characters"
-              value={color}
-              onChangeText={setColor}
-              error={errors.color}
-            />
-            <View style={styles.colorPreviewRow}>
-              <View
-                style={[
-                  styles.colorPreview,
-                  HEX_COLOR_REGEX.test(color) ? { backgroundColor: color } : null,
-                ]}
-              />
-              <AppText variant="caption" color={colors.textSecondary}>
-                Aparece ao lado do nome do professor nas aulas; a borda da aula usa
-                esta cor. O professor pode trocá-la depois no próprio perfil.
-              </AppText>
-            </View>
-          </>
-        )}
+        <CampoDeCor
+          label={isProfessorRole ? 'Cor do professor' : 'Cor (opcional)'}
+          value={color}
+          onChangeText={setColor}
+          error={errors.color}
+        />
+        <AppText variant="caption" color={colors.textSecondary} style={styles.colorHint}>
+          {isProfessorRole
+            ? 'Aparece ao lado do nome do professor nas aulas; a borda da aula usa esta cor. O professor pode trocá-la depois no próprio perfil.'
+            : 'Com uma cor, o administrador também dá aula; sem cor, ele só administra. Dá para escolher depois em Dados › Minha cor.'}
+        </AppText>
 
         {errors.form !== undefined ? (
           <AppText variant="caption" color={colors.error} style={styles.spaced}>
@@ -230,18 +225,8 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       marginBottom: 16,
       textAlign: 'center',
     },
-    colorPreviewRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-      marginTop: 10,
-    },
-    colorPreview: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
-      borderWidth: 1,
-      borderColor: colors.border,
+    colorHint: {
+      marginTop: 6,
     },
     button: {
       marginTop: 24,

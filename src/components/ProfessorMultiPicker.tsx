@@ -8,7 +8,7 @@ import { Button } from '@/components/Button';
 import { Checkbox } from '@/components/Checkbox';
 import type { Fonts, Radius } from '@/constants/theme';
 import { createLogger } from '@/lib/logger';
-import { fetchAllProfessors } from '@/services/profile.service';
+import { fetchTeachingStaff } from '@/services/profile.service';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 import type { Profile } from '@/types/models';
@@ -27,9 +27,15 @@ function professoresAtivos(perfis: Profile[]): Profile[] {
   return perfis.filter((perfil) => perfil.status === 'active' && perfil.anonymized_at === null);
 }
 
+/** O admin que dá aula aparece identificado ("Júlia · admin", mockup da linha A). */
+export function nomeNaGrade(perfil: Profile): string {
+  const nome = perfil.name ?? 'Professor';
+  return perfil.role === 'admin' ? `${nome} · admin` : nome;
+}
+
 /**
  * Seleção de vários professores numa folha, com a cor de cada um — a mesma
- * da agenda. A lista é carregada ao montar para o campo já mostrar os nomes
+ * da agenda. Entram os admins com cor, que também dão aula (contrato § 4). A lista é carregada ao montar para o campo já mostrar os nomes
  * na edição de um horário.
  */
 export function ProfessorMultiPicker({ label, value, onChange }: ProfessorMultiPickerProps): React.JSX.Element {
@@ -43,7 +49,7 @@ export function ProfessorMultiPicker({ label, value, onChange }: ProfessorMultiP
   const carregar = useCallback(async () => {
     setErro(null);
     try {
-      setProfessores(professoresAtivos(await fetchAllProfessors()));
+      setProfessores(professoresAtivos(await fetchTeachingStaff()));
     } catch (falha) {
       log.error('Falha ao carregar professores', falha);
       setErro('Não foi possível carregar os professores. Verifique sua conexão.');
@@ -74,7 +80,7 @@ export function ProfessorMultiPicker({ label, value, onChange }: ProfessorMultiP
   const resumo = useMemo(() => {
     if (professores === null) return erro !== null ? 'Professores indisponíveis' : 'Carregando professores…';
     if (selecionados.length === 0) return 'Nenhum professor';
-    return selecionados.map((professor) => professor.name ?? 'Professor').join(', ');
+    return selecionados.map(nomeNaGrade).join(', ');
   }, [professores, erro, selecionados]);
 
   const alternar = useCallback(
@@ -105,8 +111,8 @@ export function ProfessorMultiPicker({ label, value, onChange }: ProfessorMultiP
       {retirados > 0 ? (
         <AppText variant="caption" color={colors.warning} style={styles.aviso}>
           {retirados === 1
-            ? 'Um professor que não está mais ativo saiu da seleção.'
-            : `${retirados} professores que não estão mais ativos saíram da seleção.`}
+            ? 'Uma pessoa que não pode mais ser escalada (inativa ou sem cor) saiu da seleção.'
+            : `${retirados} pessoas que não podem mais ser escaladas (inativas ou sem cor) saíram da seleção.`}
         </AppText>
       ) : null}
 
@@ -133,11 +139,11 @@ export function ProfessorMultiPicker({ label, value, onChange }: ProfessorMultiP
               key={professor.id}
               checked={value.includes(professor.id)}
               onChange={(marcado) => alternar(professor.id, marcado)}
-              accessibilityLabel={professor.name ?? 'Professor'}
+              accessibilityLabel={nomeNaGrade(professor)}
             >
               <View style={styles.opcao}>
                 <View style={[styles.bolinha, { backgroundColor: professor.color ?? colors.border }]} />
-                <AppText variant="body">{professor.name ?? 'Professor'}</AppText>
+                <AppText variant="body">{nomeNaGrade(professor)}</AppText>
               </View>
             </Checkbox>
           ))

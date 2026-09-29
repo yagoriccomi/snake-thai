@@ -1,7 +1,10 @@
-import { lerErroDaFuncao } from '@/lib/functionsError';
+import { lerErroDaFuncao, lerErroDoBanco } from '@/lib/functionsError';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
 import type { Profile } from '@/types/models';
+
+/** SQLSTATE das recusas de cor que o banco escreve para a pessoa (§ 4). */
+const CODIGOS_COM_FRASE_DA_COR = ['23514'] as const;
 
 /**
  * Serviço de perfil — leitura e escrita na tabela `profiles`, sempre via cliente
@@ -191,12 +194,17 @@ export async function fetchManagedProfiles(): Promise<Profile[]> {
   return data;
 }
 
-/** Lista todos os professores (para o admin escolher em quais aulas colocar). */
-export async function fetchAllProfessors(): Promise<Profile[]> {
+/**
+ * Lista a equipe que dá aula, para o admin escalar na grade: professores e
+ * admins **com cor** (contrato § 4, T24). O admin sem cor não é escalável: o
+ * banco recusaria o vínculo.
+ */
+export async function fetchTeachingStaff(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .eq('role', 'professor')
+    .in('role', ['professor', 'admin'])
+    .not('color', 'is', null)
     .order('name', { ascending: true });
   if (error !== null) {
     throw error;
@@ -214,7 +222,7 @@ export interface StaffInput {
   /** Só dígitos. */
   cpf: string;
   role: StaffRole;
-  /** Obrigatório para `professor`; deve ficar `null` para `admin`. */
+  /** Obrigatório para `professor`; opcional para `admin` (com cor, ele dá aula). */
   color: string | null;
 }
 
@@ -240,14 +248,15 @@ export async function createStaff(input: StaffInput): Promise<void> {
 }
 
 /**
- * Atualiza a cor do PRÓPRIO professor. A RLS permite a autoedição deste
- * campo (e só deste, para quem não é admin); a constraint do banco garante
- * que só quem é professor pode ter uma cor.
+ * Atualiza a PRÓPRIA cor (professor ou admin). A RLS permite a autoedição deste
+ * campo; a constraint `profiles_color_by_role` exige a cor do professor, e só o
+ * admin pode ficar sem (`null`). O banco recusa, com uma frase para a pessoa,
+ * o admin que apaga a cor estando escalado em aula futura (`23514`).
  */
-export async function updateOwnColor(userId: string, color: string): Promise<void> {
+export async function updateOwnColor(userId: string, color: string | null): Promise<void> {
   const { error } = await supabase.from('profiles').update({ color }).eq('id', userId);
   if (error !== null) {
-    throw error;
+    throw lerErroDoBanco(error, CODIGOS_COM_FRASE_DA_COR);
   }
 }
 
@@ -313,9 +322,9 @@ export async function resetStudentPassword(userId: string): Promise<void> {
  * 2026-09-22 — e o banco recusa qualquer transição que envolva o papel de
  * aluno (trigger `enforce_role_change_rules`).
  *
- * A cor viaja junto porque a constraint `profiles_color_only_for_professor`
- * exige cor de professor e a proíbe em qualquer outro papel: promover sem
- * limpar a cor, ou rebaixar sem escolher uma, é recusado pelo banco.
+ * Promover mantém a cor (contrato § 4: o admin com cor também dá aula), então
+ * só o papel viaja. Rebaixar leva a cor junto, porque a constraint
+ * `profiles_color_by_role` exige a cor do professor.
  *
  * As travas vivem no banco, não aqui: validar só no app deixaria a brecha
  * aberta para qualquer outro cliente da API.
@@ -333,7 +342,7 @@ export async function updateUserRole(
 ): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ role, color: role === 'professor' ? corDoProfessor ?? null : null })
+    .update(role === 'admin' ? { role } : { role, color: corDoProfessor ?? null })
     .eq('id', userId);
   if (error !== null) {
     throw error;
