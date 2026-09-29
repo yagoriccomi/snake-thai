@@ -20,6 +20,9 @@ function makeItem(overrides: Partial<StudentClassItem> = {}): StudentClassItem {
     schedule_id: null,
     occurrence_date: null,
     schedule_detached: false,
+    audience: 'both',
+    cancelled_at: null,
+    attendance_edited: false,
     teachers: [],
     ...overrides,
   };

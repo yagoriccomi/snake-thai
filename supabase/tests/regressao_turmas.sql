@@ -55,7 +55,7 @@ insert into public.attendance (class_id, user_id, declared_status, status) value
 
 insert into public.absence_justifications (class_id, user_id, message, proof_provider, proof_public_id) values
   ('f6000000-0000-4000-8000-00000000c003','f6000000-0000-4000-8000-000000000002',
-   'Viagem', 'cloudinary', 'justificativas/t6/c003');
+   'Viagem', 'cloudinary', 'justificativas/f6000000-0000-4000-8000-000000000002/f6000000-0000-4000-8000-00000000c003');
 
 insert into public.attendance_monthly (user_id, reference_month, group_id, total_classes, counted_classes, attended, justified, frequency_percent)
 values ('f6000000-0000-4000-8000-000000000001', date '2025-12-01', 't6-a', 8, 8, 8, 0, 100);
@@ -356,7 +356,7 @@ reset role;
 do $$
 begin
   if not exists (select 1 from public.media_deletion_queue
-                  where asset_ref = 'justificativas/t6/c003' and processado_em is null) then
+                  where asset_ref = 'justificativas/f6000000-0000-4000-8000-000000000002/f6000000-0000-4000-8000-00000000c003' and processado_em is null) then
     raise exception 'FALHOU T13: anexo da justificativa removida não entrou na fila';
   end if;
   raise notice 'OK T13: anexo de justificativa da aula removida entra na fila LGPD';

@@ -57,7 +57,7 @@ end $$;
 update public.payments
    set status = 'pending_approval',
        proof_provider = 'cloudinary',
-       proof_public_id = 'comprovantes/aaaa/bbbb'
+       proof_public_id = 'comprovantes/aaaaaaaa-1111-1111-1111-111111111111/bbbbbbbb-2222-2222-2222-222222222222'
  where id = 'bbbbbbbb-2222-2222-2222-222222222222';
 
 do $$
