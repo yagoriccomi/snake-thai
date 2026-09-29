@@ -857,6 +857,8 @@ mais `menu_de_aulas`, `pedir_troca_de_aula`, `desistir_da_troca`, `minhas_trocas
 
 ### 4.12 Auditoria antes de publicar
 
+- [x] `revisar-projeto` — **REVIEW-FASE4.md**, correções no PR do 4.12 · [ ] `seguranca-projeto`
+
 `revisar-projeto` → `seguranca-projeto` sobre tudo que a Fase 4 mudou. As revisões do contrato já
 acharam classes de defeito que podem voltar na implementação:
 

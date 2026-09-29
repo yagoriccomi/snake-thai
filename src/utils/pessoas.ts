@@ -1,4 +1,7 @@
 import type { Profile } from '@/types/models';
+
+/** O que a lista precisa de cada pessoa (a lista não traz celular nem nascimento). */
+type PessoaDaLista = Pick<Profile, 'role' | 'name' | 'cpf' | 'status' | 'is_first_login'>;
 import { diaEHora } from '@/utils/aulasDoAluno';
 
 /** As abas da tela Pessoas (opção A dos mockups da linha E). */
@@ -37,14 +40,14 @@ export function ehDaEquipe(pessoa: Pick<Profile, 'role'>): boolean {
 }
 
 /** "Ativos" inclui quem ainda não entrou; "Pendentes" é só esse recorte. */
-function passaNoFiltro(pessoa: Profile, filtro: FiltroDeAlunos): boolean {
+function passaNoFiltro(pessoa: PessoaDaLista, filtro: FiltroDeAlunos): boolean {
   const situacao = situacaoDaPessoa(pessoa);
   if (filtro === 'trancados') return situacao === 'trancado';
   if (filtro === 'pendentes') return situacao === 'primeiro_acesso';
   return situacao !== 'trancado';
 }
 
-function passaNaBusca(pessoa: Profile, busca: string): boolean {
+function passaNaBusca(pessoa: PessoaDaLista, busca: string): boolean {
   const termo = busca.trim().toLowerCase();
   if (termo === '') return true;
   const digitos = termo.replace(/\D/g, '');
@@ -61,7 +64,7 @@ export interface RecorteDePessoas {
 }
 
 /** A lista da aba, pela busca (nome ou CPF) e, nos alunos, pelo filtro. */
-export function filtrarPessoas(pessoas: readonly Profile[], recorte: RecorteDePessoas): Profile[] {
+export function filtrarPessoas<T extends PessoaDaLista>(pessoas: readonly T[], recorte: RecorteDePessoas): T[] {
   return pessoas.filter((pessoa) => {
     const daAba = recorte.aba === 'equipe' ? ehDaEquipe(pessoa) : pessoa.role === 'user';
     if (!daAba || !passaNaBusca(pessoa, recorte.busca)) return false;
@@ -76,7 +79,7 @@ export interface ContagemDePessoas {
   trancados: number;
 }
 
-export function contarPessoas(pessoas: readonly Profile[]): ContagemDePessoas {
+export function contarPessoas(pessoas: readonly PessoaDaLista[]): ContagemDePessoas {
   const alunos = pessoas.filter((pessoa) => pessoa.role === 'user');
   return {
     alunos: alunos.length,

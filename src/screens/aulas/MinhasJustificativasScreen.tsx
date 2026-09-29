@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { BlocoDeContato } from '@/components/BlocoDeContato';
 import { EmptyState } from '@/components/EmptyState';
+import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ErrorState } from '@/components/ErrorState';
 import { JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
@@ -93,6 +94,7 @@ export function MinhasJustificativasScreen(_props: AulasStackScreenProps<'Minhas
         data={lista.items}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListHeaderComponent={<ErroAoAtualizar mensagem={lista.error} />}
         ListEmptyComponent={
           lista.loading ? (
             <ActivityIndicator color={colors.primary} style={styles.carregando} />

@@ -44,6 +44,12 @@ const SENSITIVE_KEYS = [
   'nome',
   'dob',
   'nascimento',
+  // Ids de pessoa: pseudônimos, mas ligam o evento ao titular no coletor remoto.
+  'userid',
+  'user_id',
+  'teacherid',
+  'teacher_id',
+  'studentid',
 ];
 
 /** Quantos caracteres do fim do valor permanecem visíveis ao mascarar. */
@@ -120,6 +126,13 @@ function describeError(error: unknown): LogContext {
     return { errorName: error.name, errorMessage: scrubText(error.message), stack: error.stack };
   }
   if (typeof error === 'object' && error !== null) {
+    // Erro do PostgREST: `details` e `hint` podem trazer a linha inteira que
+    // violou a regra ("Failing row contains ..."), com texto livre de
+    // justificativa ou motivo. Ficam de fora: código e mensagem bastam (REVIEW-FASE4 S2).
+    const { code, message } = error as { code?: unknown; message?: unknown };
+    if (typeof message === 'string') {
+      return { errorMessage: scrubText(typeof code === 'string' ? `[${code}] ${message}` : message) };
+    }
     return { errorMessage: scrubText(safeJson(error)) };
   }
   return { errorMessage: scrubText(String(error)) };

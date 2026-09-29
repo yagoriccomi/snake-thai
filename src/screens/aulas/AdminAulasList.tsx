@@ -15,6 +15,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
 import { ChamadasPendentesBotao } from '@/components/ChamadasPendentesBotao';
+import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TeacherRail } from '@/components/TeacherRail';
@@ -61,6 +62,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   // O admin vê a contagem de todas; o professor, a das aulas dele (T13).
   const { items: chamadasPendentes, reload: recarregarSemChamada } = useChamadasPendentes(false);
   const [teachersByClass, setTeachersByClass] = useState<Record<string, ClassTeacherRef[]>>({});
+  const [erroDosProfessores, setErroDosProfessores] = useState<string | null>(null);
 
   // Professores das aulas do dia, para pintar trilho e bolinhas — uma
   // consulta só para todas as aulas visíveis, não uma por card. [#70]
@@ -71,10 +73,12 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
       .then((porAula) => {
         if (ativo) {
           setTeachersByClass(porAula);
+          setErroDosProfessores(null);
         }
       })
       .catch((erro: unknown) => {
         log.error('Falha ao carregar professores das aulas', erro);
+        if (ativo) setErroDosProfessores('Não foi possível mostrar os professores das aulas. Puxe para atualizar.');
       });
     return () => {
       ativo = false;
@@ -168,6 +172,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
         <WeekStrip days={days} selectedKey={selectedKey} onSelect={handleSelectDay} />
       </View>
       <ChamadasPendentesBotao quantidade={chamadasPendentes.length} onPress={abrirChamadasPendentes} />
+      <ErroAoAtualizar mensagem={erroDosProfessores} estilo={styles.erroDosProfessores} />
 
       {error !== null && items.length === 0 ? (
         <ErrorState message={error} onRetry={() => void reload()} />
@@ -211,6 +216,7 @@ function makeStyles(
   fonts: ReturnType<typeof useTheme>['fonts'],
 ) {
   return StyleSheet.create({
+    erroDosProfessores: { marginHorizontal: 16, marginTop: 8 },
     strip: {
       paddingHorizontal: 16,
     },

@@ -114,6 +114,23 @@ describe('logger — coletor remoto (monitoramento)', () => {
     expect(erroSpy).toHaveBeenCalled();
   });
 
+  it('naoDeveRegistrarADetalheDoErroDoBanco', () => {
+    // "Failing row contains (...)" traz a linha inteira, com texto livre de justificativa.
+    createLogger('teste').error('falhou', {
+      code: '23514',
+      message: 'new row violates check constraint',
+      details: 'Failing row contains (Atestado de gripe da Ana)',
+    });
+    const contexto = JSON.stringify(sink.error.mock.calls[0]?.[0].context);
+    expect(contexto).toContain('23514');
+    expect(contexto).not.toContain('Atestado de gripe');
+  });
+
+  it('deveMascararIdsDePessoa', () => {
+    createLogger('teste').error('falhou', new Error('x'), { userId: 'd9000000-0000-4000-8000-000000000004' });
+    expect(JSON.stringify(sink.error.mock.calls[0]?.[0].context)).not.toContain('d9000000-0000-4000-8000-000000000004');
+  });
+
   it('naoDeveVazarCpfContidoNaMensagemDoErro', () => {
     createLogger('teste').error('falhou', { code: '23505', details: 'Key (cpf)=(12345678900) already exists.' });
     expect(erroSpy.mock.calls[0]?.[0]).not.toContain('12345678900');
