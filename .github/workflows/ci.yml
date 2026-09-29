@@ -76,10 +76,13 @@ jobs:
       # O achado C-3 do REVIEW.md nasceu exatamente desse ponto cego: uma coluna
       # entrou no schema e o trigger que deveria protegê-la nunca foi atualizado.
       # A suíte inteira continuou verde por semanas. [#42][#49]
+      # Versão fixa, a mesma do ambiente local: "latest" consulta a API do
+      # GitHub a cada execução e cai no limite de requisições quando dois jobs
+      # rodam juntos (push e pull_request), falhando sem que o código mude.
       - name: Instala a CLI do Supabase
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.118.0
 
       - name: Sobe o Postgres com todas as migrations aplicadas
         run: supabase db start
