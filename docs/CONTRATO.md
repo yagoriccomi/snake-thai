@@ -1,6 +1,6 @@
 # Contrato entre os projetos — Snake Thai
 
-> **Versão:** v3 · 2026-09-24, revisada em 2026-09-25 · **Estado:** regras de negócio aprovadas
+> **Versão:** v4 · 2026-09-29 (v3 de 2026-09-24, revisada em 2026-09-25) · **Estado:** regras de negócio aprovadas
 > pelo dono (§ 1), **com as perguntas P1–P22 respondidas em 25/09** (§ 16); decisões técnicas
 > vetáveis (§ 2); telas aguardando a aprovação dos mockups ("Mockups Snake Thai — Horário
 > livre", **versão 8**, de 25/09: menu de aulas e troca na linha G; histórico de turma, contato e aviso de atualização na linha H).
@@ -12,6 +12,12 @@
 > 180 dias (§ 8) e média do Painel sem teto (§ 11.6). **Na revisão de 25/09:** extra em
 > qualquer aula (D56), abono da troca com a aula nova cancelada (D57, T50) e **histórico de
 > turma** (D58, `student_group_periods`, § 5.2).
+>
+> **Novo na v4** (aprovada pelo dono em 28/09, D4 da coordenação): errata de `plans_cota_coerente`
+> (§ 5.2) e a regra do `check` que dá nulo (§ 0.1, regra 9); a variável `snake.justificativa_rpc`
+> (§ 0.1, § 9.1); a 2ª dica do aviso de atualização (§ 3, § 12.3); e a **segunda barreira do
+> servidor** (§ 13.5), que diz o que o `snake-server` pode chamar para conferir se quem pede é
+> admin ou pode decidir a justificativa.
 >
 > **Caminho absoluto** (para os chats de outros repositórios):
 > `C:\Users\USER\Desktop\GIT\academy\snake-thai\docs\CONTRATO.md`
@@ -57,7 +63,9 @@ Três chats diferentes vão trabalhar ao mesmo tempo, um por repositório:
    - `revoke all on ... from anon, authenticated`;
    - só então os grants escritos neste contrato;
    - `grant all ... to service_role`.
-4. **Variáveis de sessão `snake.*`** (`snake.aula_rpc`, `snake.chamada_rpc`, `snake.anexo_expirado`):
+4. **Variáveis de sessão `snake.*`** (`snake.aula_rpc`, `snake.chamada_rpc`, `snake.anexo_expirado` e,
+   **v4**, `snake.justificativa_rpc`, ligada por `reenviar_justificativa`, `anexar_a_justificativa`
+   e `decidir_justificativa`, § 9.1):
    - são ligadas só com `set_config('snake.<x>', 'on', true)` dentro de uma RPC `security definer`,
      imediatamente antes da escrita protegida;
    - são **desligadas (`'off'`) antes de cada `return`**, porque o `pg_graphql` roda várias
@@ -84,6 +92,10 @@ Três chats diferentes vão trabalhar ao mesmo tempo, um por repositório:
      o F2 passa a esperar as aulas da turma antiga até a mudança (D58), e o F6, que grava
      `group_since` à mão, passa a montar o cenário pelos períodos (a conta não lê mais
      `group_since`, T51).
+9. **(v4) `check` que dá nulo passa.** Um `check` só recusa quando dá `false`. Com uma coluna
+   nula, `between`, `=` e `in` dão nulo, e a linha entra. Toda constraint que exige valor numa
+   coluna que aceita nulo escreve o `is not null` explicitamente (ex.: `plans_cota_coerente`,
+   § 5.2). O teste de regressão da constraint inclui o caso com o valor nulo.
 
 ---
 
@@ -269,7 +281,7 @@ Numeradas para citação. **Não mudam sem o dono.** Entre parênteses, a data d
 | Contato da academia | `contato_da_academia` (§ 5.4) | **Falar com a academia** · botões **WhatsApp** e **E-mail** · sem contato: **"A academia ainda não cadastrou um contato. Procure a recepção."** |
 | Bloco de contato (pedido negado) | § 5.4 | **"Para mais informações, fale com a academia:"** + botões **WhatsApp** / **E-mail** (só os preenchidos) |
 | Configurações › CONTATO | `academy_settings` | **E-mail** · **WhatsApp** (com **+55** fixo) · **Telefone** · **Endereço** |
-| Aviso de atualização | § 12.3 | título **Nova versão disponível** · botões **Baixar atualização** / **Agora não** |
+| Aviso de atualização | § 12.3 | título **Nova versão disponível** · botões **Baixar atualização** / **Agora não** · dica (v4): **"Baixe o APK oficial do GitHub. Depois, abra o arquivo e toque em Instalar: seus dados continuam."** |
 | Turma por período (perfil do aluno, D58) | `perfil_do_aluno.turmas_no_mes` (§ 12) | cada período do mês, em ordem, separado por **·**: começou antes do mês e está aberto: **{turma}** (como hoje); começou antes e fechou: **{turma} até {dd/mm}**; começou no mês e está aberto: **{turma} desde {dd/mm}**; começou no mês e fechou: **{turma} de {dd/mm} a {dd/mm}**; se o último está fechado, no fim: **Sem turma desde {dd/mm}**. Ex.: **Turma Noite até 15/09 · Turma Manhã desde 15/09** (mudança em 15/09 às 10h: as aulas da Noite de 15/09 antes das 10h ainda eram dele) |
 | Aviso ao mudar a turma (admin, D58) | edição do aluno, turma escolhida diferente da atual, antes de salvar | de uma turma para outra: **"A frequência continua contando as aulas da {turma atual} até agora e passa a contar as da {turma nova} a partir de agora. Trocas de aula que saem de aulas futuras e trocas permanentes deste aluno serão canceladas."** · para sem turma: **"A frequência continua contando as aulas da {turma atual} até agora. Trocas de aula que saem de aulas futuras e trocas permanentes deste aluno serão canceladas."** · de sem turma para uma turma: **"As aulas da {turma nova} passam a contar a partir de agora."** · na confirmação de **Excluir turma** com alunos: **"A frequência dos alunos continua contando as aulas desta turma até agora."** |
 
@@ -325,7 +337,7 @@ create type public.class_swap_status       as enum
 | Objeto | Definição | Quem escreve |
 | --- | --- | --- |
 | `plans.schedule_mode` | `public.plan_schedule_mode not null default 'fixed'` | admin |
-| `plans.weekly_quota` | `smallint null`. Constraint `plans_cota_coerente`: `(schedule_mode in ('fixed','unlimited') and weekly_quota is null) or (schedule_mode = 'free' and weekly_quota between 1 and 6)` | admin |
+| `plans.weekly_quota` | `smallint null`. Constraint `plans_cota_coerente`: `(schedule_mode in ('fixed','unlimited') and weekly_quota is null) or (schedule_mode = 'free' and weekly_quota is not null and weekly_quota between 1 and 6)`. **v4 (errata):** a v3 não tinha o `is not null` e deixaria passar o plano livre sem cota (§ 0.1, regra 9). A migration `20260925200100` já nasceu assim | admin |
 | gatilho `enforce_plan_in_use_rules` | Em `plans`: recusa (`23514`) mudar `schedule_mode`/`weekly_quota` **e** o DELETE de plano referenciado por qualquer `plan_periods` (T4): *"Plano com histórico: crie outro plano e mova os alunos."* | — |
 | `public.plan_periods` | `id uuid pk default gen_random_uuid()`, `user_id uuid not null → profiles on delete cascade`, `plan_id uuid not null → plans on delete restrict`, `started_at timestamptz not null`, `ended_at timestamptz null`. No máximo um aberto por aluno (índice único parcial `plan_periods_um_aberto` em `(user_id) where ended_at is null`). Mantida pelo gatilho `registrar_periodo_de_plano` em `profiles` (insert e update de `plan_id`). Backfill: um período aberto desde `created_at` para quem tem plano. | só gatilho |
 | `public.inactive_periods` | `id uuid pk`, `user_id uuid not null → profiles on delete cascade`, `started_at timestamptz not null`, `ended_at timestamptz null`. Mantida pelo gatilho `registrar_periodo_inativo` em `profiles` (mudança de `status`). Backfill: aberto desde `deactivated_at` para quem está `inactive`. | só gatilho |
@@ -771,6 +783,11 @@ Se um anexo falhar, o app avisa e deixa tentar de novo ou seguir sem ele (D18).
 - **(h) Decisão por UPDATE direto de `status`** (APK ≤ 1.8): `22023`, *"Atualize o aplicativo para
   decidir justificativas."*
 - **(i) DELETE:** só o dono, com a linha pendente. O admin não apaga justificativa decidida (D15).
+- **(v4) As RPCs:** `reenviar_justificativa`, `anexar_a_justificativa` e `decidir_justificativa`
+  escrevem com `snake.justificativa_rpc = 'on'` (§ 0.1, regra 4). Só com a variável ligada, ou
+  pelo sistema, o gatilho aceita as mudanças que (f) a (h) recusam no UPDATE direto: `status`,
+  `attempt`, `reviewed_by`, `reviewed_at` e o anexo gravado pela RPC. `enviar_justificativa` faz
+  um INSERT comum e não precisa dela.
 
 **Quem lê (`select`, política reescrita):**
 
@@ -1707,6 +1724,8 @@ Não usa o banco nem cruza repositório. Está aqui para fixar os textos e a con
 - Corpo: **"A versão {instalada} deste aplicativo pode apresentar mal funcionamento. Recomendamos
   atualizar para a versão {nova}."**
 - Nota: **"Este aviso aparece uma vez por dia até você atualizar."**
+- Dica (**v4**, a do mockup aprovado, linha H): **"Baixe o APK oficial do GitHub. Depois, abra o
+  arquivo e toque em Instalar: seus dados continuam."**
 - Botões: **Baixar atualização** (abre o link) · **Agora não** (fecha até o dia seguinte).
 
 **Convenção de release (`release.yml`), que o aviso pressupõe:**
@@ -1735,6 +1754,9 @@ quem continuar na 1.8.0, o aviso da 2.0.0 vai por outro canal (ROADMAP 4.13).
 > dias (D54) e a exclusão de conta alcancem todo anexo. A justificativa da troca permanente
 > (`class_swap_evidence`) usa o módulo `motivos` como está: `pode_anexar_ao_motivo` e a RLS de
 > `action_reason_attachments` decidem, e a pasta continua `motivos/<uid>/<id>`.
+>
+> **O que a v4 acrescenta:** a § 13.5 (segunda barreira, item 5.5 do `ROADMAP-server.md`), só
+> com funções que o banco já usa na RLS.
 
 ### 13.1 Módulo novo `motivos`
 
@@ -1835,6 +1857,39 @@ são apagados. **v3:** a varredura lista os três tipos de recurso.
 `/v1/justifications/*`, `/v1/proofs/*` e, na v3, **`/v1/motivos/*`** (anexos da troca
 permanente, D34). **Conferido pelo dono em 24/09** na Render. O CORS do servidor é global
 (`src/app.ts`), então a mesma variável cobre as três rotas, sem mudança.
+
+### 13.5 Segunda barreira: quem pode ver o arquivo de outra pessoa (v4, P-9)
+
+A RLS continua sendo a trava principal. A segunda barreira só entra quando a linha que a RLS
+devolveu **não é de quem chama** (`user_id` diferente do usuário do token). Ela confere, com as
+**mesmas funções que a RLS usa**, se quem chama é um leitor legítimo. Se não for, a RLS liberou o
+que não devia: o servidor responde **403** e registra o alarme (nível `error`, sem PII).
+
+| Rota | Leitor legítimo além do dono | O que o servidor chama (com o token de quem pede) |
+| --- | --- | --- |
+| `POST /v1/proofs/view-url` | admin | `POST /rest/v1/rpc/is_admin` · corpo `{}` |
+| `POST /v1/justifications/view-url` | admin e, **com a justificativa pendente**, quem pode decidi-la (professor da aula no `scope = 'class'`; T18 no `scope = 'week'`) | `rpc/is_admin` · corpo `{}`; se der `false`: `POST /rest/v1/rpc/pode_decidir_justificativa` · corpo `{"p_id": "<justificationId>"}` |
+
+```sql
+public.is_admin() returns boolean                                 -- já existe; execute para authenticated
+public.pode_decidir_justificativa(p_id uuid) returns boolean      -- § 9.1; nasce no bloco 4.8
+```
+
+- **Resposta:** o corpo é o booleano puro (`true` ou `false`). Qualquer erro, ou qualquer resposta
+  diferente de `true`, conta como **não** (403). A barreira nunca libera por falha da consulta,
+  pelo mesmo motivo da § 0.1, regra 4.
+- **Depois da decisão**, só o dono e o admin leem a justificativa (§ 9.1, D22):
+  `pode_decidir_justificativa` devolve `false` para linha decidida, e o professor recebe 403, como
+  na RLS.
+- **Quando:** a parte do comprovante pode ser feita já. `is_admin()` está na `main` e no banco
+  local com `execute` para `authenticated` (conferido em 29/09). A parte da justificativa espera o
+  **4.8 na `main`**, anotado no Registro do `ROADMAP-thai.md`. Até lá, `pode_decidir_justificativa`
+  não existe: a chamada daria 404 e bloquearia o professor que hoje lê pela RLS.
+- **Sem RPC nova.** O servidor não ganha um papel próprio: continua usando o token de quem pede.
+  `/v1/motivos/view-url` continua só com a RLS (`pode_ler_motivo`), porque um motivo tem muitos
+  leitores legítimos (§ 8) e a regra deles já está numa função única.
+- `POLITICA_ACESSO_COMPROVANTE` (variável de ambiente do servidor) é decisão do `snake-server`.
+  Com a barreira de verdade, o modo `'rls'` deixa de ser só um alarme.
 
 ---
 
@@ -1960,3 +2015,4 @@ escolher; o caminho vale se o dono não vetar até o G0:
 | v2 | 2026-09-24 | Revisão adversarial por 5 lentes (fidelidade, banco, conta, dessincronia, segurança/LGPD), com cerca de 70 achados; decisões novas do dono: à vontade (D35–D41), reenvio (D42), seg–sáb (D9), qualquer professor retifica (D17) e "pede ao admin" nos dois sentidos (D30). **Mudanças estruturais:** tabelas laterais só para admin (auditoria da chamada, presença do professor, nota da decisão, tentativas); regras transversais (§ 0.1); compatibilidade em seção própria (§ 15); motivos de uso único; caminhos de anexo travados no banco e no worker; portões com checagem completa. |
 | v3 | 2026-09-24 | Decisões novas do dono (D43–D55): menu de escolher aulas para as três modalidades; troca de aula do fixo, só nesta semana ou permanente, decidida pela equipe da aula nova ou por um admin, com "Troca pendente" resolvida pela chamada; aula extra do fixo sem aprovação; contato da academia; aviso de atualização do app; guarda de 180 dias; média do Painel sem teto. T21 e T30 confirmadas, T10 com a média vetada; D6, D22, D29, D34 e D42 ampliadas. **Estrutura nova:** § 9.4 (`class_swaps`, `class_swap_reviews`, `class_swap_periods` e a função única `grade_efetiva_do_fixo`), § 9.5, § 5.4, § 12.2 e § 12.3; T33–T48; § 16 com as perguntas abertas P1–P17. **Revisão adversarial da v3 no mesmo dia, antes de chegar aos ROADMAPs**, por 3 lentes (conta, segurança/LGPD, nomes), com 35 achados; a versão continua v3 porque nenhum chat implementou nada dela. **Mudanças da revisão:** período permanente "vigente" definido (T37), nunca encerrado no passado e já nascido com o fim do horário de destino; permanente recusada com mudança de plano marcada e com a original já começada; conferência na volta de expirada para aprovada (T35); aula nova de troca expirada visível e contestável; T49 (quem decide a permanente); `pode_ler_motivo` para a RLS dos motivos; `minhas_trocas_permanentes` e exportação completa; gatilho que protege `attachment_retention_days`; link do aviso de atualização montado pela tag; `can_swap_from_permanent`, `swap_decided_via`, `pela_chamada`; evento sem `'extra'`; destinatários de `aula_reativada`; § 11.5 corrigida e ampliada; perguntas P18–P22. **No servidor, a v3 acrescenta só** `allowed_formats` na assinatura e a exclusão nos três tipos de recurso (§ 13); os anexos da troca usam `/v1/motivos`. |
 | v3 (revisão) | 2026-09-25 | **Respostas do dono às P1–P22** (§ 16), ainda antes de qualquer chat implementar a v3 (por isso continua v3). **D56:** o fixo marca extra em qualquer aula, inclusive "só livres" (veta o público da T40). **D57:** troca avulsa aprovada, inclusive a reposição, com a aula nova cancelada pela academia vira abono (veta a exceção da T39); **T50** estende à troca pendente com a original já começada (aprovada pelo sistema; a reativação a devolve a pendente). **D58: histórico de turma nesta rodada** — tabela `student_group_periods` gravada pelo gatilho `registrar_periodo_de_turma` em qualquer caminho (inclusive o APK 1.8), backfill a partir de `group_since` (T52), `grade_efetiva_do_fixo` pela turma da data da aula (T33, T51), trocas na mudança de turma pela T53, `excluir_turma` arquiva a turma com histórico e marca `'group_closed'`, `turmas_no_mes` no perfil do aluno, `periodos_de_turma` na exportação, `anonimizar_titular` apaga o histórico, T47 recusa no APK 1.8 a chamada com aluno que mudou de turma depois da aula, G1 com 15 tabelas. **T41 confirmada** (P2). P17: mockups publicados em 24/09 (versão 6, linhas G e H). § 3 com os rótulos da troca abonada, da turma por período e do aviso ao mudar a turma; § 11.5 com os casos novos; perguntas P23–P25. |
+| v4 | 2026-09-29 | Aprovada pelo dono em 28/09 (D4 da coordenação), com quatro itens. **(1)** Errata de `plans_cota_coerente` (§ 5.2): o texto da v3 deixava passar o plano livre sem cota, porque o `check` com a cota nula dá nulo e passa. A migration do 4.1 já fazia o certo. Entra a regra 9 na § 0.1. **(2)** `snake.justificativa_rpc` na § 0.1 e na § 9.1, para as RPCs de justificativa do 4.8 (achado 12 do 4.1). **(3)** A 2ª dica do aviso de atualização na § 3 e na § 12.3, que estava no mockup aprovado. O "Baixa" do mockup virou "Baixe", para concordar com "abra" e "toque". **(4)** § 13.5, a segunda barreira do servidor (P-9, item 5.5 do `ROADMAP-server.md`), com `is_admin()` e `pode_decidir_justificativa(p_id)`, as mesmas funções da RLS, sem RPC nova. A parte da justificativa espera o 4.8 na `main`. Nenhum nome existente mudou. |
