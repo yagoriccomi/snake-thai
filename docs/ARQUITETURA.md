@@ -8,13 +8,29 @@
 
 Um app mobile (React Native + Expo) que uma academia usa para gerir alunos,
 turmas, presença e mensalidades pagas por PIX. O diferencial de projeto: o
-**cliente que compra o sistema opera sozinho** — não há painel web separado nem
-dependência do desenvolvedor para o dia a dia. Toda administração acontece no
-mesmo app, sob um papel de `admin`.
+**cliente que compra o sistema opera sozinho**, sem depender do desenvolvedor
+para o dia a dia. Toda administração acontece no mesmo app, sob um papel de
+`admin`.
 
-O backend é **Supabase** (Postgres + Auth + Storage + Edge Functions). Não há
-servidor de API próprio: o app fala direto com o Supabase, e a segurança vem das
-**políticas de RLS no banco**, não de uma camada intermediária.
+O backend é **Supabase** (Postgres + Auth + Storage + Edge Functions). O app
+fala direto com o Supabase, e a segurança vem das **políticas de RLS no banco**,
+não de uma camada intermediária.
+
+### Os três repositórios
+
+| Repositório | O que é | Como fala com o banco |
+| --- | --- | --- |
+| `snake-thai` (este) | O app Android **e o dono do banco**: migrations, RLS, RPCs, Edge Functions | Direto, com a chave pública e a sessão do usuário |
+| `snake-web` | A página web **do aluno** (não há app para iPhone): frequência, aulas, comprovante, termos | Direto, com a **mesma** chave pública, as **mesmas** políticas e a sessão guardada no `localStorage` do navegador |
+| `snake-server` | Servidor pequeno (`/v1/*`) que **assina** o envio e a visualização de comprovantes e anexos na Cloudinary, e o worker que apaga mídia | Consulta o banco pela RLS do usuário que chamou; o worker usa a `service_role` |
+
+**O que isso muda para quem mexe no banco:** toda política, coluna ou RPC tem
+**dois clientes**, o app e a web, e os dois podem estar em versões diferentes.
+Mudança em `profiles`, `payments`, `classes`, `attendance`,
+`absence_justifications` ou `academy_settings` precisa ser conferida contra o
+`snake-web` antes do merge. Os nomes que cruzam repositório (tabela, coluna,
+RPC, rota) estão fixados em [`CONTRATO.md`](CONTRATO.md), que este repositório
+mantém.
 
 ## As três camadas do app [#22]
 

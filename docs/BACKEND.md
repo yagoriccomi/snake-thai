@@ -115,3 +115,10 @@ LGPD) vive **neste** repositório, em [`supabase/migrations/`](../supabase/migra
 
 Ou seja: o **schema** é deste repo; a **API** é do outro. Cada documento no repo
 que contém o código que ele descreve.
+
+**O servidor não é o único a usar essas colunas.** A web do aluno (`snake-web`)
+lê e grava `payments` e `absence_justifications` direto no Supabase, com as
+mesmas políticas de RLS, e usa a mesma `POST /v1/proofs/sign-upload` para
+anexar o comprovante. Mudou coluna, política ou rota do comprovante: confira o
+`snake-web` antes do merge. Os nomes que cruzam os três repositórios estão em
+[`CONTRATO.md`](CONTRATO.md).
