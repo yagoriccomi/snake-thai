@@ -173,6 +173,18 @@ aparece ao lado do nome dele e na borda das aulas, como a dos professores.
    professores.
 3. Ao salvar, o app diz quantas aulas entraram na agenda. Elas aparecem na aba
    **Aulas** e para os alunos da turma.
+4. **Quem pode participar** (a partir da versão 2.0.0): **Fixos**, **Livres** ou
+   **Fixos e livres** (o padrão). Mudar numa edição vale para as próximas aulas sem
+   chamada; aula cancelada nunca muda.
+
+**Aulas só para livres, sem turma:** em **Dados → Turmas e grade semanal**, toque em
+**Aulas só para livres**. Os horários criados ali não pertencem a turma nenhuma, e os
+alunos de horário fixo não os veem.
+
+**Troca permanente:** antes de editar ou encerrar um horário, o app avisa quando há
+aluno com troca permanente nele. Encerrar o horário encerra a troca no dia seguinte ao
+último dia, nunca antes de hoje, e cancela os pedidos de troca permanente ainda sem
+decisão.
 
 A agenda é completada todo dia de madrugada. É por isso que o contador de
 presença do aluno já mostra o total do mês no dia 1.

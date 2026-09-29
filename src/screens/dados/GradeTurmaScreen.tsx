@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -26,7 +26,13 @@ import { useGroupSchedules } from '@/hooks/useGroupSchedules';
 import { createLogger } from '@/lib/logger';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import type { ClassTeacherRef } from '@/services/classes.service';
-import { endSchedule, type ScheduleWithTeachers } from '@/services/schedules.service';
+import {
+  avisoDeTrocasPermanentes,
+  countPermanentSwapsForSchedule,
+  endSchedule,
+  seloDoPublico,
+  type ScheduleWithTeachers,
+} from '@/services/schedules.service';
 import type { ColorScheme } from '@/theme/colors';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatFullDate, isoDateKey } from '@/utils/datetime';
@@ -76,6 +82,20 @@ export function GradeTurmaScreen({ navigation, route }: DadosStackScreenProps<'G
   const [ultimoDia, setUltimoDia] = useState('');
   const [erroDoEncerramento, setErroDoEncerramento] = useState<string | null>(null);
   const [encerrando, setEncerrando] = useState(false);
+  /** Troca permanente com o horário a encerrar (§ 6); `null` = não deu para conferir. */
+  const [trocasDoEncerramento, setTrocasDoEncerramento] = useState<number | null>(0);
+  const semTurma = groupId === null;
+
+  useEffect(() => {
+    if (aEncerrar === null) return;
+    setTrocasDoEncerramento(0);
+    countPermanentSwapsForSchedule(aEncerrar.schedule.id)
+      .then(setTrocasDoEncerramento)
+      .catch((falha: unknown) => {
+        log.warn('Falha ao conferir as trocas permanentes do horário', falha);
+        setTrocasDoEncerramento(null);
+      });
+  }, [aEncerrar]);
 
   useFocusEffect(
     useCallback(() => {
@@ -111,6 +131,7 @@ export function GradeTurmaScreen({ navigation, route }: DadosStackScreenProps<'G
           validFrom: schedule.valid_from,
           validUntil: schedule.valid_until,
           teacherIds: teachers.map((professor) => professor.id),
+          audience: schedule.audience,
         },
       }),
     [navigation, groupId, groupName],
@@ -161,13 +182,21 @@ export function GradeTurmaScreen({ navigation, route }: DadosStackScreenProps<'G
     ({ item: { item, ativo, abreEncerrados } }) => {
       const { schedule } = item;
       const quando = `${nomeDoDia(schedule.weekday)} · ${horaCurta(schedule.start_time)}`;
+      const selo = seloDoPublico(schedule.audience);
       return (
         <View>
           {abreEncerrados ? <Text style={styles.sectionLabel}>ENCERRADOS</Text> : null}
           <View style={[styles.card, ativo ? null : styles.cardEnded]}>
             <View style={styles.cardTop}>
               <View style={styles.cardInfo}>
-                <Text style={styles.when}>{quando}</Text>
+                <View style={styles.whenRow}>
+                  <Text style={styles.when}>{quando}</Text>
+                  {selo !== null ? (
+                    <View style={styles.selo}>
+                      <Text style={styles.seloText}>{selo}</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <AppText variant="subtitle" numberOfLines={2}>
                   {schedule.title}
                 </AppText>
@@ -215,12 +244,13 @@ export function GradeTurmaScreen({ navigation, route }: DadosStackScreenProps<'G
           {groupName}
         </AppText>
         <AppText variant="caption" color={colors.textSecondary}>
-          As aulas de cada horário entram na agenda sozinhas, até o fim do mês seguinte. Aulas com chamada nunca
-          são alteradas pela grade.
+          {semTurma
+            ? 'Horários sem turma, só para alunos de horário livre: os fixos não veem essas aulas. As aulas entram na agenda sozinhas, até o fim do mês seguinte.'
+            : 'As aulas de cada horário entram na agenda sozinhas, até o fim do mês seguinte. Aulas com chamada nunca são alteradas pela grade.'}
         </AppText>
       </View>
     ),
-    [styles, groupName, colors.textSecondary],
+    [styles, groupName, colors.textSecondary, semTurma],
   );
 
   if (error !== null && schedules.length === 0) {
@@ -255,7 +285,11 @@ export function GradeTurmaScreen({ navigation, route }: DadosStackScreenProps<'G
           <EmptyState
             icon="calendar-outline"
             title="Nenhum horário"
-            message="Toque em Novo horário para montar a grade semanal desta turma."
+            message={
+              semTurma
+                ? 'Toque em Novo horário para criar uma aula só para alunos de horário livre.'
+                : 'Toque em Novo horário para montar a grade semanal desta turma.'
+            }
           />
         }
       />
@@ -272,6 +306,15 @@ export function GradeTurmaScreen({ navigation, route }: DadosStackScreenProps<'G
           As aulas depois do último dia que ainda não tiveram chamada saem da agenda, com as declarações e
           justificativas delas. Aulas com chamada ficam.
         </AppText>
+        {trocasDoEncerramento === null ? (
+          <AppText variant="caption" color={colors.warning} accessibilityRole="alert">
+            Não foi possível conferir se há alunos com troca permanente com este horário.
+          </AppText>
+        ) : trocasDoEncerramento > 0 ? (
+          <AppText variant="body" color={colors.warning} accessibilityRole="alert">
+            {avisoDeTrocasPermanentes(trocasDoEncerramento)}
+          </AppText>
+        ) : null}
         <Input
           label="Último dia com aula"
           placeholder="DD/MM/AAAA"
@@ -338,6 +381,25 @@ function makeStyles(colors: ColorScheme, fonts: Fonts, minHitSlop: number) {
     },
     cardActions: {
       flexDirection: 'row',
+    },
+    whenRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    selo: {
+      borderWidth: 1,
+      borderColor: colors.textSecondary,
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+    },
+    seloText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 10.5,
+      letterSpacing: 0.3,
+      textTransform: 'uppercase',
+      color: colors.textSecondary,
     },
     when: {
       fontFamily: fonts.bodySemiBold,

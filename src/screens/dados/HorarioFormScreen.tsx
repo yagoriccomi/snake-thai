@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -6,10 +6,17 @@ import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
 import { ProfessorMultiPicker } from '@/components/ProfessorMultiPicker';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { SegmentedControl, type SegmentOption } from '@/components/SegmentedControl';
 import { WeekdayPicker } from '@/components/WeekdayPicker';
 import { createLogger } from '@/lib/logger';
 import type { DadosStackScreenProps } from '@/navigation/types';
-import { saveSchedule } from '@/services/schedules.service';
+import {
+  AUDIENCE_LABELS,
+  avisoDeTrocasPermanentes,
+  countPermanentSwapsForSchedule,
+  saveSchedule,
+  type ClassAudience,
+} from '@/services/schedules.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatFullDate } from '@/utils/datetime';
 import { describeError } from '@/utils/errors';
@@ -19,6 +26,17 @@ import { dateIsoToBr, maskDate, maskTime } from '@/utils/masks';
 const log = createLogger('HorarioFormScreen');
 
 const SCREEN_EDGES = ['bottom'] as const;
+
+/** "Quem pode participar", na ordem do mockup da linha A; o padrão é Fixos e livres (D3). */
+const OPCOES_DE_PUBLICO: ReadonlyArray<SegmentOption<ClassAudience>> = (['fixed', 'free', 'both'] as const).map(
+  (publico) => ({ value: publico, label: AUDIENCE_LABELS[publico] }),
+);
+
+export const TEXTOS_DO_HORARIO = {
+  dicaDoPublico: 'O padrão é Fixos e livres. Aula só para livres não precisa de turma, e os fixos não a veem.',
+  semTurma: 'Sem turma — só livres',
+  trocasNaoConferidas: 'Não foi possível conferir se há alunos com troca permanente com este horário.',
+} as const;
 
 /**
  * Criar ou editar um horário da grade semanal (somente admin).
@@ -41,8 +59,23 @@ export function HorarioFormScreen({ navigation, route }: DadosStackScreenProps<'
   );
   const [fim, setFim] = useState(schedule?.validUntil != null ? dateIsoToBr(schedule.validUntil) : '');
   const [professores, setProfessores] = useState<string[]>(schedule?.teacherIds ?? []);
+  const semTurma = groupId === null;
+  // Sem turma, só livres (T7): o público fica travado.
+  const [publico, setPublico] = useState<ClassAudience>(semTurma ? 'free' : (schedule?.audience ?? 'both'));
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  /** Troca permanente com este horário (§ 6); `null` = não deu para conferir. */
+  const [trocasPermanentes, setTrocasPermanentes] = useState<number | null>(0);
+
+  useEffect(() => {
+    if (schedule === undefined) return;
+    countPermanentSwapsForSchedule(schedule.id)
+      .then(setTrocasPermanentes)
+      .catch((falha: unknown) => {
+        log.warn('Falha ao conferir as trocas permanentes do horário', falha);
+        setTrocasPermanentes(null);
+      });
+  }, [schedule]);
 
   const gravar = useCallback(
     async (horario: HorarioValidado) => {
@@ -52,6 +85,7 @@ export function HorarioFormScreen({ navigation, route }: DadosStackScreenProps<'
         const resultado = await saveSchedule({
           id: schedule?.id ?? null,
           groupId,
+          audience: publico,
           title: horario.titulo,
           weekday: horario.weekday,
           startTime: horario.hora,
@@ -69,7 +103,7 @@ export function HorarioFormScreen({ navigation, route }: DadosStackScreenProps<'
         setSalvando(false);
       }
     },
-    [schedule, groupId, professores, editando, navigation],
+    [schedule, groupId, publico, professores, editando, navigation],
   );
 
   const salvar = useCallback(() => {
@@ -82,26 +116,37 @@ export function HorarioFormScreen({ navigation, route }: DadosStackScreenProps<'
       void gravar(validacao.horario);
       return;
     }
+    const avisoDasTrocas =
+      trocasPermanentes === null
+        ? `\n\n${TEXTOS_DO_HORARIO.trocasNaoConferidas}`
+        : trocasPermanentes > 0
+          ? `\n\n${avisoDeTrocasPermanentes(trocasPermanentes)}`
+          : '';
     Alert.alert(
       'Atualizar as próximas aulas?',
-      'As aulas futuras deste horário que ainda não tiveram chamada serão atualizadas. Aulas com chamada e aulas editadas à mão ficam como estão.',
+      `As aulas futuras deste horário que ainda não tiveram chamada serão atualizadas. Aulas com chamada e aulas editadas à mão ficam como estão.${avisoDasTrocas}`,
       [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Salvar', onPress: () => void gravar(validacao.horario) },
       ],
     );
-  }, [titulo, weekday, hora, inicio, fim, editando, gravar]);
+  }, [titulo, weekday, hora, inicio, fim, editando, gravar, trocasPermanentes]);
 
   return (
     <ScreenWrapper edges={SCREEN_EDGES} avoidKeyboard>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <AppText variant="caption" color={colors.textSecondary} style={styles.turma}>
-          Turma: {groupName}
+          {semTurma ? `Turma: ${TEXTOS_DO_HORARIO.semTurma}` : `Turma: ${groupName}`}
         </AppText>
+        {editando && trocasPermanentes !== null && trocasPermanentes > 0 ? (
+          <AppText variant="caption" color={colors.warning} style={styles.turma} accessibilityRole="alert">
+            {avisoDeTrocasPermanentes(trocasPermanentes)}
+          </AppText>
+        ) : null}
 
         <Input
           label="Título da aula"
-          placeholder={`Ex.: Muay Thai — ${groupName}`}
+          placeholder={semTurma ? 'Ex.: Treino livre' : `Ex.: Muay Thai — ${groupName}`}
           value={titulo}
           onChangeText={setTitulo}
           maxLength={80}
@@ -141,6 +186,18 @@ export function HorarioFormScreen({ navigation, route }: DadosStackScreenProps<'
           onChangeText={(valor) => setFim(maskDate(valor))}
         />
 
+        <AppText variant="label" style={[styles.label, styles.spaced]}>
+          Quem pode participar
+        </AppText>
+        {semTurma ? (
+          <AppText variant="body">{AUDIENCE_LABELS.free}</AppText>
+        ) : (
+          <SegmentedControl options={OPCOES_DE_PUBLICO} value={publico} onChange={setPublico} />
+        )}
+        <AppText variant="caption" color={colors.textSecondary} style={[styles.hint, styles.spacedBottom]}>
+          {TEXTOS_DO_HORARIO.dicaDoPublico}
+        </AppText>
+
         <ProfessorMultiPicker label="Professores" value={professores} onChange={setProfessores} />
 
         {erro !== null ? (
@@ -177,6 +234,9 @@ function makeStyles(bottomPadding: number) {
     },
     spaced: {
       marginTop: 16,
+    },
+    spacedBottom: {
+      marginBottom: 16,
     },
     submit: {
       marginTop: 24,
