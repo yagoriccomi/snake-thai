@@ -62,6 +62,7 @@ function guardado(parcial: Partial<RascunhoGuardado> = {}): RascunhoGuardado {
     salvoEm: new Date(Date.now() - 60_000).toISOString(),
     base: { marcacoes: {}, concluidaEm: null },
     marcacoes: { 'aluno-1': 'present', 'aluno-2': 'absent' },
+    incluidos: [],
     ...parcial,
   };
 }

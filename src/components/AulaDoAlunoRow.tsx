@@ -2,12 +2,13 @@ import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { Selo } from '@/components/Selo';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TeacherRail } from '@/components/TeacherRail';
 import type { AulaDoAluno } from '@/services/aulas.service';
 import type { ClassTeacherRef } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { acaoDaAula, detalheDaAula, seloDaAula, type TomDoSelo } from '@/utils/aulasDoAluno';
+import { acaoDaAula, detalheDaAula, seloDaAula } from '@/utils/aulasDoAluno';
 import { formatTime } from '@/utils/datetime';
 
 interface AulaDoAlunoRowProps {
@@ -43,12 +44,6 @@ export const AulaDoAlunoRow = React.memo(function AulaDoAlunoRow({
   const selo = seloDaAula(aula, noMenu);
   const detalhe = detalheDaAula(aula);
   const professores = useMemo(() => comoProfessores(aula), [aula]);
-  const corDoSelo: Record<TomDoSelo, string> = {
-    neutro: colors.textSecondary,
-    destaque: colors.primaryText,
-    aviso: colors.warning,
-    erro: colors.error,
-  };
   const legenda = aula.type === 'event' ? 'Evento' : aula.group_name ?? (aula.audience === 'free' ? 'Livres' : null);
 
   return (
@@ -60,11 +55,7 @@ export const AulaDoAlunoRow = React.memo(function AulaDoAlunoRow({
           {aula.title}
         </Text>
         <View style={styles.sub}>
-          {selo !== null ? (
-            <View style={[styles.selo, { borderColor: corDoSelo[selo.tom] }]}>
-              <Text style={[styles.seloTexto, { color: corDoSelo[selo.tom] }]}>{selo.texto}</Text>
-            </View>
-          ) : null}
+          {selo !== null ? <Selo texto={selo.texto} tom={selo.tom} /> : null}
           {legenda !== null ? <Text style={styles.legenda}>{legenda}</Text> : null}
         </View>
         {detalhe !== null ? <Text style={styles.detalhe}>{detalhe}</Text> : null}
@@ -154,18 +145,6 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], fonts: Return
     corpo: { flex: 1, gap: 4 },
     titulo: { fontFamily: fonts.bodySemiBold, fontSize: 15, color: colors.textPrimary },
     sub: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6 },
-    selo: {
-      borderWidth: 1,
-      borderRadius: 6,
-      paddingHorizontal: 6,
-      paddingVertical: 1,
-    },
-    seloTexto: {
-      fontFamily: fonts.bodySemiBold,
-      fontSize: 10.5,
-      letterSpacing: 0.3,
-      textTransform: 'uppercase',
-    },
     legenda: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
     detalhe: { fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.warning },
     chip: {

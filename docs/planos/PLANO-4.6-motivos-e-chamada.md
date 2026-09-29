@@ -60,7 +60,25 @@
 | P12 | Aluno retirado da chamada (`p_remover_incluidos`) some da aula se não tinha declaração; se tinha, a linha fica só com a declaração | A declaração é do aluno, não de quem faz a chamada |
 | P13 | Os testes antigos da chamada em lote passam a cadastrar os alunos antes das aulas (a chamada conta a turma da data da aula, D58) e a esperar a recusa da § 15 na correção pelo APK antigo | Contrato |
 
-As premissas do 4.6c entram aqui quando a fatia começar.
+### Premissas do 4.6c (app) e 4.6d
+
+**O app ficou em dois PRs:** 4.6c (a tela da chamada nova) e 4.6d (chamadas pendentes, que tira
+o `MissedRollCallBanner`).
+
+| # | Premissa | Por quê |
+| --- | --- | --- |
+| P14 | Blocos na ordem: Professores, Da turma (turma e permanente), Marcaram, Trocas (troca e troca pendente), Extras, Incluídos e **Trocaram esta aula** (só para constar, sem marcação) | Os dois mockups (linhas C e G) juntos |
+| P15 | Todo professor da aula precisa estar marcado antes de concluir; quem faz a chamada começa presente | A regra 2 exige a lista completa, e marcar por padrão alguém como ausente seria dizer algo falso |
+| P16 | Quem já tinha registro e ficou sem marcação na tela mantém o registro no envio; da grade sem marcação vai como falta; marcou, extra e troca pendente sem marcação ficam sem registro | Regras 2 e 7 |
+| P17 | A revisão de justificativa **sai da chamada** (o botão antigo usava `update({status})`, que o banco recusa desde o 4.1). A linha mostra só o estado da justificativa; decidir fica em Solicitações (4.8) | § 9.1 (h) e § 15 |
+| P18 | A linha dos fixos mostra "Mês {p}%" de `frequencia_do_mes` (mockup); falha nessa leitura vira um aviso discreto na tela, sem travar a chamada | É informação de apoio [#93] |
+| P19 | Anexos da retificação só depois do G2; até lá, a folha Retificar pede só o texto | Escopo negativo |
+| P20 | Rascunho v2 guarda os incluídos (id e nome); rascunho v1 é descartado ao abrir | Roadmap: "sobe de versão e passa a guardar os incluídos" |
+
+**Decisão visual:** sem mockup novo; os das linhas C e G foram aprovados. Cores só por token
+(`primaryText`, `warning`, `success`, `error`, `textSecondary`); o selo virou um componente só
+(`Selo`), usado também pela lista de aulas do aluno. Carregando, erro com "Tentar de novo" e lista
+vazia tratados; a busca mostra carregando, erro e "ninguém encontrado".
 
 ## Passos (4.6a)
 

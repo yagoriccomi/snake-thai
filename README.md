@@ -30,8 +30,11 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   inclusive a **Semana extra**, que vira o mês. O mês fechado é gravado todo
   dia, assim que termina, e regravado se uma chamada ou justificativa mudar
   depois. Ao avisar falta, pode enviar justificativa com
-  mensagem de até 255 caracteres e imagem ou PDF, que o professor da aula ou o
-  admin aprova ou recusa. Aulas que passam sem chamada geram aviso na agenda.
+  mensagem de até 255 caracteres e imagem ou PDF. A **chamada** vem em blocos
+  (professores, da turma, marcaram, trocas, extras e incluídos): quem faz a
+  chamada confirma os professores, inclui quem apareceu e resolve as trocas de
+  aula; depois de concluída, toda mudança é **retificação com motivo**, e o
+  aluno afetado é avisado. Aulas que passam sem chamada geram aviso na agenda.
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes. Na tela de envio,

@@ -21,6 +21,7 @@ function guardado(parcial: Partial<RascunhoGuardado> = {}): RascunhoGuardado {
     salvoEm: '2026-09-16T11:00:00.000Z',
     base: { marcacoes: {}, concluidaEm: null },
     marcacoes: { 'aluno-1': 'present', 'aluno-2': 'absent' },
+    incluidos: [],
     ...parcial,
   };
 }
@@ -69,7 +70,9 @@ describe('interpretarRascunhoGuardado', () => {
 
   it.each([
     ['JSON quebrado', '{"versao":1,'],
-    ['outra versão', JSON.stringify({ ...guardado(), versao: 2 })],
+    ['outra versão (a v1 não guardava os incluídos)', JSON.stringify({ ...guardado(), versao: 1 })],
+    ['sem incluídos', JSON.stringify({ ...guardado(), incluidos: undefined })],
+    ['incluído sem id', JSON.stringify({ ...guardado(), incluidos: [{ nome: 'Ana' }] })],
     ['status inválido', JSON.stringify(guardado({ marcacoes: { 'aluno-1': 'late' as never } }))],
     ['data ilegível', JSON.stringify(guardado({ salvoEm: 'ontem' }))],
     ['sem base', JSON.stringify({ ...guardado(), base: null })],
@@ -93,6 +96,20 @@ describe('rascunhoVencido', () => {
 
   it('deveTratarDataIlegivelComoVencida', () => {
     expect(rascunhoVencido('não é data', AGORA)).toBe(true);
+  });
+});
+
+describe('rascunho v2: os incluídos', () => {
+  it('deveGuardarEReconhecerOsIncluidos', () => {
+    const registro = guardado({ incluidos: [{ id: 'aluno-9', nome: 'Ana' }], marcacoes: { 'aluno-9': 'present' } });
+    expect(interpretarRascunhoGuardado(JSON.stringify(registro))).toEqual(registro);
+  });
+
+  it('deveRecuperarQuemFoiIncluidoNaTela', () => {
+    const registro = guardado({ incluidos: [{ id: 'aluno-9', nome: 'Ana' }], marcacoes: { 'aluno-9': 'present' } });
+    expect(
+      avaliarRascunho({ guardado: registro, gravado: {}, concluidaEm: null, alunoIds: ALUNOS, agoraMs: AGORA }),
+    ).toBe('recuperar');
   });
 });
 

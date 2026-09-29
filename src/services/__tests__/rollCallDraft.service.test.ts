@@ -39,6 +39,7 @@ function registro(classId: string, salvoEmMs = AGORA): RascunhoGuardado {
     salvoEm: new Date(salvoEmMs).toISOString(),
     base: { marcacoes: {}, concluidaEm: null },
     marcacoes: { 'aluno-1': 'present' },
+    incluidos: [],
   };
 }
 

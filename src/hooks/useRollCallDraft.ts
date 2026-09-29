@@ -9,6 +9,7 @@ import {
   guardarRascunho,
   lerRascunho,
 } from '@/services/rollCallDraft.service';
+import type { IncluidoLocal } from '@/utils/chamada';
 import { alternarMarcacao, type RascunhoDeChamada } from '@/utils/rollCall';
 import {
   ATRASO_PARA_GUARDAR_MS,
@@ -45,6 +46,12 @@ interface UseRollCallDraftParams {
 interface UseRollCallDraftResult {
   rascunho: RascunhoDeChamada;
   marcar: (alunoId: string, status: AttendanceStatus) => void;
+  /** Alunos incluídos na tela e ainda não gravados (v2). */
+  incluidos: readonly IncluidoLocal[];
+  /** Inclui um aluno que veio à aula; ele entra marcado como presente. */
+  incluir: (aluno: IncluidoLocal) => void;
+  /** Tira da tela um incluído ainda não gravado. */
+  retirarIncluido: (alunoId: string) => void;
   /** `false` enquanto o rascunho guardado é lido: a lista não aceita toque. */
   pronto: boolean;
   aviso: AvisoDoRascunho | null;
@@ -85,6 +92,7 @@ export function useRollCallDraft({
   ativo,
 }: UseRollCallDraftParams): UseRollCallDraftResult {
   const [rascunho, setRascunho] = useState<RascunhoDeChamada>(gravado);
+  const [incluidos, setIncluidos] = useState<IncluidoLocal[]>([]);
   const [pronto, setPronto] = useState(true);
   const [aviso, setAviso] = useState<AvisoDoRascunho | null>(null);
 
@@ -159,6 +167,8 @@ export function useRollCallDraft({
       emConflitoRef.current = null;
       baseRef.current = { marcacoes: gravado, concluidaEm };
       setRascunho(gravado);
+      // Depois de salvar, os incluídos já vêm na lista do banco.
+      setIncluidos([]);
       setAviso(null);
     }
   }, [gravado, concluidaEm, cancelarPendente]);
@@ -200,9 +210,14 @@ export function useRollCallDraft({
           return;
         }
 
-        const marcacoes = restringirAosAlunos(guardado.marcacoes, alunoIdsRef.current);
-        ultimoConteudoRef.current = conteudoDoRascunho(classId, agora, marcacoes);
+        const recuperados = incluidosForaDaLista(guardado.incluidos, alunoIdsRef.current);
+        const marcacoes = restringirAosAlunos(guardado.marcacoes, [
+          ...alunoIdsRef.current,
+          ...recuperados.map((incluido) => incluido.id),
+        ]);
+        ultimoConteudoRef.current = conteudoDoRascunho(classId, agora, marcacoes, recuperados);
         setRascunho(marcacoes);
+        setIncluidos(recuperados);
         setAviso({ tipo: 'recuperado', salvoEm: guardado.salvoEm });
       } catch (erro) {
         // Sem o rascunho, a chamada segue com o que está gravado: nunca trava a tela.
@@ -228,7 +243,7 @@ export function useRollCallDraft({
     cancelarPendente();
 
     const operacao = (): void => {
-      if (mesmasMarcacoes(rascunho, gravadoRef.current)) {
+      if (mesmasMarcacoes(rascunho, gravadoRef.current) && incluidos.length === 0) {
         ultimoConteudoRef.current = null;
         if (!existeGuardadoRef.current) return;
         existeGuardadoRef.current = false;
@@ -238,7 +253,7 @@ export function useRollCallDraft({
 
       const base = baseRef.current;
       const marcacoes = somenteMarcados(rascunho);
-      const conteudo = conteudoDoRascunho(classId, base, marcacoes);
+      const conteudo = conteudoDoRascunho(classId, base, marcacoes, incluidos);
       if (conteudo === ultimoConteudoRef.current) return;
 
       ultimoConteudoRef.current = conteudo;
@@ -250,6 +265,7 @@ export function useRollCallDraft({
           salvoEm: new Date().toISOString(),
           base,
           marcacoes,
+          incluidos: [...incluidos],
         }),
       );
     };
@@ -260,7 +276,7 @@ export function useRollCallDraft({
       pendenteRef.current = null;
       operacao();
     }, ATRASO_PARA_GUARDAR_MS);
-  }, [rascunho, userId, classId, cancelarPendente, enfileirar]);
+  }, [rascunho, incluidos, userId, classId, cancelarPendente, enfileirar]);
 
   // O Android pode matar o processo em segundo plano: grava o pendente já.
   useEffect(() => {
@@ -296,6 +312,28 @@ export function useRollCallDraft({
     [pronto],
   );
 
+  const incluir = useCallback(
+    (aluno: IncluidoLocal) => {
+      if (!pronto || emConflitoRef.current !== null || alunoIdsRef.current.includes(aluno.id)) return;
+      semGravarAoSairRef.current = false;
+      setIncluidos((anteriores) =>
+        anteriores.some((incluido) => incluido.id === aluno.id) ? anteriores : [...anteriores, aluno],
+      );
+      setRascunho((anterior) => ({ ...anterior, [aluno.id]: 'present' }));
+    },
+    [pronto],
+  );
+
+  const retirarIncluido = useCallback((alunoId: string) => {
+    semGravarAoSairRef.current = false;
+    setIncluidos((anteriores) => anteriores.filter((incluido) => incluido.id !== alunoId));
+    setRascunho((anterior) => {
+      const restante: Record<string, AttendanceStatus | null> = { ...anterior };
+      delete restante[alunoId];
+      return restante;
+    });
+  }, []);
+
   const usarMeuRascunho = useCallback(() => {
     const guardado = emConflitoRef.current;
     if (guardado === null || userId === null) return;
@@ -305,11 +343,16 @@ export function useRollCallDraft({
     // Nova base = o que está gravado agora; senão o conflito volta na próxima abertura.
     const base = { marcacoes: gravadoRef.current, concluidaEm: concluidaEmRef.current };
     baseRef.current = base;
-    const marcacoes = restringirAosAlunos(guardado.marcacoes, alunoIdsRef.current);
-    ultimoConteudoRef.current = conteudoDoRascunho(classId, base, marcacoes);
+    const recuperados = incluidosForaDaLista(guardado.incluidos, alunoIdsRef.current);
+    const marcacoes = restringirAosAlunos(guardado.marcacoes, [
+      ...alunoIdsRef.current,
+      ...recuperados.map((incluido) => incluido.id),
+    ]);
+    ultimoConteudoRef.current = conteudoDoRascunho(classId, base, marcacoes, recuperados);
     existeGuardadoRef.current = true;
 
     setRascunho(marcacoes);
+    setIncluidos(recuperados);
     setAviso({ tipo: 'recuperado', salvoEm: guardado.salvoEm });
     void enfileirar(() =>
       guardarRascunho(userId, {
@@ -318,6 +361,7 @@ export function useRollCallDraft({
         salvoEm: new Date().toISOString(),
         base,
         marcacoes,
+        incluidos: recuperados,
       }),
     );
   }, [userId, classId, enfileirar]);
@@ -335,6 +379,7 @@ export function useRollCallDraft({
     emConflitoRef.current = null;
     baseRef.current = { marcacoes: gravadoRef.current, concluidaEm: concluidaEmRef.current };
     setRascunho(gravadoRef.current);
+    setIncluidos([]);
     setAviso(null);
     return apagarGuardado();
   }, [apagarGuardado]);
@@ -342,6 +387,9 @@ export function useRollCallDraft({
   return {
     rascunho,
     marcar,
+    incluidos,
+    incluir,
+    retirarIncluido,
     pronto,
     aviso,
     usarMeuRascunho,
@@ -350,11 +398,18 @@ export function useRollCallDraft({
   };
 }
 
-/** Identidade do rascunho sem a data: base + marcações. */
+/** Identidade do rascunho sem a data: base + marcações + incluídos. */
 function conteudoDoRascunho(
   classId: string,
   base: Base,
   marcacoes: MarcacoesGravadas,
+  incluidos: readonly IncluidoLocal[],
 ): string {
-  return JSON.stringify({ classId, base, marcacoes });
+  return JSON.stringify({ classId, base, marcacoes, incluidos });
+}
+
+/** Quem já entrou na lista do banco não é mais "incluído na tela". */
+function incluidosForaDaLista(incluidos: readonly IncluidoLocal[], alunoIds: readonly string[]): IncluidoLocal[] {
+  const naLista = new Set(alunoIds);
+  return incluidos.filter((incluido) => !naLista.has(incluido.id));
 }

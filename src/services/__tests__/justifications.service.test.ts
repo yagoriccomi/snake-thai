@@ -23,7 +23,6 @@ import {
   fetchJustificationAttachmentUrl,
   JUSTIFICATION_MESSAGE_MAX,
   JustificativaInvalidaError,
-  reviewJustification,
   submitJustification,
 } from '@/services/justifications.service';
 
@@ -139,19 +138,6 @@ describe('submitJustification — gravação', () => {
       submitJustification(ALUNO, { classId: AULA, message: 'Atestado', attachment: ANEXO }),
     ).rejects.toBeInstanceOf(AnexoIndisponivelError);
     expect(mockFrom).not.toHaveBeenCalled();
-  });
-});
-
-describe('reviewJustification', () => {
-  it('deveEnviarSoOStatusDeixandoOCarimboParaOBanco', async () => {
-    const chain = mockQuery();
-
-    await reviewJustification(JUSTIFICATIVA, 'approved');
-
-    // reviewed_by/reviewed_at são carimbados pelo gatilho: o app não escolhe
-    // em nome de quem a revisão ficou registrada.
-    expect(chain.update).toHaveBeenCalledWith({ status: 'approved' });
-    expect(chain.eq).toHaveBeenCalledWith('id', JUSTIFICATIVA);
   });
 });
 
