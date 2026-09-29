@@ -189,6 +189,29 @@ dados existentes falha (aconteceu com `payments.paid_at`). Se a migration mexe
 em dados já gravados, faça o `UPDATE` de compatibilidade **antes** da constraint,
 na mesma migration.
 
+### Limpar o histórico de demonstração (⚠️ produção, antes do primeiro aluno real)
+
+Em 23/09 o `supabase/seed/historico_demonstracao.sql` gravou em produção um ano inventado. O
+`supabase/seed/historico_demonstracao_limpar.sql` apaga **só o que ele criou**: aulas
+"<turma> — treino", presenças e faltas, mensalidades sem comprovante real, justificativas e os
+meses fechados daquele período. Ele reconhece cada execução do pacote pela forma do que gravou;
+as contas `@demo.snakethai.com` continuam com o `demo_seed_limpar.sql`.
+
+1. **Backup antes.** Painel da Supabase → *Database* → *Backups* (ou o `pg_dump` do
+   `db-push-prod.bat`). Sem backup, não rode.
+2. **Relatório.** Cole o script no **SQL Editor** (sem a linha `\set`) e execute como está. Ele
+   mostra quantas execuções do pacote achou e quantas linhas apagaria, e **desfaz tudo**
+   (termina com *"SÓ RELATÓRIO: nada foi apagado"*). Confira com os números que o pacote
+   imprimiu em 23/09.
+3. **Limpeza.** Troque `limpeza.confirmo` para `'sim'` e execute de novo.
+4. **Conferência.** Rode o relatório outra vez: *"Nada a limpar"*.
+
+**O que o pacote fez e o script não desfaz** (só o backup de antes de 23/09): reescreveu
+`created_at` e `group_since` de todos os alunos e professores, e trocou presença por falta de
+até 7 alunos em chamadas que já existiam. Se isso importar, a alternativa é zerar o operacional
+e manter a configuração (planos, turmas, grade, textos legais): decisão do dono (item 3.5 do
+`ROADMAP-thai.md`).
+
 ---
 
 ## Edge Functions: deploy
