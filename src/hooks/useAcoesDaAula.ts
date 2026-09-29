@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 
-import type { JustificationDraft } from '@/components/JustificationSheet';
+import { AVISO_DE_ANEXO_QUE_FALHOU, type JustificationDraft } from '@/components/JustificationSheet';
 import type { AulaDoAluno, ResultadoDaDeclaracao } from '@/services/aulas.service';
-import { submitJustification } from '@/services/justifications.service';
+import { enviarJustificativa as enviarAoBanco } from '@/services/justifications.service';
 
 export interface AvisoDeCota {
   aula: AulaDoAluno;
@@ -22,7 +22,8 @@ interface Parametros {
  * - "Vou" marca e, acima da cota, mostra o aviso com Desfazer (D4: nunca
  *   bloqueia);
  * - "Não vou" na aula da grade do fixo grava a falta e abre a justificativa,
- *   quando a aula ainda aceita (`can_justify`, ou a justificativa pendente);
+ *   quando a aula ainda aceita (`can_justify`) e ainda não tem justificativa
+ *   (§ 9.1: uma por aula; o estado e o reenvio ficam em Minhas justificativas);
  * - "Desmarcar" limpa.
  */
 export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
@@ -52,7 +53,7 @@ export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
     async (aula: AulaDoAluno) => {
       // Tocar de novo em "Não vou" reabre a justificativa sem regravar a falta.
       if (aula.declared_status !== 'absent' && (await declarar(aula, false)) === null) return;
-      if (aula.can_justify || aula.justification_status === 'pending') setAulaDaFalta(aula);
+      if (aula.can_justify && aula.justification_id === null) setAulaDaFalta(aula);
     },
     [declarar],
   );
@@ -68,14 +69,17 @@ export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
   const fecharFalta = useCallback(() => setAulaDaFalta(null), []);
 
   const enviarJustificativa = useCallback(
-    async (rascunho: JustificationDraft) => {
-      if (userId === null || aulaDaFalta === null) return;
-      await submitJustification(userId, {
+    async (rascunho: JustificationDraft): Promise<string | undefined> => {
+      if (userId === null || aulaDaFalta === null) return undefined;
+      const { anexoFalhou } = await enviarAoBanco({
+        scope: 'class',
         classId: aulaDaFalta.class_id,
-        message: rascunho.message,
-        attachment: rascunho.attachment,
+        weekStart: null,
+        texto: rascunho.message,
+        anexo: rascunho.attachment,
       });
       await recarregar();
+      return anexoFalhou ? AVISO_DE_ANEXO_QUE_FALHOU : undefined;
     },
     [userId, aulaDaFalta, recarregar],
   );

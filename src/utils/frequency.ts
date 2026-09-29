@@ -116,5 +116,5 @@ export function explicacaoDaSemanaExtra(modo: ModoDaFrequencia): string {
 export const ROTULO_DA_JUSTIFICATIVA: Readonly<Record<JustificationStatus, string>> = {
   pending: 'Justificativa em análise',
   approved: 'Justificativa aprovada',
-  rejected: 'Justificativa recusada',
+  rejected: 'Justificativa negada',
 };

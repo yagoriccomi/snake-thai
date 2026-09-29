@@ -277,6 +277,18 @@ app.
    às 7h. Quem tinha trocado para a aula e teve a troca cancelada não a recupera.
 6. Um professor cancela a mesma aula no máximo duas vezes; o admin, sem limite.
 
+### Revisar justificativas de falta
+
+1. Na agenda, **Justificativas para revisar** aparece com o número de pendentes. Você vê todas; o
+   professor vê as das aulas dele e, na justificativa semanal do aluno livre, as das semanas em que
+   deu aula.
+2. Toque em **Ver anexo** para abrir o atestado, quando houver, e em **Revisar**.
+3. Escreva a **nota da decisão** (obrigatória) e toque em **Aprovar** ou **Negar**. O aluno nunca lê
+   a nota; na aprovação, ele vê quem aprovou; na negativa, não vê quem negou.
+4. Depois da decisão, o atestado some para o professor e fica só para o aluno e a administração.
+5. O aluno pode reenviar **uma vez**, em até 7 dias depois da negativa. Se a segunda também for
+   negada, ele é orientado a procurar a academia, com o contato de Configurações.
+
 ---
 
 ## 6. Receber e aprovar pagamentos

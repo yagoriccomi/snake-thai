@@ -17,7 +17,7 @@ jest.mock('@/services/justifications.service', () => {
   return { JUSTIFICATION_MESSAGE_MAX: 255, JustificativaInvalidaError, AnexoIndisponivelError };
 });
 
-import { JustificationSheet } from '@/components/JustificationSheet';
+import { AVISO_DE_ANEXO_QUE_FALHOU, JustificationSheet } from '@/components/JustificationSheet';
 import { PortalProvider } from '@/components/Portal';
 import { JustificativaInvalidaError } from '@/services/justifications.service';
 import { ThemeProvider } from '@/theme/ThemeProvider';
@@ -47,7 +47,7 @@ describe('JustificationSheet', () => {
     const { getByText, queryByLabelText } = renderSheet();
 
     expect(getByText('Acrescentar justificativa?')).toBeTruthy();
-    expect(queryByLabelText('Mensagem da justificativa')).toBeNull();
+    expect(queryByLabelText('Motivo da falta')).toBeNull();
     expect(getByText('Fechar')).toBeTruthy();
   });
 
@@ -63,16 +63,16 @@ describe('JustificationSheet', () => {
     const { getByRole, getByLabelText, getByText } = renderSheet();
     marcarJustificativa(getByRole);
 
-    fireEvent.changeText(getByLabelText('Mensagem da justificativa'), 'Gripe');
+    fireEvent.changeText(getByLabelText('Motivo da falta'), 'Gripe');
     expect(getByText('5/255')).toBeTruthy();
-    expect(getByLabelText('Mensagem da justificativa').props.maxLength).toBe(255);
+    expect(getByLabelText('Motivo da falta').props.maxLength).toBe(255);
   });
 
   it('deveEnviarAMensagemEFecharQuandoDaCerto', async () => {
     const { getByRole, getByLabelText, getByText, onSubmit, onClose } = renderSheet();
     marcarJustificativa(getByRole);
 
-    fireEvent.changeText(getByLabelText('Mensagem da justificativa'), 'Consulta médica');
+    fireEvent.changeText(getByLabelText('Motivo da falta'), 'Consulta médica');
     fireEvent.press(getByText('Enviar justificativa'));
 
     await waitFor(() => expect(onClose).toHaveBeenCalled());
@@ -82,14 +82,61 @@ describe('JustificationSheet', () => {
   it('deveIncluirOAnexoEscolhido', async () => {
     const arquivo = { uri: 'file://atestado.jpg', name: 'atestado.jpg', contentType: 'image/jpeg' };
     mockPickImage.mockResolvedValue(arquivo);
-    const { getByRole, getByText, findByText, onSubmit } = renderSheet();
+    const { getByRole, getByLabelText, getByText, findByText, onSubmit } = renderSheet();
     marcarJustificativa(getByRole);
 
     fireEvent.press(getByText('Anexar imagem'));
     await findByText('atestado.jpg');
+    fireEvent.changeText(getByLabelText('Motivo da falta'), 'Atestado');
     fireEvent.press(getByText('Enviar justificativa'));
 
-    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ message: '', attachment: arquivo }));
+    await waitFor(() => expect(onSubmit).toHaveBeenCalledWith({ message: 'Atestado', attachment: arquivo }));
+  });
+
+  it('naoDeveEnviarSoComOAnexo', async () => {
+    mockPickImage.mockResolvedValue({ uri: 'file://a.jpg', name: 'a.jpg', contentType: 'image/jpeg' });
+    const { getByRole, getByText, findByText, onSubmit } = renderSheet();
+    marcarJustificativa(getByRole);
+
+    fireEvent.press(getByText('Anexar imagem'));
+    await findByText('a.jpg');
+    fireEvent.press(getByText('Enviar justificativa'));
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it('deveMostrarOAvisoDoAnexoQueFalhouETrocarPorFechar', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(AVISO_DE_ANEXO_QUE_FALHOU);
+    const { getByRole, getByLabelText, getByText, findByText, queryByText, onClose } = renderSheet(onSubmit);
+    marcarJustificativa(getByRole);
+
+    fireEvent.changeText(getByLabelText('Motivo da falta'), 'Atestado');
+    fireEvent.press(getByText('Enviar justificativa'));
+
+    expect(await findByText(AVISO_DE_ANEXO_QUE_FALHOU)).toBeTruthy();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(queryByText('Enviar justificativa')).toBeNull();
+  });
+
+  it('deveAbrirDiretoNoFormularioQuandoNaoPerguntaSeQuer', () => {
+    const { getByLabelText, queryByRole, queryByText, getByText } = render(
+      <ThemeProvider>
+        <PortalProvider>
+          <JustificationSheet
+            visible
+            titulo="Justificar semana"
+            contexto="Semana de 28/09"
+            perguntarSeQuer={false}
+            permiteAnexo={false}
+            onClose={jest.fn()}
+            onSubmit={jest.fn()}
+          />
+        </PortalProvider>
+      </ThemeProvider>,
+    );
+    expect(getByText('Justificar semana')).toBeTruthy();
+    expect(queryByRole('checkbox')).toBeNull();
+    expect(getByLabelText('Motivo da falta')).toBeTruthy();
+    expect(queryByText('Anexar imagem')).toBeNull();
   });
 
   it('deveMostrarAMensagemDeValidacaoEContinuarAberta', async () => {
@@ -97,7 +144,7 @@ describe('JustificationSheet', () => {
     const { getByRole, getByLabelText, getByText, findByText, onClose } = renderSheet(onSubmit);
     marcarJustificativa(getByRole);
 
-    fireEvent.changeText(getByLabelText('Mensagem da justificativa'), 'x');
+    fireEvent.changeText(getByLabelText('Motivo da falta'), 'x');
     fireEvent.press(getByText('Enviar justificativa'));
 
     expect(await findByText('Mensagem longa demais.')).toBeTruthy();
@@ -109,7 +156,7 @@ describe('JustificationSheet', () => {
     const { getByRole, getByLabelText, getByText, findByText, queryByText } = renderSheet(onSubmit);
     marcarJustificativa(getByRole);
 
-    fireEvent.changeText(getByLabelText('Mensagem da justificativa'), 'x');
+    fireEvent.changeText(getByLabelText('Motivo da falta'), 'x');
     fireEvent.press(getByText('Enviar justificativa'));
 
     expect(await findByText('Não foi possível enviar a justificativa. Tente de novo.')).toBeTruthy();

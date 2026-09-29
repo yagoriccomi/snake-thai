@@ -37,8 +37,28 @@
 | 1 | `supabase/migrations/20260929170000_justificativas.sql` | Trava com `snake.justificativa_rpc`; `pode_decidir_justificativa`; RLS de leitura e de UPDATE; o aviso pendente; a fila que não apaga o anexo da tentativa 1; as 7 RPCs | [#87] [#6] | `db-dev reset` |
 | 2 | `supabase/tests/regressao_justificativas.sql` | J1–J12 | [#41] | `db-dev test` |
 
+## Premissas do 4.8b (modo Loop)
+
+| # | Premissa | Por quê |
+| --- | --- | --- |
+| P6 | O anexo da aula continua pela rota que o servidor tem hoje (`sign-upload {classId}`) e é gravado pelo UPDATE do dono enquanto pendente (§ 9.1 f), depois do texto aceito. A semana e o reenvio vão **sem** anexo até o G2 | A rota `{justificationId}` e `anexar_a_justificativa` dependem do G2; o caminho `justificativas/<user>/<class_id>` é aceito pela constraint |
+| P7 | A folha da falta só abre com `can_justify` **e sem justificativa**: o estado e o reenvio ficam em Minhas justificativas | Uma por aula (T16); reabrir daria "Você já enviou…" |
+| P8 | Depois do prazo do reenvio, o rótulo da 1ª negada fica só "Justificativa negada" | A data vencida não promete nada |
+| P9 | "Ver anexo" abre a URL assinada no navegador do aparelho, como o comprovante | Sem visualizador novo [#7] |
+| P10 | Os avisos de justificativa abrem Justificativas para revisar (pendente) e Minhas justificativas (aprovada, negada) | § 10: o destino é a tela de quem recebe |
+
+## Passos (4.8b)
+
+| # | Arquivo | O que muda | Prática | Verificação |
+| --- | --- | --- | --- | --- |
+| 1 | `src/services/justifications.service.ts` | `enviarJustificativa`, `reenviarJustificativa`, `decidirJustificativa`, `fetchMinhasJustificativas`, `fetchJustificativasParaRevisar`; sai o upsert | [#22] [#52] | Jest |
+| 2 | `src/components/JustificationSheet.tsx` | Título, contexto, pergunta e anexo opcionais; motivo obrigatório; aviso do anexo que falhou | [#6] [#93] | Jest |
+| 3 | `src/utils/justificativas.ts` | Rótulos da § 3, tom e assunto | [#3] | Jest |
+| 4 | `MinhasJustificativasScreen`, `JustificativasParaRevisarScreen`, `DecidirJustificativaSheet`, `JustificarSemanaCard` | As telas e a folha, com carregando, erro e vazio | [#13] [#93] | Jest |
+| 5 | agendas e `notificationRouting.ts` | Atalho com contador; o toque no aviso abre a tela certa | [#6] | Jest |
+
 ## Definição de pronto
 
-- [ ] 4.8a: `db-dev test` e `reset` verdes, tipos, PR com CI verde, Registro (com a linha para o
+- [x] 4.8a: `db-dev test` e `reset` verdes, tipos, PR com CI verde, Registro (com a linha para o
   servidor: a segunda barreira da § 13.5 já pode usar `pode_decidir_justificativa`);
-- [ ] 4.8b: Jest verde, PR, entrega com o roteiro do aparelho.
+- [x] 4.8b: Jest verde, PR, entrega com o roteiro do aparelho.

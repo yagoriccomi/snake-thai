@@ -11,12 +11,19 @@ import {
   pickImageProof,
   type PickedFile,
 } from '@/services/filePicker.service';
+import { createLogger } from '@/lib/logger';
 import {
   AnexoIndisponivelError,
   JUSTIFICATION_MESSAGE_MAX,
   JustificativaInvalidaError,
 } from '@/services/justifications.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import { classifyError } from '@/utils/errors';
+
+const log = createLogger('JustificationSheet');
+
+/** O texto foi, o arquivo não (§ 9.1, fluxo 3): a justificativa vale só com o texto. */
+export const AVISO_DE_ANEXO_QUE_FALHOU = 'A justificativa foi enviada, mas o anexo não. Ela vale só com o texto.';
 
 /** O que o aluno preencheu — o envio em si é de quem abriu a folha. */
 export interface JustificationDraft {
@@ -26,26 +33,43 @@ export interface JustificationDraft {
 
 interface JustificationSheetProps {
   visible: boolean;
-  classTitle: string;
+  /** Título da aula (na falta avisada). */
+  classTitle?: string;
+  /** Padrão "Falta avisada". */
+  titulo?: string;
+  /** Linha de contexto; padrão: a aula e a regra da chamada. */
+  contexto?: string;
+  /** Depois do "Não vou", pergunta antes se quer justificar. Padrão: sim. */
+  perguntarSeQuer?: boolean;
+  /** A semana e o reenvio vão sem anexo até o G2. Padrão: sim. */
+  permiteAnexo?: boolean;
   onClose: () => void;
-  /** Deve lançar em caso de falha; a folha mostra a mensagem e continua aberta. */
-  onSubmit: (draft: JustificationDraft) => Promise<void>;
+  /**
+   * Deve lançar em caso de falha; a folha mostra a mensagem e continua aberta.
+   * Devolver um texto (ex.: o anexo não foi) mostra o aviso e troca o botão por Fechar.
+   */
+  onSubmit: (draft: JustificationDraft) => Promise<string | undefined | void>;
 }
 
 const FALHA_NO_ENVIO = 'Não foi possível enviar a justificativa. Tente de novo.';
 
-/** Só erros escritos para o aluno chegam à tela; o resto vira mensagem genérica. [#93] */
+/**
+ * As recusas do banco (§ 9.1), de rede e de validação chegam à tela como estão;
+ * a falha interna vira mensagem genérica, sem detalhe técnico. [#93]
+ */
 function mensagemDeErro(erro: unknown): string {
   if (erro instanceof JustificativaInvalidaError || erro instanceof AnexoIndisponivelError) {
     return erro.message;
   }
-  return FALHA_NO_ENVIO;
+  const { kind, message } = classifyError(erro);
+  return kind === 'interno' ? FALHA_NO_ENVIO : message;
 }
 
 /**
- * Folha exibida depois que o aluno avisa a falta. A falta já está declarada;
- * aqui ele decide se "Acrescentar justificativa?" — mensagem de até 255
- * caracteres e/ou imagem ou PDF (docs/FREQUENCIA.md).
+ * Folha da justificativa (§ 9.1): depois do "Não vou" (a falta já está
+ * declarada, e o aluno decide se "Acrescentar justificativa?"), na semana do
+ * livre e no reenvio. O motivo escrito, de até 255 caracteres, é obrigatório;
+ * a imagem ou o PDF são opcionais (docs/FREQUENCIA.md).
  *
  * É uma `BottomSheet`, não um `Modal`: o campo de mensagem ficava escondido
  * atrás do teclado no Android (ver Portal.tsx).
@@ -55,19 +79,25 @@ function mensagemDeErro(erro: unknown): string {
  */
 export function JustificationSheet({
   visible,
-  classTitle,
+  classTitle = '',
+  titulo = 'Falta avisada',
+  contexto,
+  perguntarSeQuer = true,
+  permiteAnexo = true,
   onClose,
   onSubmit,
 }: JustificationSheetProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
-  const [querJustificar, setQuerJustificar] = useState(false);
+  const [querJustificar, setQuerJustificar] = useState(!perguntarSeQuer);
+  const [aviso, setAviso] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState('');
   const [anexo, setAnexo] = useState<PickedFile | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const podeEnviar = mensagem.trim() !== '' || anexo !== null;
+  // Contrato § 9.1: o motivo escrito é obrigatório; o anexo é opcional.
+  const podeEnviar = mensagem.trim() !== '';
 
   const escolher = useCallback(async (picker: () => Promise<PickedFile | null>) => {
     setErro(null);
@@ -81,9 +111,14 @@ export function JustificationSheet({
     setEnviando(true);
     setErro(null);
     try {
-      await onSubmit({ message: mensagem, attachment: anexo });
+      const avisoDoEnvio = await onSubmit({ message: mensagem, attachment: anexo });
+      if (typeof avisoDoEnvio === 'string') {
+        setAviso(avisoDoEnvio);
+        return;
+      }
       onClose();
     } catch (falha) {
+      log.warn('Justificativa não enviada', falha);
       setErro(mensagemDeErro(falha));
     } finally {
       setEnviando(false);
@@ -92,37 +127,46 @@ export function JustificationSheet({
 
   return (
     <BottomSheet visible={visible} onClose={onClose}>
-      <AppText variant="subtitle">Falta avisada</AppText>
+      <AppText variant="subtitle">{titulo}</AppText>
       <AppText variant="caption" color={colors.textSecondary}>
-        {classTitle} · a presença só vale com a chamada do professor.
+        {contexto ?? `${classTitle} · a presença só vale com a chamada do professor.`}
       </AppText>
 
-      <Checkbox
-        checked={querJustificar}
-        onChange={setQuerJustificar}
-        accessibilityLabel="Acrescentar justificativa?"
-        style={styles.checkbox}
-      >
-        <AppText variant="body">Acrescentar justificativa?</AppText>
-      </Checkbox>
+      {perguntarSeQuer ? (
+        <Checkbox
+          checked={querJustificar}
+          onChange={setQuerJustificar}
+          accessibilityLabel="Acrescentar justificativa?"
+          style={styles.checkbox}
+        >
+          <AppText variant="body">Acrescentar justificativa?</AppText>
+        </Checkbox>
+      ) : null}
 
-      {querJustificar ? (
+      {aviso !== null ? (
+        <>
+          <AppText variant="caption" color={colors.warning} accessibilityRole="alert">
+            {aviso}
+          </AppText>
+          <Button title="Fechar" variant="secondary" onPress={onClose} />
+        </>
+      ) : querJustificar ? (
         <>
           <TextInput
             value={mensagem}
             onChangeText={setMensagem}
             maxLength={JUSTIFICATION_MESSAGE_MAX}
             multiline
-            placeholder="Conte o motivo da falta"
+            placeholder="Conte o motivo da falta (obrigatório)"
             placeholderTextColor={colors.textSecondary}
             style={styles.mensagem}
-            accessibilityLabel="Mensagem da justificativa"
+            accessibilityLabel="Motivo da falta"
           />
           <Text style={styles.contador}>
             {mensagem.length}/{JUSTIFICATION_MESSAGE_MAX}
           </Text>
 
-          {anexo !== null ? (
+          {!permiteAnexo ? null : anexo !== null ? (
             <View style={styles.anexo}>
               <Ionicons name="document-attach-outline" size={18} color={colors.textSecondary} />
               <Text style={styles.anexoNome} numberOfLines={1}>

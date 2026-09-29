@@ -27,6 +27,15 @@ describe('destinoDaNotificacao', () => {
     expect(destinoDaNotificacao({ tipo, paymentId: UUID })?.aba).toBe(aba);
   });
 
+  it.each([
+    ['justificativa_pendente', 'JustificativasParaRevisar'],
+    ['justificativa_aprovada', 'MinhasJustificativas'],
+    ['justificativa_negada', 'MinhasJustificativas'],
+    ['aula_cancelada', 'AulasHome'],
+  ])('%s abre a tela %s', (tipo, tela) => {
+    expect(destinoDaNotificacao({ tipo, justificationId: UUID })?.tela).toBe(tela);
+  });
+
   it('naoDeveNavegarComPayloadDesconhecidoOuMalformado', () => {
     expect(destinoDaNotificacao(null)).toBeNull();
     expect(destinoDaNotificacao('comprovante_enviado')).toBeNull();

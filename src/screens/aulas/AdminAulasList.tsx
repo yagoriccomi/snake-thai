@@ -14,7 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
-import { ChamadasPendentesBotao } from '@/components/ChamadasPendentesBotao';
+import { ChamadasPendentesBotao, JustificativasParaRevisarBotao } from '@/components/ChamadasPendentesBotao';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TeacherRail } from '@/components/TeacherRail';
@@ -23,6 +23,7 @@ import { WeekStrip } from '@/components/WeekStrip';
 import { useAdminClassesForDay } from '@/hooks/useAdminClassesForDay';
 import { useGroups } from '@/hooks/useGroups';
 import { useChamadasPendentes } from '@/hooks/useChamadasPendentes';
+import { useJustificativasParaRevisar } from '@/hooks/useJustificativas';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import {
   fetchTeachersForClasses,
@@ -60,6 +61,8 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   const { groups } = useGroups();
   // O admin vê a contagem de todas; o professor, a das aulas dele (T13).
   const { items: chamadasPendentes, reload: recarregarSemChamada } = useChamadasPendentes(false);
+  // A lista é do banco: cada um vê só o que pode decidir (T18, D14).
+  const { items: paraRevisar, reload: recarregarParaRevisar } = useJustificativasParaRevisar();
   const [teachersByClass, setTeachersByClass] = useState<Record<string, ClassTeacherRef[]>>({});
 
   // Professores das aulas do dia, para pintar trilho e bolinhas — uma
@@ -95,7 +98,8 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
     useCallback(() => {
       void reload();
       void recarregarSemChamada();
-    }, [reload, recarregarSemChamada]),
+      void recarregarParaRevisar();
+    }, [reload, recarregarSemChamada, recarregarParaRevisar]),
   );
 
   const handleSelectDay = useCallback((day: DayItem) => {
@@ -123,6 +127,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
   }, [navigation]);
 
   const abrirChamadasPendentes = useCallback(() => navigation.navigate('ChamadasPendentes'), [navigation]);
+  const abrirParaRevisar = useCallback(() => navigation.navigate('JustificativasParaRevisar'), [navigation]);
 
   const renderItem = useCallback<ListRenderItem<ClassRow>>(
     ({ item }) => {
@@ -168,6 +173,7 @@ export function AdminAulasList({ navigation }: AdminAulasListProps): React.JSX.E
         <WeekStrip days={days} selectedKey={selectedKey} onSelect={handleSelectDay} />
       </View>
       <ChamadasPendentesBotao quantidade={chamadasPendentes.length} onPress={abrirChamadasPendentes} />
+      <JustificativasParaRevisarBotao quantidade={paraRevisar.length} onPress={abrirParaRevisar} />
 
       {error !== null && items.length === 0 ? (
         <ErrorState message={error} onRetry={() => void reload()} />

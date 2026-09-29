@@ -4,16 +4,22 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { useTheme } from '@/theme/ThemeProvider';
 
-interface ChamadasPendentesBotaoProps {
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
+
+interface AtalhoDaAgendaProps {
+  icone: IoniconName;
+  titulo: string;
+  /** O que o toque abre, para o leitor de tela. */
+  dica: string;
   quantidade: number;
   onPress: () => void;
 }
 
 /**
- * O acesso às chamadas pendentes na agenda da equipe (T13), no lugar do aviso
- * antigo, que sumia na virada do mês. Some quando não há nada pendente.
+ * Um atalho da agenda da equipe com contador: chamadas pendentes (T13) e
+ * justificativas para revisar (§ 9.1). Some quando não há nada pendente.
  */
-function ChamadasPendentesBotaoComponent({ quantidade, onPress }: ChamadasPendentesBotaoProps): React.JSX.Element | null {
+function AtalhoDaAgendaComponent({ icone, titulo, dica, quantidade, onPress }: AtalhoDaAgendaProps): React.JSX.Element | null {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   if (quantidade === 0) {
@@ -24,11 +30,11 @@ function ChamadasPendentesBotaoComponent({ quantidade, onPress }: ChamadasPenden
       onPress={onPress}
       style={styles.botao}
       accessibilityRole="button"
-      accessibilityLabel={`Chamadas pendentes: ${quantidade}`}
-      accessibilityHint="Abre as aulas que passaram sem chamada"
+      accessibilityLabel={`${titulo}: ${quantidade}`}
+      accessibilityHint={dica}
     >
-      <Ionicons name="clipboard-outline" size={22} color={colors.warning} />
-      <Text style={styles.texto}>Chamadas pendentes</Text>
+      <Ionicons name={icone} size={22} color={colors.warning} />
+      <Text style={styles.texto}>{titulo}</Text>
       <View style={styles.contador}>
         <Text style={styles.contadorTexto}>{quantidade}</Text>
       </View>
@@ -36,6 +42,45 @@ function ChamadasPendentesBotaoComponent({ quantidade, onPress }: ChamadasPenden
     </Pressable>
   );
 }
+
+export const AtalhoDaAgenda = React.memo(AtalhoDaAgendaComponent);
+
+interface ChamadasPendentesBotaoProps {
+  quantidade: number;
+  onPress: () => void;
+}
+
+/** O acesso às chamadas pendentes (T13), no lugar do aviso antigo, que sumia na virada do mês. */
+export const ChamadasPendentesBotao = React.memo(function ChamadasPendentesBotao({
+  quantidade,
+  onPress,
+}: ChamadasPendentesBotaoProps): React.JSX.Element {
+  return (
+    <AtalhoDaAgenda
+      icone="clipboard-outline"
+      titulo="Chamadas pendentes"
+      dica="Abre as aulas que passaram sem chamada"
+      quantidade={quantidade}
+      onPress={onPress}
+    />
+  );
+});
+
+/** As justificativas que quem abre a agenda pode decidir (§ 9.1, D14). */
+export const JustificativasParaRevisarBotao = React.memo(function JustificativasParaRevisarBotao({
+  quantidade,
+  onPress,
+}: ChamadasPendentesBotaoProps): React.JSX.Element {
+  return (
+    <AtalhoDaAgenda
+      icone="document-text-outline"
+      titulo="Justificativas para revisar"
+      dica="Abre as justificativas que você pode aprovar ou negar"
+      quantidade={quantidade}
+      onPress={onPress}
+    />
+  );
+});
 
 function makeStyles(
   colors: ReturnType<typeof useTheme>['colors'],
@@ -68,5 +113,3 @@ function makeStyles(
     contadorTexto: { fontFamily: fonts.bodyBold, fontSize: 13, color: colors.background },
   });
 }
-
-export const ChamadasPendentesBotao = React.memo(ChamadasPendentesBotaoComponent);
