@@ -1229,6 +1229,16 @@ isOneToOne: false
 "anonimizar_titular":
 { Args: { "p_solicitante": string,"p_user_id": string }; Returns: Json
                            },
+"aulas_do_aluno":
+{ Args: { "p_ate": string,"p_de": string }; Returns: {
+              "audience": Database["public"]['Enums']["class_audience"],"can_cancel_swap": boolean,"can_contest": boolean,"can_justify": boolean,"can_mark_extra": boolean,"can_swap_from": boolean,"can_swap_from_permanent": boolean,"can_swap_to": boolean,"cancelled": boolean,"class_id": string,"contest_until": string,"date_time": string,"declared_status": Database["public"]['Enums']["attendance_status"],"group_id": string,"group_name": string,"is_recurring": boolean,"justification_id": string,"justification_status": Database["public"]['Enums']["justification_status"],"justify_until": string,"marked_in_week": number,"origem": string,"schedule_ends_on": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"status": Database["public"]['Enums']["attendance_status"],"swap_decided_via": string,"swap_id": string,"swap_kind": Database["public"]['Enums']["class_swap_kind"],"swap_other_class_id": string,"swap_other_date_time": string,"swap_role": string,"swap_status": Database["public"]['Enums']["class_swap_status"],"teachers": Json,"title": string,"type": Database["public"]['Enums']["class_type"],"weekly_target": number
+            }[]
+                           },
+"aulas_do_aluno_base":
+{ Args: { "p_ate": string,"p_de": string,"p_menu": boolean,"p_referencia": string,"p_user_id": string }; Returns: {
+              "audience": Database["public"]['Enums']["class_audience"],"can_cancel_swap": boolean,"can_contest": boolean,"can_justify": boolean,"can_mark_extra": boolean,"can_swap_from": boolean,"can_swap_from_permanent": boolean,"can_swap_to": boolean,"cancelled": boolean,"class_id": string,"contest_until": string,"date_time": string,"declared_status": Database["public"]['Enums']["attendance_status"],"group_id": string,"group_name": string,"is_recurring": boolean,"justification_id": string,"justification_status": Database["public"]['Enums']["justification_status"],"justify_until": string,"marked_in_week": number,"origem": string,"schedule_ends_on": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"status": Database["public"]['Enums']["attendance_status"],"swap_decided_via": string,"swap_id": string,"swap_kind": Database["public"]['Enums']["class_swap_kind"],"swap_other_class_id": string,"swap_other_date_time": string,"swap_role": string,"swap_status": Database["public"]['Enums']["class_swap_status"],"teachers": Json,"title": string,"type": Database["public"]['Enums']["class_type"],"weekly_target": number
+            }[]
+                           },
 "aulas_sem_chamada":
 { Args: { "p_referencia"?: string }; Returns: {
               "class_id": string,"date_time": string,"group_id": string,"title": string
@@ -1245,6 +1255,12 @@ isOneToOne: false
                            },
 "cota_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: number
+                           },
+"declarar_aula":
+{ Args: { "p_class_id": string,"p_vou": boolean }; Returns: Json
+                           },
+"definir_meta_semanal":
+{ Args: { "p_meta": number,"p_user_id"?: string }; Returns: Json
                            },
 "definir_senha_padrao_da_academia":
 { Args: { "p_senha": string }; Returns: undefined
@@ -1298,6 +1314,9 @@ isOneToOne: false
 "fechar_frequencia_do_mes":
 { Args: { "p_agora"?: string,"p_mes"?: string }; Returns: number
                            },
+"fonte_da_aula_na_grade":
+{ Args: { "p_class_id": string,"p_user_id": string }; Returns: string
+                           },
 "frequencia_mensal":
 { Args: { "p_referencia"?: string,"p_user_ids": (string)[] }; Returns: {
               "attended": number,"counted_classes": number,"frequency_percent": number,"justified": number,"reference_month": string,"total_classes": number,"user_id": string
@@ -1329,19 +1348,42 @@ isOneToOne: false
 "is_staff":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"limite_de_7_dias":
+{ Args: { "p_quando": string }; Returns: string
+                           },
 "limpar_notificacoes_antigas":
 { Args: { "p_agora"?: string }; Returns: number
+                           },
+"marcadas_na_semana":
+{ Args: { "p_segunda": string,"p_so_extras": boolean,"p_user_id": string }; Returns: number
                            },
 "mark_overdue_payments":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
+"menu_de_aulas":
+{ Args: { "p_referencia"?: string,"p_semana": string }; Returns: {
+              "audience": Database["public"]['Enums']["class_audience"],"can_cancel_swap": boolean,"can_contest": boolean,"can_justify": boolean,"can_mark_extra": boolean,"can_swap_from": boolean,"can_swap_from_permanent": boolean,"can_swap_to": boolean,"cancelled": boolean,"class_id": string,"contest_until": string,"date_time": string,"declared_status": Database["public"]['Enums']["attendance_status"],"group_id": string,"group_name": string,"is_recurring": boolean,"justification_id": string,"justification_status": Database["public"]['Enums']["justification_status"],"justify_until": string,"marked_in_week": number,"origem": string,"schedule_ends_on": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"status": Database["public"]['Enums']["attendance_status"],"swap_decided_via": string,"swap_id": string,"swap_kind": Database["public"]['Enums']["class_swap_kind"],"swap_other_class_id": string,"swap_other_date_time": string,"swap_role": string,"swap_status": Database["public"]['Enums']["class_swap_status"],"teachers": Json,"title": string,"type": Database["public"]['Enums']["class_type"],"weekly_target": number
+            }[]
+                           },
+"meta_da_semana":
+{ Args: { "p_user_id": string,"p_week_start": string }; Returns: number
+                           },
+"meta_vigente":
+{ Args: { "p_segunda": string,"p_user_id": string }; Returns: number
+                           },
 "modalidade_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: Database["public"]['Enums']["plan_schedule_mode"]
+                           },
+"normalizar_declaracao":
+{ Args: { "p_class_id": string,"p_user_id": string,"p_valor": Database["public"]['Enums']["attendance_status"] }; Returns: Database["public"]['Enums']["attendance_status"]
                            },
 "ocorrencias_da_grade":
 { Args: { "p_agora": string,"p_schedule_id": string }; Returns: {
               "audience": Database["public"]['Enums']["class_audience"],"date_time": string,"group_id": string,"occurrence_date": string,"schedule_id": string,"title": string
             }[]
+                           },
+"outra_aula_da_grade_no_horario":
+{ Args: { "p_class_id": string,"p_user_id": string }; Returns: boolean
                            },
 "painel_admin_resumo":
 { Args: { "p_referencia"?: string }; Returns: {
@@ -1378,6 +1420,15 @@ isOneToOne: false
                            },
 "pode_ler_motivo":
 { Args: { "p_motivo_id": string }; Returns: boolean
+                           },
+"pode_ser_destino_de_troca":
+{ Args: { "p_class_id": string,"p_referencia": string,"p_user_id": string }; Returns: boolean
+                           },
+"pode_ser_original_avulsa":
+{ Args: { "p_class_id": string,"p_referencia": string,"p_user_id": string }; Returns: boolean
+                           },
+"pode_ser_original_permanente":
+{ Args: { "p_class_id": string,"p_referencia": string,"p_user_id": string }; Returns: boolean
                            },
 "previa_exclusao_turma":
 { Args: { "p_group_id": string }; Returns: Json

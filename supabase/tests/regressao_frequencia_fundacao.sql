@@ -32,7 +32,13 @@ values
 insert into public.classes (id, title, type, date_time, group_id)
 values
   ('d0000000-0000-4000-8000-0000000000c1','Aula Freq 1','routine', now() - interval '2 hours','d0000000-0000-4000-8000-0000000000a1'),
-  ('d0000000-0000-4000-8000-0000000000c2','Aula Freq 2','routine', now() - interval '1 day','d0000000-0000-4000-8000-0000000000a1');
+  ('d0000000-0000-4000-8000-0000000000c2','Aula Freq 2','routine', now() - interval '1 day','d0000000-0000-4000-8000-0000000000a1'),
+  -- 4.4: declarar só antes de a aula começar (T26); o T1 declara nesta.
+  ('d0000000-0000-4000-8000-0000000000c9','Aula Freq futura','routine', now() + interval '2 days','d0000000-0000-4000-8000-0000000000a1');
+
+-- A declaração da aula que já passou (a c1) é massa: o aluno a fez antes do início.
+insert into public.attendance (class_id, user_id, declared_status)
+values ('d0000000-0000-4000-8000-0000000000c1','d0000000-0000-4000-8000-000000000001','present');
 
 insert into public.class_teachers (class_id, teacher_id)
 values
@@ -64,12 +70,12 @@ set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000001","r
 
 -- T1 — aluno declara que vai (sugestivo)
 insert into public.attendance (class_id, user_id, declared_status)
-values ('d0000000-0000-4000-8000-0000000000c1','d0000000-0000-4000-8000-000000000001','present');
+values ('d0000000-0000-4000-8000-0000000000c9','d0000000-0000-4000-8000-000000000001','present');
 
 do $$
 begin
   if not exists (select 1 from public.attendance
-                  where class_id = 'd0000000-0000-4000-8000-0000000000c1'
+                  where class_id = 'd0000000-0000-4000-8000-0000000000c9'
                     and user_id = 'd0000000-0000-4000-8000-000000000001'
                     and declared_status = 'present' and status is null) then
     raise exception 'FALHOU T1: declaração do aluno não gravou como sugestiva';
@@ -181,9 +187,8 @@ begin
   raise notice 'OK T6: justifica sem ter declarado ausência; pendente, o dono apaga';
 end $$;
 
--- T7 — declara ausência e justifica: nasce pendente
-insert into public.attendance (class_id, user_id, declared_status)
-values ('d0000000-0000-4000-8000-0000000000c1','d0000000-0000-4000-8000-000000000002','absent');
+-- T7 — justifica: nasce pendente. (4.4: a aula já passou, e declarar numa aula
+-- que começou é recusado, T26; justificar não exige declarar ausência, § 9.1 a.)
 
 insert into public.absence_justifications (id, class_id, user_id, message)
 values ('d0000000-0000-4000-8000-0000000000e1','d0000000-0000-4000-8000-0000000000c1',
@@ -212,8 +217,6 @@ begin
 end $$;
 
 -- T9 — justificativa vazia (só espaços, sem anexo) é recusada
-insert into public.attendance (class_id, user_id, declared_status)
-values ('d0000000-0000-4000-8000-0000000000c2','d0000000-0000-4000-8000-000000000002','absent');
 
 do $$
 begin
