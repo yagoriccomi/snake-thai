@@ -1291,6 +1291,9 @@ isOneToOne: false
               "color": string,"name": string,"teacher_id": string
             }[]
                            },
+"cancelar_aula":
+{ Args: { "p_class_id": string,"p_motivo_id": string }; Returns: undefined
+                           },
 "chamada_exige_app_novo":
 { Args: { "p_class_id": string }; Returns: boolean
                            },
@@ -1322,6 +1325,11 @@ isOneToOne: false
                            },
 "definir_senha_padrao_da_academia":
 { Args: { "p_senha": string }; Returns: undefined
+                           },
+"destinatarios_da_aula":
+{ Args: { "p_class_id": string,"p_excluir": string }; Returns: {
+              "papel": string,"user_id": string
+            }[]
                            },
 "dias_de_aula_da_semana":
 { Args: { "p_segunda": string }; Returns: string[]
@@ -1574,6 +1582,14 @@ isOneToOne: false
                            },
 "publicar_documento_legal_do_modelo":
 { Args: { "p_tipo": Database["public"]['Enums']["legal_document_kind"],"p_versao": string }; Returns: string
+                           },
+"quem_sera_avisado":
+{ Args: { "p_class_id": string }; Returns: {
+              "admins": number,"alunos_evento": number,"antes_da_aula": boolean,"fixos": number,"livres": number,"professores": (string)[]
+            }[]
+                           },
+"reativar_aula":
+{ Args: { "p_class_id": string,"p_motivo_id": string }; Returns: undefined
                            },
 "reativar_turma":
 { Args: { "p_group_id": string }; Returns: undefined
