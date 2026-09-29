@@ -1,7 +1,7 @@
 # Roadmap — Snake Thai (app Android e banco)
 
-> **Atualizado em:** 2026-09-25, com o contrato **v3** (revisão de 25/09) e os fatos de produção
-> de 24/09.
+> **Atualizado em:** 2026-09-29: PRs #41 a #48 mesclados e **G1 aberto**. Contrato **v3** (revisão
+> de 25/09); a v4 foi aprovada pelo dono em 28/09 (D4 da coordenação). Fatos de produção de 24/09.
 > **Substitui** o [`docs/PLANO-DE-TAREFAS.md`](docs/PLANO-DE-TAREFAS.md) como fila viva: aquele
 > checklist (2026-09-16) está todo feito do lado do código, e as pendências dele que ainda
 > valem foram trazidas para cá.
@@ -27,9 +27,9 @@
 | | |
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **1.9.0**, com o aviso de atualização (Fase 3A) |
-| **`main`** | Em `384f715` (merge do PR #38, 24/09). **CI vermelho nesse merge:** o job de regressão SQL não conseguiu instalar a CLI do Supabase ("rate limit exceeded" ao resolver `version: latest`); os outros dois jobs passaram. É falha de infraestrutura, não de código (item 0.6) |
-| **Branches** | **PRs abertos em 25/09, aguardando seu merge:** #41 (Fase 0), #42 (1.5), #43 (Fase 3A), #45 (2.4), #46 (4.1, esquema v3), #47 (3.5) e #48 (documentação); #44 com este andamento. As locais já mescladas foram apagadas (0.3) |
-| **Banco local** | De pé, com um ano de histórico de demonstração |
+| **`main`** | Em `0e4dbf9` (merge do PR #44, 29/09), **CI verde**. Os PRs #41 a #48 foram mesclados em 29/09 |
+| **Branches** | Desde 29/09 este chat mescla os próprios PRs com o CI verde (D2 da coordenação). As branches mescladas são apagadas no GitHub e no disco |
+| **Banco local** | Recriado da `main` em 29/09 às 11:26 (`db-dev test`, 0 falhas) e às 11:27 (`db-dev reset`, com o histórico de demonstração). **G1 conferido nele** |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
 | **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v3**, revisada em 25/09. Nenhum chat implementou nada dela ainda |
 | **Mockups** | Versão 7 (25/09). Linhas A–F aprovadas em 24/09; G e H aguardando aprovação |
@@ -376,7 +376,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 | # | Bloco | Contrato | Mockups | Depende de | Abre |
 | --- | --- | --- | --- | --- | --- |
 | 4.0 | 👤 **Aprovar** as linhas G e H dos mockups e o contrato v3 (revisão de 25/09) | § 14 (G0), § 16 | A–H aprovadas (A–F em 24/09; G e H em 25/09, versão 8) | — | **G0 ✅ 25/09** |
-| 4.1 | **Esquema completo** | § 0.1, § 4 a § 10 (a parte de dados), § 5.2, § 5.4 | — | G0 | **G1** |
+| 4.1 | **Esquema completo** | § 0.1, § 4 a § 10 (a parte de dados), § 5.2, § 5.4 | — | G0 | **G1 ✅ 29/09** |
 | 4.2 | **Admin é professor** | § 4 | A (Horário) | G1 | — |
 | 4.3 | **Planos, grade, dias de aula e contato** | § 5, § 5.4, § 6 | A, H (contato) | G1 | — |
 | 4.4 | **Aulas do aluno, menu de aulas, extra e meta** | § 5.3, § 9.2, § 9.5, § 12, § 12.2 | B, G (escolher aulas) | 4.3 | — |
@@ -407,7 +407,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 ### 4.1 Esquema completo (abre G1)
 
-- [x] Plano · [x] Banco · [x] Testes · [x] Tipos gerados · [ ] **G1 anotado no Registro** — **PR #46 (25/09)**; o G1 abre com o merge
+- [x] Plano · [x] Banco · [x] Testes · [x] Tipos gerados · [x] **G1 anotado no Registro** — **PR #46, mesclado em 29/09; G1 aberto em 29/09**
 
 **O que entra, numa série de migrations e sem as RPCs de comportamento:**
 
@@ -1092,3 +1092,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-25 | **4.1 no PR #46 (esquema completo da v3), G1 AINDA FECHADO.** Sete migrations (enums; colunas e constraints; motivos, solicitações e auditoria; trocas; históricos de plano, trancamento, meta e turma com backfills e `registrar_periodo_de_turma`; `pode_ler_motivo` e `grade_efetiva_do_fixo`; travas de aula, chamada e justificativa). A conferência do G1 do § 14 dá **15 · 3 · `contact_whatsapp` · `pode_ler_motivo` · gatilho · 0 no banco local**; o portão abre quando o PR estiver na `main`. **Para o servidor e a web, já no banco local:** as 15 tabelas, `pode_ler_motivo`, `is_staff()` e `pode_decidir_troca` (antecipadas; mesmas assinaturas do contrato). **Efeito no APK 1.8 e no app DEV:** a chamada continua; decidir justificativa passa a pedir para atualizar o app (§ 15). Errata proposta ao contrato: `plans_cota_coerente` (o texto deixaria passar o livre sem cota). |
 | 2026-09-25 | **4.1: CI do PR #46 verde** depois de corrigir o `regressao_frequencia_fundacao.sql` (a colisão de CPF com os dados de demonstração escondia, no banco local, três caminhos que a v3 fechou). Suíte SQL: 0 falhas em 19 arquivos. **3.5 no PR #47:** `supabase/seed/historico_demonstracao_limpar.sql` apaga só o que o pacote de 23/09 criou, reconhecendo cada execução dele (no banco local foram três), com relatório por padrão e roteiro no `RUNBOOK.md`. **Decisão pendente do dono:** o pacote também reescreveu datas de cadastro e trocou presenças por faltas, sem desfazer; a recomendação é zerar o operacional e manter a configuração (precisa do e-mail da conta real de admin). |
 | 2026-09-25 | **Fase 6, documentação no PR #48** (`CLAUDE.md`, `ARQUITETURA.md`, `BACKEND.md`). **Tudo o que não depende de merge ou de decisão está feito.** Esperando: merge dos PRs #41–#48 (o #46 abre o G1 e destrava o 4.2 em diante), a errata `plans_cota_coerente`, a escolha do 3.5 (limpar só o pacote ou zerar o operacional) e o momento do `db-dev reset` no banco local. |
+| 2026-09-29 | **PRs #41 a #48 mesclados** (merge commit, CI verde em cada um; a `main` ficou verde em `0e4dbf9`). Autorizado pelo dono em 28/09 (D1); daqui em diante este chat mescla os próprios PRs com o CI verde (D2). Branches mescladas apagadas. **Banco local recriado da `main`** (C3): `scripts\db-dev test` às 11:26 (19 arquivos, 0 falhas) e `scripts\db-dev reset` às 11:27. **G1 aberto em 29/09.** Conferência do § 14 no banco local: **15** tabelas · **3** valores de enum · `academy_settings.contact_whatsapp` existe · `pode_ler_motivo` existe · gatilho `registrar_periodo_de_turma` em `profiles` = **1** · backfill faltando = **0** (50 alunos com turma). O 4.2 e o 4.3 estão destravados. **3.5:** fica para antes do primeiro aluno real, junto da troca da `service_role` (D5). |
