@@ -109,3 +109,63 @@ confirmação do dono para duas erratas do contrato (A1 e B2).
 3. **G2 (servidor):** anexo da justificativa pela rota nova e `proof_*` fora das colunas do dono.
 4. **3.5:** saída do primeiro acesso por RPC (C2), junto da troca da `service_role`.
 5. **Dívida:** conferir linhas afetadas nos updates do admin (S6).
+
+---
+
+# 🛡️ Relatório de Postura de Segurança (`seguranca-projeto`)
+
+> Segunda metade do 4.12, sobre o que a revisão não cobriu: pipeline, configuração do app,
+> limite de uso e superfície das RPCs novas. **✅ = no PR de segurança do 4.12.**
+
+### 🔥 Top 5 Causas de Vazamento — veredicto obrigatório
+| # | Causa | Veredicto | Evidência | Prática |
+|---|-------|-----------|-----------|---------|
+| V1 | Banco sem RLS / regras abertas | ✅ PROTEGIDO | ver a revisão acima (A1 corrigido no #79); `service_role` só no servidor e nas Edge Functions | [#55] |
+| V2 | Autorização decidida no front-end | ✅ PROTEGIDO | papel lido no banco (`is_admin()`, `is_staff()`); o app só esconde botão | [#51][#56] |
+| V3 | IDOR (ID sem checagem de dono) | ✅ PROTEGIDO | RPCs conferem `auth.uid()` ou a regra de quem decide | [#55] |
+| V4 | Segredo chumbado no código/Git | ✅ PROTEGIDO | **gitleaks no histórico inteiro: 286 commits, nenhum achado**; agora roda no CI a cada push | [#37][#80] |
+| V5 | Input sem tratamento (XSS) | ✅ PROTEGIDO | sem WebView nem HTML; textos com teto no banco; URL de anexo validada (#79) | [#51][#53] |
+
+### 🚨 Crítico (acesso imediato do atacante)
+* Nenhum achado nesta passada (o crítico A1 foi corrigido no #79).
+
+### ⚠️ Alto / Médio (endurecimento)
+* **✅ Permissões Android que o app não usa**: o manifesto de release pedia `CAMERA`,
+  `RECORD_AUDIO` e `SYSTEM_ALERT_WINDOW` (o `expo-image-picker` pede câmera e microfone por padrão),
+  contra a Política ("não usa câmera") e o menor privilégio — [#55].
+* **Onde está:** `app.json` (plugin `expo-image-picker`; `android.blockedPermissions`).
+* **Mitigação:** `cameraPermission: false`, `microphonePermission: false` e as três em
+  `blockedPermissions`. **Vale a partir do próximo APK** (é do dono).
+
+* **✅ Envio sem limite gerando aviso na equipe**: pedir e desistir de uma troca em sequência criava
+  uma troca nova a cada vez, e cada uma avisava os professores (`troca_pendente:<id>`);
+  `criar_motivo` não tinha teto — [#58].
+* **Onde está:** `class_swaps` e `action_reasons` (sem limite por usuário no PostgREST).
+* **Mitigação:** `20260929230000_limites_de_envio.sql` — 10 pedidos de troca e 20 motivos de pedido
+  por pessoa por hora; o sistema passa.
+
+* **✅ Pipeline sem varredura de segredos nem SAST**: `ci.yml` ganhou o job **gitleaks** (histórico
+  completo) e `permissions: contents: read`; `codeql.yml` roda o CodeQL (`security-extended`) nos PRs
+  para a `main`, nos pushes e toda segunda — [#64][#62].
+
+* **Ofuscação do release (R8) desligada**: `android/app/build.gradle:69`
+  (`android.enableMinifyInReleaseBuilds` = `false`). O JS vai como bytecode Hermes e não carrega
+  segredo (a chave pública do Supabase é pública por desenho), então o ganho é pequeno e o risco de
+  quebrar reflexão é real. **Pendência do dono:** ligar com `expo-build-properties` num APK de
+  ensaio e testar no aparelho.
+* **Certificate pinning**: não há. Todo o tráfego é HTTPS (Supabase, `snake-server`, Cloudinary), e
+  o pinning em Expo exige módulo nativo e plano de rotação de certificado. **Recomendação:** avaliar
+  depois do primeiro aluno real; hoje o custo supera o ganho.
+* **Dependabot**: não há `dependabot.yml`. O `npm audit` crítico já bloqueia o CI. **Pendência do
+  dono:** ligar "Dependabot security updates" nas configurações do repositório (só PRs de
+  segurança, sem o ruído das atualizações de versão).
+* **Armazenamento local**: sessão e rascunho da chamada cifrados (AES-256 com a chave no
+  SecureStore, `src/lib/secureStorage.ts`); `allowBackup: false`. Sem achado.
+* **Deep link `snakethai://`**: o app não trata URL de entrada (o toque em aviso navega pelos dados
+  da notificação, validados em `notificationRouting.ts`). Sem achado.
+
+### ✅ Plano de Blindagem Imediato
+1. **Feito:** limites de envio, permissões Android, gitleaks e CodeQL no CI.
+2. **Dono:** o próximo APK leva as permissões novas; ligar "Dependabot security updates".
+3. **Ensaio:** R8 num APK de teste, com o roteiro do aparelho.
+4. **Depois do primeiro aluno real:** avaliar certificate pinning.

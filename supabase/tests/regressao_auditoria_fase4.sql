@@ -140,6 +140,30 @@ begin
 end $$;
 
 -- =====================================================================
+-- S1 — limite de envios (seguranca-projeto)
+-- =====================================================================
+set local role authenticated;
+
+do $$
+declare
+  i int;
+begin
+  perform pg_temp.como('dd000000-0000-4000-8000-000000000004');
+  for i in 1..20 loop
+    perform public.criar_motivo('request_evidence', 'ddc00000-0000-4000-8000-000000000001', 'Motivo ' || i);
+  end loop;
+  begin
+    perform public.criar_motivo('request_evidence', 'ddc00000-0000-4000-8000-000000000001', 'Mais um');
+    raise exception 'FALHOU S1: motivo sem limite';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK S1: motivos de pedido com limite por hora';
+end $$;
+
+reset role;
+select set_config('request.jwt.claims', '', true);
+
+-- =====================================================================
 -- H1 — permissões
 -- =====================================================================
 do $$

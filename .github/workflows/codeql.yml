@@ -1,0 +1,42 @@
+# Análise estática de segurança (SAST) do código TypeScript [#64].
+#
+# O CodeQL procura padrões perigosos (injeção, URL não validada, segredo em
+# código, dado sensível em log) que os testes não enxergam. É gratuito em
+# repositório público; os alertas aparecem na aba Security do GitHub.
+# Não bloqueia o merge: o gate de qualidade continua sendo o ci.yml.
+
+name: CodeQL
+
+on:
+  pull_request:
+    branches: ['main']
+  push:
+    branches: ['main']
+  schedule:
+    - cron: '17 6 * * 1'   # segunda, 03:17 SP: pega CVE novo em código parado
+
+permissions:
+  contents: read
+
+jobs:
+  analisar:
+    name: Análise do TypeScript
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Inicia o CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+
+      - name: Analisa
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
