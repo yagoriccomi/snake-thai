@@ -50,7 +50,8 @@ begin
 end $$;
 
 -- =====================================================================
--- P3 — professor vira administrador, com a cor liberada na mesma operação
+-- P3 — professor vira administrador; o color: null do APK 1.8 mantém a cor
+--      (§ 4 do contrato v4: o admin com cor dá aula)
 -- =====================================================================
 do $$
 begin
@@ -59,23 +60,25 @@ begin
   if (select role from public.profiles where id = 'ca000000-0000-4000-8000-000000000002') <> 'admin' then
     raise exception 'FALHOU P3: o professor não foi promovido';
   end if;
-  raise notice 'OK P3: professor vira administrador';
+  if (select color from public.profiles where id = 'ca000000-0000-4000-8000-000000000002') is distinct from '#39FF14' then
+    raise exception 'FALHOU P3: a promoção apagou a cor';
+  end if;
+  raise notice 'OK P3: professor vira administrador e mantém a cor';
 end $$;
 
 -- =====================================================================
--- P4 — promover sem tirar a cor é recusado (constraint de cor)
+-- P4 — promover sem mexer na cor também mantém a cor (antes era recusado)
 -- =====================================================================
 do $$
 begin
   update public.profiles set role = 'professor', color = '#39FF14'
    where id = 'ca000000-0000-4000-8000-000000000002';
-  begin
-    update public.profiles set role = 'admin'
-     where id = 'ca000000-0000-4000-8000-000000000002';
-    raise exception 'FALHOU P4: promoveu mantendo a cor de professor';
-  exception when check_violation then null;
-  end;
-  raise notice 'OK P4: promover exige limpar a cor na mesma operação';
+  update public.profiles set role = 'admin'
+   where id = 'ca000000-0000-4000-8000-000000000002';
+  if (select color from public.profiles where id = 'ca000000-0000-4000-8000-000000000002') is distinct from '#39FF14' then
+    raise exception 'FALHOU P4: a cor não ficou com o admin';
+  end if;
+  raise notice 'OK P4: promover mantém a cor do professor';
 end $$;
 
 -- =====================================================================

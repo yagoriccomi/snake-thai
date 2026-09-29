@@ -1206,15 +1206,9 @@ isOneToOne: false
           Views: {
             "diretorio_perfis": {
                   Row: {
-                    "color": string | null,"group_id": string | null,"id": string | null,"name": string | null,"role": Database["public"]['Enums']["user_role"] | null,"status": Database["public"]['Enums']["profile_status"] | null
+                    "color": string | null,"group_id": string | null,"id": string | null,"name": string | null,"role": Database["public"]['Enums']["user_role"] | null,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"] | null,"status": Database["public"]['Enums']["profile_status"] | null
                   }
-                  Insert: {
-                           "color"?: string | null,"group_id"?: string | null,"id"?: string | null,"name"?: string | null,"role"?: Database["public"]['Enums']["user_role"] | null,"status"?: Database["public"]['Enums']["profile_status"] | null
-                         }
-                        Update: {
-                           "color"?: string | null,"group_id"?: string | null,"id"?: string | null,"name"?: string | null,"role"?: Database["public"]['Enums']["user_role"] | null,"status"?: Database["public"]['Enums']["profile_status"] | null
-                         }
-                        Relationships: [
+                  Relationships: [
                     {
       foreignKeyName: "profiles_group_id_fkey"
       columns: ["group_id"]
