@@ -31,7 +31,7 @@
 | **Branches** | Desde 29/09 este chat mescla os próprios PRs com o CI verde (D2 da coordenação). As branches mescladas são apagadas no GitHub e no disco |
 | **Banco local** | Recriado da `main` em 29/09 às 11:26 (`db-dev test`, 0 falhas) e às 11:27 (`db-dev reset`, com o histórico de demonstração). **G1 conferido nele** |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
-| **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v3**, revisada em 25/09. Nenhum chat implementou nada dela ainda |
+| **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v4** (29/09): a v3 com a errata de `plans_cota_coerente`, `snake.justificativa_rpc`, a 2ª dica do aviso de atualização e a segunda barreira do servidor (§ 13.5). O 4.1 (esquema) está na `main` |
 | **Mockups** | Versão 7 (25/09). Linhas A–F aprovadas em 24/09; G e H aguardando aprovação |
 | **Fundação** | Git, GitHub, Husky, Conventional Commits e versionamento por tag funcionando. Jira adiado por escolha sua (2026-07-27) e fora deste roadmap |
 
@@ -313,8 +313,8 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 ## Fase 4 — Nova direção: horário livre, troca de aula, chamada auditável, solicitações e perfis
 
-> **Contrato:** [`docs/CONTRATO.md`](docs/CONTRATO.md), **v3** (2026-09-24, revisada em
-> 2026-09-25). **Nenhum chat implementou nada da v3 ainda.** **Este chat é o dono do contrato**
+> **Contrato:** [`docs/CONTRATO.md`](docs/CONTRATO.md), **v4** (2026-09-29; a v3 de 2026-09-24,
+> revisada em 2026-09-25, com os quatro itens da D4). O 4.1 foi mesclado em 29/09 (G1). **Este chat é o dono do contrato**
 > e do banco, e os chats do `snake-server` e do `snake-web` leem dele.
 >
 > **Mockups:** artifact **"Mockups Snake Thai — Horário livre"**
@@ -1027,7 +1027,7 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 
 ## Dependências com os repositórios irmãos
 
-- **O contrato ([`docs/CONTRATO.md`](docs/CONTRATO.md), v3) é a fronteira.** Os três chats seguem
+- **O contrato ([`docs/CONTRATO.md`](docs/CONTRATO.md), v4) é a fronteira.** Os três chats seguem
   os nomes dele; só este chat o edita, com aprovação do usuário e versão nova. Os portões do § 14
   são anotados no Registro de cada ROADMAP dono.
 - **O esquema do banco mora aqui e a web lê dele.** Toda migration que mexa em `profiles`
@@ -1093,3 +1093,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-25 | **4.1: CI do PR #46 verde** depois de corrigir o `regressao_frequencia_fundacao.sql` (a colisão de CPF com os dados de demonstração escondia, no banco local, três caminhos que a v3 fechou). Suíte SQL: 0 falhas em 19 arquivos. **3.5 no PR #47:** `supabase/seed/historico_demonstracao_limpar.sql` apaga só o que o pacote de 23/09 criou, reconhecendo cada execução dele (no banco local foram três), com relatório por padrão e roteiro no `RUNBOOK.md`. **Decisão pendente do dono:** o pacote também reescreveu datas de cadastro e trocou presenças por faltas, sem desfazer; a recomendação é zerar o operacional e manter a configuração (precisa do e-mail da conta real de admin). |
 | 2026-09-25 | **Fase 6, documentação no PR #48** (`CLAUDE.md`, `ARQUITETURA.md`, `BACKEND.md`). **Tudo o que não depende de merge ou de decisão está feito.** Esperando: merge dos PRs #41–#48 (o #46 abre o G1 e destrava o 4.2 em diante), a errata `plans_cota_coerente`, a escolha do 3.5 (limpar só o pacote ou zerar o operacional) e o momento do `db-dev reset` no banco local. |
 | 2026-09-29 | **PRs #41 a #48 mesclados** (merge commit, CI verde em cada um; a `main` ficou verde em `0e4dbf9`). Autorizado pelo dono em 28/09 (D1); daqui em diante este chat mescla os próprios PRs com o CI verde (D2). Branches mescladas apagadas. **Banco local recriado da `main`** (C3): `scripts\db-dev test` às 11:26 (19 arquivos, 0 falhas) e `scripts\db-dev reset` às 11:27. **G1 aberto em 29/09.** Conferência do § 14 no banco local: **15** tabelas · **3** valores de enum · `academy_settings.contact_whatsapp` existe · `pode_ler_motivo` existe · gatilho `registrar_periodo_de_turma` em `profiles` = **1** · backfill faltando = **0** (50 alunos com turma). O 4.2 e o 4.3 estão destravados. **3.5:** fica para antes do primeiro aluno real, junto da troca da `service_role` (D5). |
+| 2026-09-29 | **Contrato v4 na `main`** (aprovado pelo dono em 28/09, D4): errata de `plans_cota_coerente` (§ 5.2) e regra 9 da § 0.1 (`check` que dá nulo); `snake.justificativa_rpc` (§ 0.1, § 9.1); 2ª dica do aviso de atualização (§ 3, § 12.3); **§ 13.5, a segunda barreira do servidor.** **Para o `snake-server`: o 5.5 (P-9) destravou.** A parte do comprovante pode ser feita já, com `rpc/is_admin` e o token de quem pede. A parte da justificativa (`rpc/pode_decidir_justificativa`) espera o 4.8 na `main`, que será anotado aqui. Nenhum nome existente mudou; a web não precisa mudar nada. |
