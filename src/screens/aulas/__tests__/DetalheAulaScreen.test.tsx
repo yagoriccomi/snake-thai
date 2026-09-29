@@ -18,6 +18,18 @@ jest.mock('@/services/profile.service', () => ({
   updateOwnColor: (...args: unknown[]): unknown => mockUpdateOwnColor(...args),
 }));
 jest.mock('@/context/AuthProvider', () => ({ useAuth: () => mockAuth }));
+const mockEstado = jest.fn();
+const mockMotivos = jest.fn();
+const mockPrevia = jest.fn();
+const mockMudar = jest.fn();
+jest.mock('@/services/chamada.service', () => ({
+  fetchEstadoDaChamada: (...args: unknown[]): unknown => mockEstado(...args),
+}));
+jest.mock('@/services/cancelamento.service', () => ({
+  fetchMotivosDaAula: (...args: unknown[]): unknown => mockMotivos(...args),
+  fetchPreviaDosAvisos: (...args: unknown[]): unknown => mockPrevia(...args),
+  mudarSituacaoDaAula: (...args: unknown[]): unknown => mockMudar(...args),
+}));
 jest.mock('@/lib/logger', () => ({
   createLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));
@@ -71,6 +83,46 @@ beforeEach(() => {
   mockRemoveTeacher.mockReset().mockResolvedValue(undefined);
   mockUpdateOwnColor.mockReset().mockResolvedValue(undefined);
   mockRefreshProfile.mockReset().mockResolvedValue(undefined);
+  mockEstado.mockReset().mockResolvedValue({ cancelled: false });
+  mockMotivos.mockReset().mockResolvedValue([]);
+  mockPrevia.mockReset().mockResolvedValue({
+    antesDaAula: true, fixos: 18, livres: 32, alunosDoEvento: 0, professores: ['Ana'], admins: 2,
+  });
+  mockMudar.mockReset().mockResolvedValue(undefined);
+});
+
+describe('DetalheAulaScreen — cancelar e reativar (4.7, § 6.1)', () => {
+  it('deveMostrarQuemSeraAvisadoEPedirOMotivo', async () => {
+    comoAdmin('#FB923C');
+    const { findByRole, findByText, getAllByRole, getByPlaceholderText } = renderTela();
+    fireEvent.press(await findByRole('button', { name: 'Cancelar aula' }));
+    expect(
+      await findByText('A aula ainda não aconteceu. O aviso sai agora, mesmo à noite, para: 18 alunos fixos, 32 alunos livres, Ana (professor da aula) e 2 admins.'),
+    ).toBeTruthy();
+    fireEvent.changeText(getByPlaceholderText('Ex.: manutenção no tatame.'), 'Manutenção no tatame');
+    const botoes = getAllByRole('button', { name: 'Cancelar aula' });
+    fireEvent.press(botoes[botoes.length - 1]!);
+    await waitFor(() => expect(mockMudar).toHaveBeenCalledWith(AULA, 'cancelar', 'Manutenção no tatame'));
+  });
+
+  it('deveMostrarAAulaCanceladaComOMotivoEReativar', async () => {
+    comoAdmin('#FB923C');
+    mockEstado.mockResolvedValue({ cancelled: true });
+    mockMotivos.mockResolvedValue([
+      { id: 'm-1', kind: 'class_cancel', authorName: 'Rafael', createdAt: '2030-03-09T00:10:00Z', body: 'Chuva forte' },
+    ]);
+    const { findByText, getByText, getByRole } = renderTela();
+    expect(await findByText('Motivo: Chuva forte')).toBeTruthy();
+    expect(getByText('Cancelada')).toBeTruthy();
+    expect(getByRole('button', { name: 'Reativar aula' })).toBeTruthy();
+  });
+
+  it('naoDeveOferecerCancelarAoProfessorDeFora', async () => {
+    mockAuth = { isAdmin: false, isProfessor: true, isStaff: true, profile: { id: EU, role: 'professor', name: 'Júlia', color: '#FB923C' }, refreshProfile: mockRefreshProfile };
+    const { findByRole, queryByRole } = renderTela();
+    await findByRole('button', { name: 'Entrar nesta aula' });
+    expect(queryByRole('button', { name: 'Cancelar aula' })).toBeNull();
+  });
 });
 
 describe('DetalheAulaScreen — admin é professor (4.2, contrato § 4)', () => {

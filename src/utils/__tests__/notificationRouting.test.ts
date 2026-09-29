@@ -13,6 +13,16 @@ describe('destinoDaNotificacao', () => {
     ['justificativa_pendente', 'Aulas'],
     ['aula_sem_chamada', 'Aulas'],
     ['aulas_sem_chamada_resumo', 'Aulas'],
+    ['aula_cancelada', 'Aulas'],
+    ['aula_reativada', 'Aulas'],
+    ['justificativa_aprovada', 'Aulas'],
+    ['justificativa_negada', 'Aulas'],
+    ['chamada_retificada', 'Aulas'],
+    ['solicitacao_pendente', 'Aulas'],
+    ['troca_pendente', 'Aulas'],
+    ['troca_aprovada', 'Aulas'],
+    ['troca_negada', 'Aulas'],
+    ['troca_aprovada_equipe', 'Aulas'],
   ])('%s abre a aba %s', (tipo, aba) => {
     expect(destinoDaNotificacao({ tipo, paymentId: UUID })?.aba).toBe(aba);
   });

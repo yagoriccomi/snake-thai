@@ -5,11 +5,15 @@ import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
 import { PedirCorSheet } from '@/components/PedirCorSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { Selo } from '@/components/Selo';
+import { SituacaoDaAulaSheet } from '@/components/SituacaoDaAulaSheet';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TypeBadge } from '@/components/TypeBadge';
 import { useAuth } from '@/context/AuthProvider';
 import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
+import { fetchMotivosDaAula, type MotivoDaAula } from '@/services/cancelamento.service';
+import { fetchEstadoDaChamada } from '@/services/chamada.service';
 import {
   addClassTeacher,
   fetchTeachersForClasses,
@@ -18,7 +22,7 @@ import {
 } from '@/services/classes.service';
 import { updateOwnColor } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatFullDateTime } from '@/utils/datetime';
+import { formatDayMonth, formatFullDateTime, formatTime } from '@/utils/datetime';
 import { describeError } from '@/utils/errors';
 
 const SCREEN_EDGES = ['bottom'] as const;
@@ -49,6 +53,11 @@ export function DetalheAulaScreen({
   const [working, setWorking] = useState(false);
   const [erroDaEquipe, setErroDaEquipe] = useState<string | null>(null);
   const [pedindoCor, setPedindoCor] = useState(false);
+  // Cancelamento (§ 6.1): a situação vem do banco, não dos parâmetros da rota.
+  const [cancelada, setCancelada] = useState(false);
+  const [cancelamento, setCancelamento] = useState<MotivoDaAula | null>(null);
+  const [erroDaSituacao, setErroDaSituacao] = useState<string | null>(null);
+  const [mudandoSituacao, setMudandoSituacao] = useState<'cancelar' | 'reativar' | null>(null);
 
   const loadTeachers = useCallback(() => {
     fetchTeachersForClasses([classId])
@@ -66,7 +75,31 @@ export function DetalheAulaScreen({
     loadTeachers();
   }, [loadTeachers]);
 
+  const carregarSituacao = useCallback(async () => {
+    try {
+      const estado = await fetchEstadoDaChamada(classId);
+      setCancelada(estado.cancelled);
+      setErroDaSituacao(null);
+      if (!estado.cancelled || !(isAdmin || isProfessor)) {
+        setCancelamento(null);
+        return;
+      }
+      // O motivo só chega para a equipe da aula e os admins (T21).
+      const motivos = await fetchMotivosDaAula(classId);
+      setCancelamento([...motivos].reverse().find((motivo) => motivo.kind === 'class_cancel') ?? null);
+    } catch (erro) {
+      log.error('Falha ao carregar a situação da aula', erro, { classId });
+      setErroDaSituacao('Não foi possível ver se a aula está cancelada.');
+    }
+  }, [classId, isAdmin, isProfessor]);
+
+  useEffect(() => {
+    void carregarSituacao();
+  }, [carregarSituacao]);
+
   const souProfessorDaAula = teachers.some((teacher) => teacher.id === profile?.id);
+  // D24: a equipe da aula ou um admin cancela e reativa.
+  const podeCancelar = isAdmin || souProfessorDaAula;
 
   const openEdit = useCallback(() => {
     navigation.navigate('CriarAula', { classId, title, type, dateTimeIso, groupId, scheduleId });
@@ -140,14 +173,15 @@ export function DetalheAulaScreen({
         <View style={styles.card}>
           <View style={styles.badges}>
             <TypeBadge type={type} />
+            {cancelada ? <Selo texto="Cancelada" tom="erro" /> : null}
             {scheduleId !== null ? (
               <View style={styles.gradeBadge} accessibilityLabel="Aula da grade semanal">
                 <Text style={styles.gradeBadgeText}>Grade semanal</Text>
               </View>
             ) : null}
           </View>
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.when}>{formatFullDateTime(dateTimeIso)}</Text>
+          <Text style={[styles.title, cancelada ? styles.riscado : null]}>{title}</Text>
+          <Text style={[styles.when, cancelada ? styles.riscado : null]}>{formatFullDateTime(dateTimeIso)}</Text>
           <View style={styles.divider} />
           <Text style={styles.group}>{groupLabel}</Text>
           {teachers.length > 0 && (
@@ -228,6 +262,48 @@ export function DetalheAulaScreen({
           </View>
         )}
 
+        {cancelada && cancelamento !== null ? (
+          <View style={styles.cartao} accessible>
+            <Text style={styles.overline}>CANCELAMENTO</Text>
+            <AppText variant="body">
+              {`Por ${cancelamento.authorName ?? 'alguém da equipe'} em ${formatDayMonth(cancelamento.createdAt)} às ${formatTime(cancelamento.createdAt)}`}
+            </AppText>
+            <AppText variant="caption" color={colors.textSecondary}>
+              {`Motivo: ${cancelamento.body}`}
+            </AppText>
+            <AppText variant="caption" color={colors.textSecondary}>
+              Visto só por professores da aula e admins.
+            </AppText>
+          </View>
+        ) : null}
+        {cancelada ? (
+          <AppText variant="caption" color={colors.textSecondary} style={styles.explicacao}>
+            Fixos da turma: aula abonada, o mês fica com uma aula a menos. Livres que tinham marcado: uma aula a menos no
+            esperado da semana. Ninguém se inclui nem faz chamada numa aula cancelada; ela continua na grade, riscada.
+          </AppText>
+        ) : null}
+        {erroDaSituacao !== null ? (
+          <AppText variant="caption" color={colors.error} accessibilityRole="alert" style={styles.erro}>
+            {erroDaSituacao}
+          </AppText>
+        ) : null}
+        {podeCancelar ? (
+          <Button
+            title={cancelada ? 'Reativar aula' : 'Cancelar aula'}
+            variant={cancelada ? 'secondary' : 'danger'}
+            onPress={() => setMudandoSituacao(cancelada ? 'reativar' : 'cancelar')}
+            style={styles.equipeBtn}
+            accessibilityHint={
+              cancelada ? 'Pede o motivo e avisa as mesmas pessoas' : 'Pede o motivo e avisa os alunos e a equipe'
+            }
+          />
+        ) : null}
+        {podeCancelar && cancelada ? (
+          <AppText variant="caption" color={colors.textSecondary} style={styles.explicacao}>
+            Reativar também pede motivo e avisa as mesmas pessoas, respeitando o silêncio das 22h às 7h.
+          </AppText>
+        ) : null}
+
         {erroDaEquipe !== null ? (
           <AppText variant="caption" color={colors.error} accessibilityRole="alert" style={styles.erro}>
             {erroDaEquipe}
@@ -235,6 +311,13 @@ export function DetalheAulaScreen({
         ) : null}
       </View>
 
+      <SituacaoDaAulaSheet
+        visible={mudandoSituacao !== null}
+        classId={classId}
+        acao={mudandoSituacao ?? 'cancelar'}
+        onClose={() => setMudandoSituacao(null)}
+        onFeito={() => void carregarSituacao()}
+      />
       <PedirCorSheet
         visible={pedindoCor}
         onClose={() => setPedindoCor(false)}
@@ -315,6 +398,28 @@ function makeStyles(
       marginTop: 12,
     },
     erro: {
+      marginTop: 12,
+    },
+    riscado: {
+      textDecorationLine: 'line-through',
+      color: colors.textSecondary,
+    },
+    cartao: {
+      marginTop: 16,
+      gap: 6,
+      padding: 16,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    overline: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      letterSpacing: 1,
+      color: colors.textSecondary,
+    },
+    explicacao: {
       marginTop: 12,
     },
   });
