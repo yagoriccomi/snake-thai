@@ -55,6 +55,11 @@ export interface ColorScheme {
   devBanner: string;
   /** Texto sobre a faixa de desenvolvimento. */
   onDevBanner: string;
+  /**
+   * Véu sobre a tela atrás de um diálogo. Mais denso no escuro: sobre preto, o
+   * véu claro não separa o cartão do fundo.
+   */
+  scrim: string;
 }
 
 /** Tema escuro — identidade principal da marca (neon sobre preto profundo). */
@@ -79,6 +84,7 @@ export const darkColors: ColorScheme = {
   // 10,3:1 — a faixa é a mesma nos dois temas; é o app DEV, não o tema, que ela marca.
   devBanner: '#F59E0B',
   onDevBanner: '#0D0D0D',
+  scrim: 'rgba(0, 0, 0, 0.62)',
 };
 
 /**
@@ -110,4 +116,5 @@ export const lightColors: ColorScheme = {
   // 10,3:1 — a faixa é a mesma nos dois temas; é o app DEV, não o tema, que ela marca.
   devBanner: '#F59E0B',
   onDevBanner: '#0D0D0D',
+  scrim: 'rgba(0, 0, 0, 0.45)',
 };

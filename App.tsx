@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { AvisoDeAtualizacao } from '@/components/AvisoDeAtualizacao';
 import { DevEnvironmentFrame } from '@/components/DevBanner';
 import { PortalProvider } from '@/components/Portal';
 import { env } from '@/config/env';
@@ -50,6 +51,8 @@ function App(): React.JSX.Element | null {
                   {/* Folhas com campo de texto vivem aqui, e não em Modal: ver Portal.tsx. */}
                   <PortalProvider>
                     <RootNavigator onReady={handleNavigationReady} />
+                    {/* Versão nova no GitHub: em qualquer tela, inclusive no Login (§ 12.3). */}
+                    <AvisoDeAtualizacao />
                   </PortalProvider>
                 </PushNotificationsProvider>
               </LegalConsentProvider>
