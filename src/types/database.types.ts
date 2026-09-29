@@ -1293,6 +1293,12 @@ isOneToOne: false
 "avisar_troca_aprovada":
 { Args: { "p_pela_chamada": boolean,"p_por": string,"p_swap_id": string }; Returns: undefined
                            },
+"avisar_troca_pendente":
+{ Args: { "p_swap_id": string }; Returns: undefined
+                           },
+"avulsa_com_aula_futura_dos_horarios":
+{ Args: { "p_a": string,"p_b": string,"p_user_id": string }; Returns: boolean
+                           },
 "buscar_alunos_para_incluir":
 { Args: { "p_busca": string,"p_class_id": string }; Returns: {
               "group_name": string,"name": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"user_id": string
@@ -1340,6 +1346,9 @@ isOneToOne: false
 "decidir_solicitacao":
 { Args: { "p_decisao": Database["public"]['Enums']["justification_status"],"p_id": string,"p_nota": string }; Returns: undefined
                            },
+"decidir_troca_de_aula":
+{ Args: { "p_decisao": Database["public"]['Enums']["class_swap_status"],"p_id": string,"p_nota"?: string }; Returns: undefined
+                           },
 "declarar_aula":
 { Args: { "p_class_id": string,"p_vou": boolean }; Returns: Json
                            },
@@ -1348,6 +1357,9 @@ isOneToOne: false
                            },
 "definir_senha_padrao_da_academia":
 { Args: { "p_senha": string }; Returns: undefined
+                           },
+"desistir_da_troca":
+{ Args: { "p_id": string }; Returns: undefined
                            },
 "destinatarios_da_aula":
 { Args: { "p_class_id": string,"p_excluir": string }; Returns: {
@@ -1466,6 +1478,14 @@ isOneToOne: false
 "gravar_frequencia_do_mes":
 { Args: { "p_agora": string,"p_mes": string,"p_user_ids": (string)[] }; Returns: number
                            },
+"historico_de_aulas_do_aluno":
+{ Args: { "p_ate": string,"p_de": string,"p_user_id": string }; Returns: {
+              "approved_by_name": string,"attendance_delay_days": number,"audience": Database["public"]['Enums']["class_audience"],"cancelled": boolean,"class_id": string,"date_time": string,"declared_status": Database["public"]['Enums']["attendance_status"],"edited": boolean,"edited_at": string,"edited_by_name": string,"group_name": string,"justification_status": Database["public"]['Enums']["justification_status"],"origem": string,"previous_status": Database["public"]['Enums']["attendance_status"],"status": Database["public"]['Enums']["attendance_status"],"swap_kind": Database["public"]['Enums']["class_swap_kind"],"swap_other_date_time": string,"title": string
+            }[]
+                           },
+"horario_na_grade":
+{ Args: { "p_quando": string,"p_schedule_id": string,"p_user_id": string }; Returns: boolean
+                           },
 "horario_permitido_para_push":
 { Args: { "p_agora": string }; Returns: string
                            },
@@ -1542,6 +1562,16 @@ isOneToOne: false
               "approved_by_name": string,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"id": string,"kind": Database["public"]['Enums']["roll_call_request_kind"],"status": Database["public"]['Enums']["justification_status"]
             }[]
                            },
+"minhas_trocas":
+{ Args: { "p_ate"?: string,"p_de"?: string }; Returns: {
+              "approved_by_name": string,"can_cancel": boolean,"created_at": string,"decided_at": string,"decided_via": string,"from_class_id": string,"from_date_time": string,"from_title": string,"id": string,"is_makeup": boolean,"kind": Database["public"]['Enums']["class_swap_kind"],"motivo_texto": string,"status": Database["public"]['Enums']["class_swap_status"],"to_class_id": string,"to_date_time": string,"to_title": string
+            }[]
+                           },
+"minhas_trocas_permanentes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "ended_at": string,"from_group_name": string,"from_start_time": string,"from_weekday": number,"started_at": string,"to_group_name": string,"to_start_time": string,"to_weekday": number
+            }[]
+                           },
 "modalidade_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: Database["public"]['Enums']["plan_schedule_mode"]
                            },
@@ -1589,10 +1619,16 @@ isOneToOne: false
               "faixa": string,"mensalidades": number,"ordem": number,"valor_cents": number
             }[]
                            },
+"pedir_troca_de_aula":
+{ Args: { "p_de": string,"p_motivo_id"?: string,"p_para": string,"p_tipo": Database["public"]['Enums']["class_swap_kind"] }; Returns: string
+                           },
 "pendencias_de_recibo_push":
 { Args: { "p_limite": number }; Returns: {
               "delivery_id": string,"ticket_id": string
             }[]
+                           },
+"plano_aberto_e_fixo":
+{ Args: { "p_user_id": string }; Returns: boolean
                            },
 "plano_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: {
@@ -1695,6 +1731,9 @@ isOneToOne: false
               "agenda": string,"falhas_24h": number,"rotina": string,"ultima_execucao": string,"ultimo_status": string
             }[]
                            },
+"segunda_de":
+{ Args: { "p_quando": string }; Returns: string
+                           },
 "sem_repeticao":
 { Args: { "p_valores": (number)[] }; Returns: boolean
                            },
@@ -1741,6 +1780,16 @@ isOneToOne: false
       } },
 "troca_pode_voltar":
 { Args: { "p_swap_id": string }; Returns: boolean
+                           },
+"trocas_decididas":
+{ Args: { "p_ate": string,"p_de": string }; Returns: {
+              "decided_at": string,"decided_via": string,"from_class_id": string,"from_date_time": string,"id": string,"kind": Database["public"]['Enums']["class_swap_kind"],"review_note": string,"reviewer_name": string,"status": Database["public"]['Enums']["class_swap_status"],"student_name": string,"to_class_id": string,"to_date_time": string,"user_id": string
+            }[]
+                           },
+"trocas_para_decidir":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "anexos": Json,"created_at": string,"from_class_id": string,"from_date_time": string,"from_group_name": string,"from_status": Database["public"]['Enums']["attendance_status"],"from_title": string,"id": string,"is_makeup": boolean,"kind": Database["public"]['Enums']["class_swap_kind"],"motivo_id": string,"motivo_texto": string,"student_name": string,"to_class_id": string,"to_date_time": string,"to_group_name": string,"to_schedule_ends_on": string,"to_title": string,"user_id": string
+            }[]
                            },
 "trocas_permanentes_do_horario":
 { Args: { "p_schedule_id": string }; Returns: {
