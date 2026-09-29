@@ -48,7 +48,19 @@
 | P5 | Crons: `delete-unused-reasons` de hora em hora (minuto 15) e `expire-attachments` diário às 03:50 UTC | § 8 diz "mais de 24 h" e "cron diário"; a hora não importa, só não pode encavalar com os outros crons das 03:xx | Muda o horário |
 | P6 | `enfileirar_anexos_expirados` devolve quantos arquivos foram para a fila | Para o teste e o monitoramento | — |
 
-As premissas do 4.6b e do 4.6c entram aqui quando cada fatia começar.
+### Premissas do 4.6b
+
+| # | Premissa | Por quê |
+| --- | --- | --- |
+| P7 | Quem está na chamada sai de **uma** função interna, `origens_da_chamada`, usada pela lista, pela `salvar_chamada_v2`, pela busca de alunos e pela trava do APK 1.8 | Se cada uma decidisse "quem é da aula", a T47 e a lista divergiriam [#6] |
+| P8 | As regras da T35 que valem "venha de qualquer RPC" (presença na original cancela a pendente; presença nova na aula de uma expirada a aprova de novo com a conferência; presença retirada de uma aprovada pela chamada a devolve a expirada) ficam num **gatilho** em `attendance` | Cobrem a chamada nova, a antiga e o "Eu estava na aula" (4.9a) sem repetir a regra |
+| P9 | A aprovação pela chamada grava `class_swap_reviews` com `on conflict` (a mesma troca pode ser aprovada, expirar e voltar) | A chave da tabela é a troca |
+| P10 | Textos que o contrato não escreve: *"Aula cancelada não tem chamada."*, *"Você está sem presença nesta aula. Peça a correção em Solicitações."* (D28), *"Um aluno não pode estar em duas listas."*, *"Só professor com cor entra na chamada."*, *"Só aluno incluído pode sair da chamada."*, *"Digite de 2 a 60 letras para buscar."* | Frase para a pessoa, no padrão das outras |
+| P11 | `salvar_chamada` (APK 1.8), na primeira conclusão, continua limpando a chamada de quem ficou fora das duas listas | É o que ela fazia; a declaração do aluno fica |
+| P12 | Aluno retirado da chamada (`p_remover_incluidos`) some da aula se não tinha declaração; se tinha, a linha fica só com a declaração | A declaração é do aluno, não de quem faz a chamada |
+| P13 | Os testes antigos da chamada em lote passam a cadastrar os alunos antes das aulas (a chamada conta a turma da data da aula, D58) e a esperar a recusa da § 15 na correção pelo APK antigo | Contrato |
+
+As premissas do 4.6c entram aqui quando a fatia começar.
 
 ## Passos (4.6a)
 
@@ -57,6 +69,14 @@ As premissas do 4.6b e do 4.6c entram aqui quando cada fatia começar.
 | 1 | `supabase/migrations/20260929140000_motivos.sql` | `criar_motivo`, `pode_anexar_ao_motivo`, `anexar_ao_motivo`, `motivos_da_aula`, `marcar_retificacao_conferida`, `apagar_motivos_nao_usados`, `enfileirar_anexos_expirados` (com a P21 antes) e os dois crons | [#87] [#6] | `db-dev reset` |
 | 2 | `supabase/tests/regressao_motivos.sql` | Quem cria cada tipo; texto; anexos (autor, usado, limite de 5, caminho); leitura por papel (RLS pela `pode_ler_motivo`, sem `42501` em nenhum tipo, § 0.1 regra 8); conferência; limpeza de 24 h; expiração dos 180 dias em cada referência, com `'anexo_expirado'` e sem duplicar na fila; P21; anônimo recebe `42501` | [#41] | `db-dev test` |
 | 3 | `src/types/database.types.ts` | `db-dev types` | [#11] | `tsc` |
+
+## Passos (4.6b)
+
+| # | Arquivo | O que muda | Prática | Verificação |
+| --- | --- | --- | --- | --- |
+| 1 | `supabase/migrations/20260929150000_chamada_nova.sql` | `origens_da_chamada`, `lista_da_chamada`, `professores_da_chamada`, as duas buscas, `chamadas_pendentes`, `aulas_sem_chamada` sem cancelada, o gatilho das trocas pela presença, `salvar_chamada_v2` e a compatibilidade de `salvar_chamada` e `concluir_chamada` (T47) | [#87] [#6] | `db-dev reset` |
+| 2 | `supabase/tests/regressao_chamada_nova.sql` | C1–C17: origens, leitura por papel, T47, primeira conclusão com trocas, retificação, D28, T35, pendentes, buscas, anônimo | [#41] | `db-dev test` |
+| 3 | `supabase/tests/regressao_chamada_em_lote.sql` | P13 | [#42] | `db-dev test` |
 
 ## Riscos e rollback [#84]
 
