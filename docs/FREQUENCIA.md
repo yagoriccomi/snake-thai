@@ -83,14 +83,21 @@ regressão `supabase/tests/regressao_frequencia_regras.sql` com 18 casos verdes.
 **App** — o que cada papel vê:
 
 - **Aluno:** card "Presença em Aulas X/Y · Frequência N%" no topo das aulas,
-  que abre o histórico dos meses fechados. Ao avisar falta, uma folha oferece
-  "Acrescentar justificativa?" (mensagem com contador de 255 e anexo de
-  imagem ou PDF). A linha da aula mostra se a justificativa está em análise,
-  aprovada ou recusada. Depois da revisão, a folha não reabre: o banco não
-  aceita editar justificativa já revisada.
-- **Professor / admin:** na chamada, frequência do mês por aluno, a
-  justificativa com "Ver anexo", "Aprovar" e "Recusar", e toque no nome para
-  abrir o histórico. Na agenda, o aviso de aulas sem chamada leva direto à aula.
+  que abre a tela Frequência. Ao avisar falta (fixo), uma folha oferece
+  "Acrescentar justificativa?": o **motivo escrito é obrigatório** (até 255
+  caracteres) e a imagem ou o PDF, opcionais; a folha só abre enquanto a aula
+  aceita e ainda não tem justificativa. O livre justifica pela tela Frequência
+  (**Justificar semana**, com o prazo e quantas restam; cada aprovada devolve
+  uma aula). **Minhas justificativas** traz os rótulos da § 3 do contrato
+  (em análise, aprovada por {nome}, negada · reenviar até dd/mm) e o
+  **Reenviar**; a 2ª negada mostra o contato da academia (D42). Tudo passa
+  pelas RPCs da § 9.1 (`enviar_justificativa`, `reenviar_justificativa`).
+- **Professor / admin:** na chamada, frequência do mês por aluno e toque no
+  nome para abrir o histórico. Na agenda, os atalhos **Chamadas pendentes** e
+  **Justificativas para revisar** (com contador); a revisão pede **nota
+  obrigatória** para aprovar e para negar (D15), e a nota fica só para o
+  admin (D16). Quem decide: a equipe da aula (fixo), quem deu aula na semana
+  (livre, T18) ou um admin.
 
 ### Chamada em lote (2026-09-14, app 1.6.0)
 

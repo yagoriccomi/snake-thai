@@ -12,12 +12,12 @@
 | Mensalidade em atraso | Aluno | 1 e 7 dias depois do vencimento, às 09:00 |
 | Novo comprovante para analisar | Admins | Quando o aluno envia (vários juntos viram "N comprovantes") |
 | Pagamento aprovado / comprovante recusado | Aluno | Quando o admin decide |
-| Justificativa de falta para revisar | Professores da aula (admins, se a aula não tem professor) | Quando o aluno envia |
+| Justificativa de falta para revisar | Quem pode decidir: professores da aula; na semanal, quem deu aula na semana (sem ninguém, os admins) | Quando o aluno envia ou reenvia; o toque abre **Justificativas para revisar** |
 | Chamada pendente | Professores da aula | 1 hora depois do início, a cada 15 min, por até 24 h |
 | Aulas sem chamada hoje | Admins | Resumo às 21:00 |
 | Aula cancelada | Antes da aula: alunos da aula (fixos da grade, com troca ou extra; livres, se a aula aceita livres), a equipe e os admins. Depois da aula: só a equipe e os admins. Quem cancelou fica de fora | Na hora; **o primeiro cancelamento fura o silêncio** para os alunos |
 | Aula confirmada de novo | Os mesmos, calculados na reativação | Respeita o silêncio |
-| Justificativa aprovada / negada | Aluno | Na decisão (tentativa 2 negada: "procure o professor ou a administração") |
+| Justificativa aprovada / negada | Aluno | Na decisão (tentativa 2 negada: "procure o professor ou a administração"); o toque abre **Minhas justificativas** |
 | Chamada corrigida | O aluno cuja presença mudou | Na retificação |
 | Nova solicitação para analisar | Quem pode decidir | Quando o pedido chega |
 | Pedido de troca de aula | Professores da aula nova (sem nenhum, os admins; na permanente, também os admins) | Quando o aluno pede |

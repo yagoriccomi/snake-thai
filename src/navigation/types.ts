@@ -91,6 +91,10 @@ export type AulasStackParamList = {
   ChamadasPendentes: undefined;
   /** Menu de aulas do aluno (§ 12.2): esta semana e a próxima. */
   AulasDaSemana: undefined;
+  /** As justificativas do aluno, com o reenvio (§ 9.1, D42). */
+  MinhasJustificativas: undefined;
+  /** As pendentes que a equipe pode decidir (§ 9.1, D14). */
+  JustificativasParaRevisar: undefined;
 };
 
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */

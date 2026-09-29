@@ -6,7 +6,7 @@
 
 export type DestinoDaNotificacao =
   | { aba: 'Financeiro'; tela: 'FinanceiroHome' }
-  | { aba: 'Aulas'; tela: 'AulasHome' };
+  | { aba: 'Aulas'; tela: 'AulasHome' | 'MinhasJustificativas' | 'JustificativasParaRevisar' };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -19,16 +19,15 @@ const TIPOS_FINANCEIROS = new Set([
   'comprovante_recusado',
 ]);
 
-// Contrato v4 (§ 10): os avisos de aula, justificativa, chamada e troca abrem
-// Aulas. Solicitações (troca pendente, solicitação) chega nos blocos 4.8/4.9.
+// Contrato v4 (§ 10): os avisos de aula, chamada e troca abrem Aulas; os de
+// justificativa, a lista de quem os recebe. Solicitações chega no bloco 4.9.
+const PARA_REVISAR = new Set(['justificativa_pendente']);
+const MINHAS_JUSTIFICATIVAS = new Set(['justificativa_aprovada', 'justificativa_negada']);
 const TIPOS_DE_AULA = new Set([
-  'justificativa_pendente',
   'aula_sem_chamada',
   'aulas_sem_chamada_resumo',
   'aula_cancelada',
   'aula_reativada',
-  'justificativa_aprovada',
-  'justificativa_negada',
   'chamada_retificada',
   'solicitacao_pendente',
   'troca_pendente',
@@ -52,6 +51,8 @@ export function destinoDaNotificacao(data: unknown): DestinoDaNotificacao | null
   const tipo = payload.tipo;
   if (typeof tipo !== 'string') return null;
   if (TIPOS_FINANCEIROS.has(tipo)) return { aba: 'Financeiro', tela: 'FinanceiroHome' };
+  if (PARA_REVISAR.has(tipo)) return { aba: 'Aulas', tela: 'JustificativasParaRevisar' };
+  if (MINHAS_JUSTIFICATIVAS.has(tipo)) return { aba: 'Aulas', tela: 'MinhasJustificativas' };
   if (TIPOS_DE_AULA.has(tipo)) return { aba: 'Aulas', tela: 'AulasHome' };
   return null;
 }

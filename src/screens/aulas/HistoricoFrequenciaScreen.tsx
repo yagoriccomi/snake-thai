@@ -1,15 +1,19 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '@/components/AppText';
 import { ErrorState } from '@/components/ErrorState';
+import { JustificarSemanaCard, semanasParaJustificar } from '@/components/JustificarSemanaCard';
+import { JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
 import { MonthSelector, type MonthOption } from '@/components/MonthSelector';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { useAuth } from '@/context/AuthProvider';
 import { useFrequenciaDoMes } from '@/hooks/useFrequenciaDoMes';
 import type { AulasStackScreenProps } from '@/navigation/types';
-import type { FrequenciaDoMes } from '@/services/frequency.service';
+import type { FrequenciaDoMes, SemanaDoMes } from '@/services/frequency.service';
+import { enviarJustificativa } from '@/services/justifications.service';
 import { SCHEDULE_MODE_LABELS } from '@/services/plans.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { currentMonthIso, formatMonthShort, formatMonthYear, isoDateKey } from '@/utils/datetime';
@@ -95,6 +99,7 @@ function LinhaDaTabela({ linha, esperadoDoMes, styles }: LinhaProps): React.JSX.
  * banco; a tela só soma as parcelas na ordem para o acumulado. [#6]
  */
 export function HistoricoFrequenciaScreen({
+  navigation,
   route,
 }: AulasStackScreenProps<'HistoricoFrequencia'>): React.JSX.Element {
   const { colors, fonts } = useTheme();
@@ -104,6 +109,25 @@ export function HistoricoFrequenciaScreen({
   const mesCorrente = currentMonthIso();
   const [mesIso, setMesIso] = useState(mesCorrente);
   const { mes, semanas, historico, loading, error, reload } = useFrequenciaDoMes(userId, mesIso);
+  // Justificar é do próprio aluno (§ 9.1 e): a equipe só lê a frequência dele.
+  const { profile } = useAuth();
+  const proprio = profile?.id === userId;
+  const [semanaAJustificar, setSemanaAJustificar] = useState<SemanaDoMes | null>(null);
+
+  const justificarSemana = useCallback(
+    async (draft: JustificationDraft): Promise<void> => {
+      if (semanaAJustificar === null) return;
+      await enviarJustificativa({
+        scope: 'week',
+        classId: null,
+        weekStart: semanaAJustificar.weekStart,
+        texto: draft.message,
+        anexo: null,
+      });
+      void reload();
+    },
+    [semanaAJustificar, reload],
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -191,6 +215,13 @@ export function HistoricoFrequenciaScreen({
           </View>
         ) : null}
 
+        {proprio && semanasParaJustificar(semanas).length > 0 ? (
+          <JustificarSemanaCard
+            semanas={semanas}
+            onJustificar={setSemanaAJustificar}
+          />
+        ) : null}
+
         <Text style={styles.dica}>{dicaDaConta(mes.scheduleMode)}</Text>
       </>
     );
@@ -209,7 +240,29 @@ export function HistoricoFrequenciaScreen({
         </AppText>
         <MonthSelector options={opcoes} value={mesIso} onChange={setMesIso} />
         {conteudo()}
+        {proprio ? (
+          <Pressable
+            onPress={() => navigation.navigate('MinhasJustificativas')}
+            style={styles.link}
+            accessibilityRole="button"
+          >
+            <Text style={styles.linkTexto}>Minhas justificativas</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
       </ScrollView>
+      {semanaAJustificar !== null ? (
+        <JustificationSheet
+          key={semanaAJustificar.weekStart}
+          visible
+          titulo="Justificar semana"
+          contexto={`${semanaAJustificar.label} · ${periodoDaSemana(semanaAJustificar)}. Cada justificativa aprovada devolve uma aula.`}
+          perguntarSeQuer={false}
+          permiteAnexo={false}
+          onClose={() => setSemanaAJustificar(null)}
+          onSubmit={justificarSemana}
+        />
+      ) : null}
     </ScreenWrapper>
   );
 }
@@ -277,5 +330,7 @@ function makeStyles(
       backgroundColor: colors.surface,
     },
     avisoTexto: { flex: 1 },
+    link: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44 },
+    linkTexto: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.textPrimary },
   });
 }

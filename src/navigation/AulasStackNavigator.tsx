@@ -12,6 +12,8 @@ import { CriarAulaScreen } from '@/screens/aulas/CriarAulaScreen';
 import { DetalheAulaScreen } from '@/screens/aulas/DetalheAulaScreen';
 import { FrequenciaScreen } from '@/screens/aulas/FrequenciaScreen';
 import { HistoricoFrequenciaScreen } from '@/screens/aulas/HistoricoFrequenciaScreen';
+import { JustificativasParaRevisarScreen } from '@/screens/aulas/JustificativasParaRevisarScreen';
+import { MinhasJustificativasScreen } from '@/screens/aulas/MinhasJustificativasScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<AulasStackParamList>();
@@ -55,6 +57,12 @@ export function AulasStackNavigator(): React.JSX.Element {
         component={HistoricoFrequenciaScreen}
         options={HISTORICO_OPTIONS}
       />
+      <Stack.Screen name="MinhasJustificativas" component={MinhasJustificativasScreen} options={MINHAS_JUSTIFICATIVAS_OPTIONS} />
+      <Stack.Screen
+        name="JustificativasParaRevisar"
+        component={JustificativasParaRevisarScreen}
+        options={PARA_REVISAR_OPTIONS}
+      />
     </Stack.Navigator>
   );
 }
@@ -65,3 +73,5 @@ const FREQUENCIA_OPTIONS: NativeStackNavigationOptions = { title: 'Chamada' };
 const PENDENTES_OPTIONS: NativeStackNavigationOptions = { title: 'Chamadas pendentes' };
 const HISTORICO_OPTIONS: NativeStackNavigationOptions = { title: 'Frequência' };
 const AULAS_DA_SEMANA_OPTIONS: NativeStackNavigationOptions = { title: 'Aulas da semana' };
+const MINHAS_JUSTIFICATIVAS_OPTIONS: NativeStackNavigationOptions = { title: 'Minhas justificativas' };
+const PARA_REVISAR_OPTIONS: NativeStackNavigationOptions = { title: 'Justificativas para revisar' };

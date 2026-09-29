@@ -691,7 +691,7 @@ o roteamento do toque (`notificationRouting`).
 
 ### 4.8 Justificativas novas
 
-- [ ] Plano · [ ] Banco · [ ] Interface · [ ] Testes · [ ] Aparelho
+- [x] Plano · [x] Banco · [x] Interface · [x] Testes · [ ] Aparelho
 
 **Banco:**
 
