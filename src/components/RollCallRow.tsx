@@ -22,7 +22,8 @@ interface RollCallRowProps {
   /** Falso para quem só visualiza, antes de a aula começar e no conflito do rascunho. */
   editavel: boolean;
   onMarcar: (userId: string, status: AttendanceStatus) => void;
-  onAbrirFrequencia: (userId: string, nome: string) => void;
+  /** A ficha do aluno (§ 12, D32). */
+  onAbrirFicha: (userId: string, nome: string) => void;
   /** Só para incluídos: tira da chamada. */
   onRetirar?: (userId: string) => void;
 }
@@ -43,7 +44,7 @@ function RollCallRowComponent({
   editada,
   editavel,
   onMarcar,
-  onAbrirFrequencia,
+  onAbrirFicha,
   onRetirar,
 }: RollCallRowProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
@@ -55,11 +56,11 @@ function RollCallRowComponent({
     <View style={styles.linha}>
       <View style={styles.info}>
         <Pressable
-          onPress={() => onAbrirFrequencia(linha.userId, linha.nome)}
+          onPress={() => onAbrirFicha(linha.userId, linha.nome)}
           style={styles.nome}
           accessibilityRole="button"
-          accessibilityLabel={`Frequência de ${linha.nome}`}
-          accessibilityHint="Abre a frequência do aluno"
+          accessibilityLabel={`Ficha de ${linha.nome}`}
+          accessibilityHint="Abre a ficha do aluno, com a frequência e o histórico"
         >
           <Text style={styles.nomeTexto} numberOfLines={1}>
             {linha.nome}

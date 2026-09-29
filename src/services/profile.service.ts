@@ -175,17 +175,17 @@ export async function fetchAllStudents(): Promise<Profile[]> {
 }
 
 /**
- * Perfis que a gestão de alunos mostra: alunos e administradores (o filtro
- * "Admins" da tela precisa deles), sem as contas excluídas (LGPD).
+ * Quem a tela Pessoas mostra: alunos e a equipe (professores e admins), sem
+ * as contas excluídas (LGPD).
  *
  * `fetchAllStudents` continua existindo à parte: o financeiro precisa dos
  * excluídos, que aparecem como "Usuário removido".
  */
-export async function fetchManagedProfiles(): Promise<Profile[]> {
+export async function fetchPessoas(): Promise<Profile[]> {
   const { data, error } = await supabase
     .from('profiles')
     .select('*')
-    .in('role', ['user', 'admin'])
+    .in('role', ['user', 'professor', 'admin'])
     .is('anonymized_at', null)
     .order('name', { ascending: true });
   if (error !== null) {

@@ -26,6 +26,11 @@
 | P2 | `financeiro`: `pagas` = pagas; `pagas_com_atraso` = pagas depois do vencimento (data de SP); `inadimplentes` = vencidas; `em_aberto` = abertas ou em análise; `meses_na_academia` conta o mês de entrada | Os quatro marcadores do antigo Histórico do Financeiro, mais o tempo de casa |
 | P3 | Professor: "escalado" = na aula sem ter sido acrescentado na chamada; `faltas` só com `present = false` (sem marcação não é falta, § 15); `pendentes` = rotina passada, não cancelada, sem chamada | As definições da § 12, lidas por aula |
 | P4 | `frequencia_semana` e `frequencia_mes` do perfil trazem `percentual`, `feitas` e `esperadas` | A § 12 nomeia as chaves sem o formato; é o mesmo par da tela Frequência |
+| P5 | Tocar na pessoa abre a **folha**, e **Ver ficha** é a primeira ação | A opção A abre a folha; o roadmap pede a ficha pelo toque: a folha dá os dois |
+| P6 | A busca é por nome ou CPF (o e-mail está só no Auth) | O mockup diz "Nome, e-mail ou CPF"; o e-mail não vem na lista sem uma função nova |
+| P7 | **Excluir conta** leva à edição do aluno com a confirmação já aberta | A exclusão (LGPD) já vive lá, com as mensalidades em aberto |
+| P8 | A ficha do aluno fica nas abas Dados (Pessoas) e Aulas; o toque no nome, na chamada, passa a abrir a ficha (que leva à frequência completa) | D32: o professor vê o perfil detalhado, sem financeiro |
+| P9 | "Sem turma desde {dd/mm}" usa o último dia do período fechado | O perfil devolve o dia do fim (`ate`); a mudança costuma ser no mesmo dia |
 
 ## Passos (4.10a)
 
@@ -37,4 +42,4 @@
 ## Definição de pronto
 
 - [x] 4.10a: `db-dev test` e `reset` verdes, tipos, PR com CI verde, Registro;
-- [ ] 4.10b: Jest verde, PR, entrega com o roteiro do aparelho; acessibilidade depois.
+- [x] 4.10b: Jest verde, PR, entrega com o roteiro do aparelho; acessibilidade depois.

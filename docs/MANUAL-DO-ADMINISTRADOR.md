@@ -10,7 +10,7 @@
 1. [Primeiro acesso](#1-primeiro-acesso)
 2. [Configurar a sua academia](#2-configurar-a-sua-academia)
 3. [Planos e mensalidades](#3-planos-e-mensalidades)
-4. [Cadastrar e gerenciar alunos](#4-cadastrar-e-gerenciar-alunos)
+4. [Pessoas: alunos e equipe](#4-pessoas-alunos-e-equipe)
 5. [Turmas e aulas](#5-turmas-e-aulas)
 6. [Receber e aprovar pagamentos](#6-receber-e-aprovar-pagamentos)
 7. [Painel e inadimplência](#7-painel-e-inadimplencia)
@@ -96,11 +96,16 @@ Em **Dados → Planos e Mensalidades** você define quanto custa treinar.
 
 ---
 
-## 4. Cadastrar e gerenciar alunos
+## 4. Pessoas: alunos e equipe
 
-### Cadastrar um aluno novo
+Em **Dados → Pessoas** ficam os alunos e a equipe, em duas abas: **Alunos** e **Equipe**, cada
+uma com o total. Busque pelo nome ou pelo CPF. Na aba Alunos, os filtros separam **Ativos**,
+**Pendentes** (quem ainda não fez o primeiro acesso) e **Trancados**.
 
-Em **Dados → Cadastrar Novo Aluno**:
+### Cadastrar
+
+Toque em **+ Cadastrar**, no canto de baixo. Na aba Alunos, abre o cadastro de aluno; na aba
+Equipe, o de professor ou administrador.
 
 1. Digite o **e-mail** do aluno.
 2. Toque em cadastrar. O sistema cria a conta com a **senha de primeiro acesso**
@@ -108,24 +113,29 @@ Em **Dados → Cadastrar Novo Aluno**:
 3. Passe essa senha ao aluno. No primeiro acesso, ele é obrigado a trocá-la e a
    completar os próprios dados.
 
-### Gerenciar quem já existe
+### O que dá para fazer com cada pessoa
 
-Em **Dados → Gerenciar Alunos**, cada aluno tem uma linha com ícones de ação:
+Toque no nome. Abre uma folha com as ações escritas por extenso:
 
-| Ícone | O que faz |
+| Ação | O que faz |
 | --- | --- |
-| **Lápis** | **Edita os dados** do aluno: nome, CPF, celular, nascimento, turma, plano, situação e o **e-mail de login** (útil quando foi digitado errado no cadastro). Aluno que ainda não fez o primeiro acesso tem nome e CPF travados — ele mesmo informa. |
-| **Escudo** | Promove o aluno a **administrador** (ou rebaixa de volta). Um administrador vê e gerencia tudo — use com critério. |
-| **Pausa** | **Tranca a matrícula** (ou reativa). O aluno trancado sai da lista de ativos e das cobranças, **mas o histórico é preservado**. Use quando alguém suspende o treino sem cancelar de vez. |
-| **Chave** | **Redefine a senha** do aluno para a padrão. Use quando ele esquecer a senha. Ele terá que criar uma nova no acesso seguinte. |
-| **Turma** | Muda o aluno de turma. |
+| **Ver ficha** | A **ficha do aluno**: a turma de cada período do mês (ex.: "Turma Noite até 15/09 · Turma Manhã desde 15/09"), a modalidade, a frequência da semana e do mês, as trocas permanentes, o histórico de aulas dos últimos 60 dias ("Trocou para…" no lugar de falta) e o **financeiro** (pagas, com atraso, vencidas, em aberto). O professor também vê a ficha, pelo nome na chamada, mas **sem o financeiro**. |
+| **Editar cadastro** | Nome, CPF, celular, nascimento, turma, plano, situação e o **e-mail de login**. Aluno que ainda não fez o primeiro acesso tem nome e CPF travados — ele mesmo informa. |
+| **Trocar turma ou plano** | Muda a turma e o plano. **Antes de salvar**, o app avisa o que acontece: a frequência conta as aulas da turma antiga até agora e as da nova a partir de agora, e as trocas de aula que saem de aulas futuras e as trocas permanentes do aluno são canceladas. |
+| **Trancar matrícula** | O aluno sai dos ativos e das cobranças, **mas o histórico fica**. Reative quando ele voltar. |
+| **Redefinir senha de acesso** | Volta a senha para a de primeiro acesso. Ele cria uma nova no acesso seguinte. |
+| **Excluir conta** | Abre a exclusão (LGPD), explicada abaixo. |
+
+Na aba **Equipe**, a folha tem **Ver ficha** (a do professor: aulas esperadas, dadas, fora da
+escala, canceladas, faltas, abonadas e sem chamada, com o percentual do mês) e **Promover a
+administrador** ou **Tornar professor**. **Promover só existe na Equipe**: um aluno nunca vira
+administrador por engano. O professor promovido continua dando aula com a mesma cor.
 
 > **Trancar não apaga.** A diferença importa: um aluno trancado pode voltar com
 > todo o histórico de presença e pagamentos. Para apagar de vez os dados
-> pessoais de alguém (a pedido dele, pela LGPD), use **Excluir conta** no fim da
-> tela de edição (lápis) — veja a seção 8.
+> pessoais de alguém (a pedido dele, pela LGPD), use **Excluir conta** — veja a seção 8.
 
-**Excluir conta (LGPD).** Na edição do aluno, em *Zona de perigo*. O app mostra o
+**Excluir conta (LGPD).** Na folha da pessoa, ou na edição do aluno, em *Zona de perigo*. O app mostra o
 que é apagado (dados pessoais, imagens dos comprovantes, justificativas de falta,
 acesso) e o que fica sem identificação (pagamentos e presenças, por obrigação
 legal), avisa se há mensalidades em aberto — excluir **não quita** débito — e pede

@@ -795,7 +795,7 @@ mais `menu_de_aulas`, `pedir_troca_de_aula`, `desistir_da_troca`, `minhas_trocas
 
 ### 4.10 Perfis e Pessoas
 
-- [x] Plano · [x] Banco · [ ] Interface · [ ] Testes · [ ] Aparelho · [ ] Acessibilidade
+- [x] Plano · [x] Banco · [x] Interface · [x] Testes · [ ] Aparelho · [ ] Acessibilidade
 
 **Banco:**
 
