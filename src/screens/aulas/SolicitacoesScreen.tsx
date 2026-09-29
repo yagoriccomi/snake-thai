@@ -3,6 +3,7 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, T
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useCaixaDeSolicitacoes } from '@/hooks/useSolicitacoes';
@@ -49,6 +50,7 @@ export function SolicitacoesScreen({ navigation }: AulasStackScreenProps<'Solici
     }
     return (
       <View style={styles.lista} accessibilityRole="list">
+        <ErroAoAtualizar mensagem={caixa.error} />
         {caixa.items.map(({ categoria, quantidade }) => (
           <Pressable
             key={categoria}

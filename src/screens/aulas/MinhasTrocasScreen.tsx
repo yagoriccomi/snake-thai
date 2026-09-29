@@ -4,6 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 
 import { BlocoDeContato } from '@/components/BlocoDeContato';
 import { EmptyState } from '@/components/EmptyState';
+import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { Selo } from '@/components/Selo';
@@ -68,6 +69,7 @@ export function MinhasTrocasScreen(_props: AulasStackScreenProps<'MinhasTrocas'>
         data={lista.items}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
+        ListHeaderComponent={<ErroAoAtualizar mensagem={lista.error} />}
         ListEmptyComponent={
           lista.loading ? (
             <ActivityIndicator color={colors.primary} style={styles.carregando} />

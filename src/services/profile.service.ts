@@ -174,6 +174,15 @@ export async function fetchAllStudents(): Promise<Profile[]> {
   return data;
 }
 
+/** O que a lista de Pessoas usa: nada de celular nem nascimento (minimização). */
+const COLUNAS_DE_PESSOAS =
+  'id, role, name, cpf, status, is_first_login, group_id, plan_id, color, access_channel, anonymized_at' as const;
+
+export type Pessoa = Pick<
+  Profile,
+  'id' | 'role' | 'name' | 'cpf' | 'status' | 'is_first_login' | 'group_id' | 'plan_id' | 'color' | 'access_channel' | 'anonymized_at'
+>;
+
 /**
  * Quem a tela Pessoas mostra: alunos e a equipe (professores e admins), sem
  * as contas excluídas (LGPD).
@@ -181,10 +190,10 @@ export async function fetchAllStudents(): Promise<Profile[]> {
  * `fetchAllStudents` continua existindo à parte: o financeiro precisa dos
  * excluídos, que aparecem como "Usuário removido".
  */
-export async function fetchPessoas(): Promise<Profile[]> {
+export async function fetchPessoas(): Promise<Pessoa[]> {
   const { data, error } = await supabase
     .from('profiles')
-    .select('*')
+    .select(COLUNAS_DE_PESSOAS)
     .in('role', ['user', 'professor', 'admin'])
     .is('anonymized_at', null)
     .order('name', { ascending: true });

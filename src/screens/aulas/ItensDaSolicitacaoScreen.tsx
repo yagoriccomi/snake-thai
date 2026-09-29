@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AppText } from '@/components/AppText';
 import { DecidirSolicitacaoSheet } from '@/components/DecidirSolicitacaoSheet';
 import { EmptyState } from '@/components/EmptyState';
+import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { Selo } from '@/components/Selo';
@@ -166,6 +167,7 @@ export function ItensDaSolicitacaoScreen({
             <AppText variant="subtitle" accessibilityRole="header">
               {ROTULO_DA_CATEGORIA[categoria]}
             </AppText>
+            <ErroAoAtualizar mensagem={itens.error} />
             {erro !== null ? (
               <AppText variant="caption" color={colors.error} accessibilityRole="alert">
                 {erro}

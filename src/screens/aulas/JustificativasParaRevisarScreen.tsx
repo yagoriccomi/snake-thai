@@ -5,6 +5,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { AppText } from '@/components/AppText';
 import { DecidirJustificativaSheet } from '@/components/DecidirJustificativaSheet';
 import { EmptyState } from '@/components/EmptyState';
+import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ErrorState } from '@/components/ErrorState';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { Selo } from '@/components/Selo';
@@ -15,6 +16,7 @@ import { fetchJustificationAttachmentUrl, type JustificativaParaRevisar } from '
 import { useTheme } from '@/theme/ThemeProvider';
 import { describeError } from '@/utils/errors';
 import { assuntoDaJustificativa } from '@/utils/justificativas';
+import { ehUrlDeAnexoConfiavel } from '@/utils/url';
 
 const log = createLogger('JustificativasParaRevisarScreen');
 
@@ -45,6 +47,10 @@ export function JustificativasParaRevisarScreen(_props: AulasStackScreenProps<'J
     setErroDoAnexo(null);
     try {
       const { url } = await fetchJustificationAttachmentUrl(id);
+      // O atestado só abre de onde ele mora: nada de esquema ou host inesperado.
+      if (!ehUrlDeAnexoConfiavel(url)) {
+        throw new Error('Endereço de anexo inesperado.');
+      }
       await Linking.openURL(url);
     } catch (falha) {
       log.warn('Falha ao abrir o anexo da justificativa', falha, { justificationId: id });
@@ -115,11 +121,14 @@ export function JustificativasParaRevisarScreen(_props: AulasStackScreenProps<'J
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         ListHeaderComponent={
-          erroDoAnexo !== null ? (
-            <AppText variant="caption" color={colors.error} accessibilityRole="alert" style={styles.erro}>
-              {erroDoAnexo}
-            </AppText>
-          ) : null
+          <>
+            <ErroAoAtualizar mensagem={lista.error} />
+            {erroDoAnexo !== null ? (
+              <AppText variant="caption" color={colors.error} accessibilityRole="alert" style={styles.erro}>
+                {erroDoAnexo}
+              </AppText>
+            ) : null}
+          </>
         }
         ListEmptyComponent={
           lista.loading ? (

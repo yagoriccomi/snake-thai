@@ -152,10 +152,15 @@ describe('JustificativasParaRevisarScreen (§ 9.1, D15)', () => {
 
   it('deveAbrirOAnexoEAvisarQuandoFalha', async () => {
     const abrir = jest.spyOn(Linking, 'openURL').mockResolvedValue(true);
-    mockUrlDoAnexo.mockResolvedValueOnce({ url: 'https://assinada', paginas: 1, pagina: 1 });
+    mockUrlDoAnexo.mockResolvedValueOnce({ url: 'https://res.cloudinary.com/snake/assinada', paginas: 1, pagina: 1 });
     const tela = comProvedores(<JustificativasParaRevisarScreen {...PROPS} />);
     fireEvent.press(await tela.findByLabelText('Ver o anexo da justificativa de Bia'));
-    await waitFor(() => expect(abrir).toHaveBeenCalledWith('https://assinada'));
+    await waitFor(() => expect(abrir).toHaveBeenCalledWith('https://res.cloudinary.com/snake/assinada'));
+
+    mockUrlDoAnexo.mockResolvedValueOnce({ url: 'http://outro-lugar.io/x', paginas: 1, pagina: 1 });
+    fireEvent.press(tela.getByLabelText('Ver o anexo da justificativa de Bia'));
+    expect(await tela.findByText('Erro interno: Endereço de anexo inesperado.')).toBeTruthy();
+    expect(abrir).toHaveBeenCalledTimes(1);
 
     mockUrlDoAnexo.mockRejectedValueOnce(new TypeError('Network request failed'));
     fireEvent.press(tela.getByLabelText('Ver o anexo da justificativa de Bia'));

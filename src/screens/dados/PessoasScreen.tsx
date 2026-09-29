@@ -30,6 +30,7 @@ import { createLogger } from '@/lib/logger';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import {
   fetchPessoas,
+  type Pessoa,
   resetStudentPassword,
   setStudentActive,
   updateStudentGroup,
@@ -37,7 +38,6 @@ import {
   updateUserRole,
 } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import type { Profile } from '@/types/models';
 import type { TomDoSelo } from '@/utils/aulasDoAluno';
 import { describeError } from '@/utils/errors';
 import {
@@ -74,16 +74,16 @@ export function PessoasScreen({ navigation }: DadosStackScreenProps<'Pessoas'>):
   const { plans } = usePlans();
   const { password: senhaPadrao } = useDefaultStudentPassword();
 
-  const [pessoas, setPessoas] = useState<Profile[]>([]);
+  const [pessoas, setPessoas] = useState<Pessoa[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [erroDaAcao, setErroDaAcao] = useState<string | null>(null);
   const [aba, setAba] = useState<AbaDePessoas>('alunos');
   const [filtro, setFiltro] = useState<FiltroDeAlunos>('ativos');
   const [busca, setBusca] = useState('');
-  const [escolhida, setEscolhida] = useState<Profile | null>(null);
-  const [trocandoTurma, setTrocandoTurma] = useState<Profile | null>(null);
-  const [pedindoCorDe, setPedindoCorDe] = useState<Profile | null>(null);
+  const [escolhida, setEscolhida] = useState<Pessoa | null>(null);
+  const [trocandoTurma, setTrocandoTurma] = useState<Pessoa | null>(null);
+  const [pedindoCorDe, setPedindoCorDe] = useState<Pessoa | null>(null);
 
   const carregar = useCallback(async () => {
     setCarregando(true);
@@ -132,7 +132,7 @@ export function PessoasScreen({ navigation }: DadosStackScreenProps<'Pessoas'>):
   }, []);
 
   const acoesDoAluno = useCallback(
-    (aluno: Profile): AcaoDaPessoa[] => {
+    (aluno: Pessoa): AcaoDaPessoa[] => {
       const nome = aluno.name ?? 'este aluno';
       const ativo = aluno.status === 'active';
       const senha = senhaPadrao !== null ? ` (${senhaPadrao})` : '';
@@ -176,7 +176,7 @@ export function PessoasScreen({ navigation }: DadosStackScreenProps<'Pessoas'>):
   );
 
   const acoesDaEquipe = useCallback(
-    (pessoa: Profile): AcaoDaPessoa[] => {
+    (pessoa: Pessoa): AcaoDaPessoa[] => {
       const nome = pessoa.name ?? 'esta pessoa';
       const acoes: AcaoDaPessoa[] = [
         {
@@ -220,7 +220,7 @@ export function PessoasScreen({ navigation }: DadosStackScreenProps<'Pessoas'>):
     [navigation, confirmar, executar, profile?.id],
   );
 
-  const renderItem = useCallback<ListRenderItem<Profile>>(
+  const renderItem = useCallback<ListRenderItem<Pessoa>>(
     ({ item }) => {
       const daEquipe = aba === 'equipe';
       const situacao = situacaoDaPessoa(item);
