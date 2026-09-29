@@ -19,8 +19,8 @@ jest.mock('@/services/justifications.service', () => ({
 jest.mock('@/context/AuthProvider', () => ({
   useAuth: () => ({ session: { user: { id: 'aluno-1' } }, profile: { id: 'aluno-1', name: 'Aluno' } }),
 }));
-jest.mock('@/hooks/useMonthlyFrequency', () => ({
-  useMonthlyFrequency: () => ({ byUser: {}, loading: false, reload: jest.fn() }),
+jest.mock('@/hooks/useFrequenciaDoAluno', () => ({
+  useFrequenciaDoAluno: () => ({ semana: null, mes: null, loading: false, error: null, reload: jest.fn() }),
 }));
 jest.mock('@/hooks/useAcademySettings', () => ({
   useAcademySettings: () => ({ settings: { class_weekdays: [1, 2, 3, 4, 5, 6] } }),

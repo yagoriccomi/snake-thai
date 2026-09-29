@@ -2,48 +2,67 @@ import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 
 import { FrequencyCard } from '@/components/FrequencyCard';
-import type { MonthlyFrequency } from '@/services/frequency.service';
+import { mesDeFrequencia, semanaDeFrequencia } from '@/test-utils/frequencia';
 import { ThemeProvider } from '@/theme/ThemeProvider';
-
-const FREQUENCIA: MonthlyFrequency = {
-  userId: 'aluno-1',
-  referenceMonth: '2026-11-01',
-  totalClasses: 12,
-  countedClasses: 4,
-  attended: 3,
-  justified: 0,
-  frequencyPercent: 75,
-};
 
 function renderWithTheme(ui: React.ReactElement) {
   return render(<ThemeProvider>{ui}</ThemeProvider>);
 }
 
-describe('FrequencyCard', () => {
-  it('deveMostrarPresencaSobreOTotalDoMesEPercentual', () => {
+describe('FrequencyCard (contrato § 3)', () => {
+  it('deveMostrarSemanaEMesComPercentualEContagem', () => {
     const { getByText } = renderWithTheme(
-      <FrequencyCard frequency={FREQUENCIA} loading={false} onPress={jest.fn()} />,
+      <FrequencyCard semana={semanaDeFrequencia()} mes={mesDeFrequencia()} loading={false} error={null} onPress={jest.fn()} />,
     );
-
-    // O total é o mês inteiro (12), não só as aulas com chamada (4).
-    expect(getByText('3/12')).toBeTruthy();
-    expect(getByText('75%')).toBeTruthy();
+    expect(getByText('Semana')).toBeTruthy();
+    expect(getByText('150%')).toBeTruthy();
+    expect(getByText('3 de 2')).toBeTruthy();
+    expect(getByText('Mês')).toBeTruthy();
+    expect(getByText('37,5%')).toBeTruthy();
+    expect(getByText('3 de 8')).toBeTruthy();
   });
 
-  it('deveMostrarTracoQuandoAFrequenciaNaoCarregou', () => {
-    const { getAllByText } = renderWithTheme(
-      <FrequencyCard frequency={null} loading={false} onPress={jest.fn()} />,
+  it('deveFalarDeMetaNoAVontade', () => {
+    const { getByText } = renderWithTheme(
+      <FrequencyCard
+        semana={semanaDeFrequencia({ scheduleMode: 'unlimited' })}
+        mes={mesDeFrequencia({ scheduleMode: 'unlimited' })}
+        loading={false}
+        error={null}
+        onPress={jest.fn()}
+      />,
     );
-    // "0%" seria mentira: o aluno leria que faltou a tudo.
+    expect(getByText('Meta da semana')).toBeTruthy();
+    expect(getByText('Meta do mês')).toBeTruthy();
+  });
+
+  it('deveMostrarTracoComEsperadoZero', () => {
+    const { getAllByText } = renderWithTheme(
+      <FrequencyCard
+        semana={semanaDeFrequencia({ expected: 0, attended: 0, frequencyPercent: null })}
+        mes={mesDeFrequencia({ expected: 0, attended: 0, frequencyPercent: null })}
+        loading={false}
+        error={null}
+        onPress={jest.fn()}
+      />,
+    );
+    // "0%" seria mentira: sem aula esperada, não houve falta.
     expect(getAllByText('—')).toHaveLength(2);
   });
 
-  it('deveAbrirOHistoricoAoToque', () => {
+  it('deveMostrarOErroEmVezDeNumerosInventados', () => {
+    const { getByText, queryByText } = renderWithTheme(
+      <FrequencyCard semana={null} mes={null} loading={false} error="Não foi possível carregar a frequência." onPress={jest.fn()} />,
+    );
+    expect(getByText('Não foi possível carregar a frequência.')).toBeTruthy();
+    expect(queryByText('0%')).toBeNull();
+  });
+
+  it('deveAbrirATelaFrequenciaAoToque', () => {
     const onPress = jest.fn();
     const { getByRole } = renderWithTheme(
-      <FrequencyCard frequency={FREQUENCIA} loading={false} onPress={onPress} />,
+      <FrequencyCard semana={semanaDeFrequencia()} mes={mesDeFrequencia()} loading={false} error={null} onPress={onPress} />,
     );
-
     fireEvent.press(getByRole('button'));
     expect(onPress).toHaveBeenCalledTimes(1);
   });

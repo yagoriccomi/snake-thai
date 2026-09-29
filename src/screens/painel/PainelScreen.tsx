@@ -146,12 +146,12 @@ export function PainelScreen({ navigation }: PainelStackScreenProps<'PainelHome'
         <View style={styles.grade}>
           <StatTile
             label="Média deste mês"
-            value={resumo.frequenciaMediaMes === null ? '—' : formatarPercentual(resumo.frequenciaMediaMes)}
+            value={formatarPercentual(resumo.frequenciaMediaMes)}
             hint={`de ${contagem(resumo.alunosComAulaNoMes, 'aluno', 'alunos')} com aula`}
           />
           <StatTile
             label={`Média de ${formatMonthYear(resumo.ultimoMesFechado).split(' ')[0]?.toLowerCase() ?? 'mês passado'}`}
-            value={resumo.frequenciaMediaUltimoMes === null ? '—' : formatarPercentual(resumo.frequenciaMediaUltimoMes)}
+            value={formatarPercentual(resumo.frequenciaMediaUltimoMes)}
             hint={`de ${contagem(resumo.alunosComAulaUltimoMes, 'aluno', 'alunos')} com aula`}
           />
         </View>

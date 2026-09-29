@@ -25,9 +25,11 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   alunos.
 - **Controle de frequência**: o aluno declara se vem (só sugestivo) e a presença
   vale pela chamada do professor, efetivada em "Concluir chamada". Cada aluno
-  vê "Presença em Aulas X/Y · Frequência N%" e o histórico dos meses fechados
-  (gravados todo dia, assim que o mês termina, inclusive a semana que vira o
-  mês, e regravados se uma chamada ou justificativa mudar depois). Ao avisar falta, pode enviar justificativa com
+  vê a frequência da **semana** e do **mês** ("{a} de {e}", podendo passar de
+  100%; no plano à vontade, a meta) e, na tela Frequência, cada semana do mês,
+  inclusive a **Semana extra**, que vira o mês. O mês fechado é gravado todo
+  dia, assim que termina, e regravado se uma chamada ou justificativa mudar
+  depois. Ao avisar falta, pode enviar justificativa com
   mensagem de até 255 caracteres e imagem ou PDF, que o professor da aula ou o
   admin aprova ou recusa. Aulas que passam sem chamada geram aviso na agenda.
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.

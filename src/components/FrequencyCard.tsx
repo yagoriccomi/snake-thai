@@ -2,59 +2,95 @@ import React, { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import type { MonthlyFrequency } from '@/services/frequency.service';
+import type { FrequenciaDaSemana, FrequenciaDoMes } from '@/services/frequency.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatarPercentual } from '@/utils/frequency';
+import {
+  formatarPercentual,
+  rotulosDaFrequencia,
+  textoDeContagem,
+  tomDoPercentual,
+} from '@/utils/frequency';
 
 interface FrequencyCardProps {
-  /** `null` enquanto carrega ou quando a carga falhou. */
-  frequency: MonthlyFrequency | null;
+  semana: FrequenciaDaSemana | null;
+  mes: FrequenciaDoMes | null;
   loading: boolean;
-  /** Abre o histórico mensal. */
+  /** Mensagem amigável quando a carga falhou. */
+  error: string | null;
+  /** Abre a tela Frequência. */
   onPress: () => void;
 }
 
+type Estilos = ReturnType<typeof makeStyles>;
+
+interface BlocoProps {
+  rotulo: string;
+  percentual: number | null;
+  feitas: number | null;
+  esperadas: number | null;
+  styles: Estilos;
+}
+
+function Bloco({ rotulo, percentual, feitas, esperadas, styles }: BlocoProps): React.JSX.Element {
+  return (
+    <View style={styles.bloco}>
+      <Text style={styles.rotulo}>{rotulo}</Text>
+      <Text style={[styles.valor, tomDoPercentual(percentual) === 'acima' && styles.valorAcima]}>
+        {formatarPercentual(percentual)}
+      </Text>
+      <Text style={styles.rotulo}>{feitas !== null && esperadas !== null ? textoDeContagem(feitas, esperadas) : ' '}</Text>
+    </View>
+  );
+}
+
 /**
- * Resumo da frequência do aluno no mês: "Presença em Aulas: X/Y" e
- * "Frequência: N%" (docs/FREQUENCIA.md).
- *
- * Os dois números medem coisas diferentes — o total é o mês inteiro, o
- * percentual só as aulas que já tiveram chamada — por isso o card leva ao
- * histórico, onde isso é explicado.
+ * A frequência do aluno na tela Aulas (contrato § 3, mockups da linha B):
+ * "Semana · {p}%" e "Mês · {p}%", cada um com "{a} de {e}". No à vontade, a
+ * meta. O percentual passa de 100% (D7) e ganha o acento; esperado 0 é "—".
  */
-function FrequencyCardComponent({
-  frequency,
-  loading,
-  onPress,
-}: FrequencyCardProps): React.JSX.Element {
+function FrequencyCardComponent({ semana, mes, loading, error, onPress }: FrequencyCardProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
 
-  const presenca =
-    frequency !== null ? `${frequency.attended}/${frequency.totalClasses}` : '—';
-  const percentual = frequency !== null ? formatarPercentual(frequency.frequencyPercent) : '—';
+  const rotulos = rotulosDaFrequencia(mes?.scheduleMode ?? semana?.scheduleMode ?? 'fixed');
+
+  const descricao =
+    semana !== null && mes !== null
+      ? `${rotulos.semana}: ${formatarPercentual(semana.frequencyPercent)}, ${textoDeContagem(semana.attended, semana.expected)}. ` +
+        `${rotulos.mes}: ${formatarPercentual(mes.frequencyPercent)}, ${textoDeContagem(mes.attended, mes.expected)}.`
+      : 'Frequência';
+
+  const carregando = loading && semana === null && mes === null;
 
   return (
     <Pressable
       onPress={onPress}
       style={styles.card}
       accessibilityRole="button"
-      accessibilityLabel={`Presença em aulas: ${presenca}. Frequência: ${percentual}`}
-      accessibilityHint="Abre o histórico de frequência"
+      accessibilityLabel={error ?? descricao}
+      accessibilityHint="Abre a sua frequência, semana a semana"
     >
-      {loading && frequency === null ? (
-        <ActivityIndicator color={colors.primary} style={styles.loading} />
+      {carregando ? (
+        <ActivityIndicator color={colors.primary} style={styles.cheio} />
+      ) : error !== null ? (
+        <Text style={[styles.rotulo, styles.cheio, styles.erro]}>{error}</Text>
       ) : (
         <>
-          <View style={styles.bloco}>
-            <Text style={styles.rotulo}>Presença em Aulas</Text>
-            <Text style={styles.valor}>{presenca}</Text>
-          </View>
+          <Bloco
+            rotulo={rotulos.semana}
+            percentual={semana?.frequencyPercent ?? null}
+            feitas={semana?.attended ?? null}
+            esperadas={semana?.expected ?? null}
+            styles={styles}
+          />
           <View style={styles.divisor} />
-          <View style={styles.bloco}>
-            <Text style={styles.rotulo}>Frequência</Text>
-            <Text style={styles.valor}>{percentual}</Text>
-          </View>
+          <Bloco
+            rotulo={rotulos.mes}
+            percentual={mes?.frequencyPercent ?? null}
+            feitas={mes?.attended ?? null}
+            esperadas={mes?.expected ?? null}
+            styles={styles}
+          />
         </>
       )}
       <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
@@ -80,15 +116,17 @@ function makeStyles(
       borderColor: colors.border,
       backgroundColor: colors.surface,
     },
-    loading: { flex: 1 },
+    cheio: { flex: 1 },
     bloco: { flex: 1, gap: 2 },
     rotulo: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+    erro: { color: colors.error, fontSize: 13 },
     valor: {
       fontFamily: fonts.headingBold,
       fontSize: 22,
       color: colors.textPrimary,
       fontVariant: ['tabular-nums'],
     },
+    valorAcima: { color: colors.primaryText },
     divisor: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: colors.border },
   });
 }
