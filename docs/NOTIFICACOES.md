@@ -15,6 +15,18 @@
 | Justificativa de falta para revisar | Professores da aula (admins, se a aula não tem professor) | Quando o aluno envia |
 | Chamada pendente | Professores da aula | 1 hora depois do início, a cada 15 min, por até 24 h |
 | Aulas sem chamada hoje | Admins | Resumo às 21:00 |
+| Aula cancelada | Antes da aula: alunos da aula (fixos da grade, com troca ou extra; livres, se a aula aceita livres), a equipe e os admins. Depois da aula: só a equipe e os admins. Quem cancelou fica de fora | Na hora; **o primeiro cancelamento fura o silêncio** para os alunos |
+| Aula confirmada de novo | Os mesmos, calculados na reativação | Respeita o silêncio |
+| Justificativa aprovada / negada | Aluno | Na decisão (tentativa 2 negada: "procure o professor ou a administração") |
+| Chamada corrigida | O aluno cuja presença mudou | Na retificação |
+| Nova solicitação para analisar | Quem pode decidir | Quando o pedido chega |
+| Pedido de troca de aula | Professores da aula nova (sem nenhum, os admins; na permanente, também os admins) | Quando o aluno pede |
+| Troca aprovada / negada | Aluno (quem decidiu fica de fora) | Na decisão ou na chamada que aprova |
+| Troca de aula (equipe) | Professores da aula antiga e da nova; admins só na permanente | Na aprovação |
+
+Os tipos do contrato v4 (os oito últimos) são montados pela `send-push` desde o bloco 4.7b; um tipo que
+ela ainda não conheça vira um texto genérico ("Abra o app para ver a novidade.") em vez de derrubar o
+lote. **Por isso a função vai para produção antes das migrations do 4.6b e do 4.7a** (contrato § 14).
 
 Horários de São Paulo. Os lembretes de mensalidade só valem para mensalidade **em
 aberto** (quem já mandou comprovante não recebe) e usam o dia de São Paulo, não o
