@@ -11,8 +11,11 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import {
+  avisoDeTrocasPermanentes,
+  countPermanentSwapsForSchedule,
   endSchedule,
   fetchSchedulesForGroup,
+  seloDoPublico,
   saveSchedule,
   type ScheduleInput,
 } from '@/services/schedules.service';
@@ -34,6 +37,7 @@ const HORARIO = {
 const ENTRADA: ScheduleInput = {
   id: null,
   groupId: 'turma-a',
+  audience: 'both',
   title: '  Muay Thai ',
   weekday: 1,
   startTime: '19:00',
@@ -115,6 +119,7 @@ describe('saveSchedule', () => {
       p_start_time: '19:00',
       p_valid_from: '2030-03-01',
       p_teacher_ids: ['p-1'],
+      p_audience: 'both',
     });
     expect(resultado).toEqual({ scheduleId: 'h-1', adjusted: 0, removed: 0, created: 9 });
   });
@@ -165,5 +170,54 @@ describe('endSchedule', () => {
     const falha = await endSchedule('h-1', '2020-01-01').catch((erro: unknown) => erro);
 
     expect(describeError(falha)).toBe('O último dia do horário não pode ser antes de ontem.');
+  });
+});
+
+describe('grade com público e sem turma (4.3, contrato § 6)', () => {
+  it('deveBuscarOsHorariosSemTurmaPeloGroupIdNulo', async () => {
+    const horarios = createQueryChain({ data: [], error: null });
+    mockFrom.mockReturnValue(horarios);
+
+    await fetchSchedulesForGroup(null);
+
+    expect(horarios.is).toHaveBeenCalledWith('group_id', null);
+    expect(horarios.eq).not.toHaveBeenCalled();
+  });
+
+  it('deveMandarOHorarioSoLivresSemTurma', async () => {
+    mockRpc.mockResolvedValue({ data: { schedule_id: 'h-9', ajustadas: 0, removidas: 0, criadas: 4 }, error: null });
+
+    await saveSchedule({ ...ENTRADA, groupId: null, audience: 'free' });
+
+    expect(mockRpc).toHaveBeenCalledWith(
+      'salvar_horario_da_grade',
+      expect.objectContaining({ p_group_id: null, p_audience: 'free' }),
+    );
+  });
+
+  it('deveContarCadaAlunoUmaVezNasTrocasPermanentesDoHorario', async () => {
+    mockRpc.mockResolvedValue({
+      data: [
+        { user_id: 'a-1', student_name: 'Ana', papel: 'origem', started_at: '2030-01-01T00:00:00Z' },
+        { user_id: 'a-1', student_name: 'Ana', papel: 'destino', started_at: '2030-02-01T00:00:00Z' },
+        { user_id: 'a-2', student_name: 'Bia', papel: 'destino', started_at: '2030-02-01T00:00:00Z' },
+      ],
+      error: null,
+    });
+
+    await expect(countPermanentSwapsForSchedule('h-1')).resolves.toBe(2);
+    expect(mockRpc).toHaveBeenCalledWith('trocas_permanentes_do_horario', { p_schedule_id: 'h-1' });
+  });
+
+  it('devePropagarAFalhaAoContarAsTrocas', async () => {
+    mockRpc.mockResolvedValue(NETWORK_FAILURE);
+    await expect(countPermanentSwapsForSchedule('h-1')).rejects.toEqual(NETWORK_FAILURE.error);
+  });
+
+  it('deveUsarOsTextosDoContrato', () => {
+    expect(seloDoPublico('free')).toBe('Livres');
+    expect(seloDoPublico('fixed')).toBe('Fixos');
+    expect(seloDoPublico('both')).toBeNull();
+    expect(avisoDeTrocasPermanentes(3)).toBe('3 aluno(s) têm troca permanente com este horário.');
   });
 });

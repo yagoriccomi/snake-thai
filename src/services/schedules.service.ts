@@ -11,6 +11,26 @@ import { comoObjeto, lerInteiro, lerTexto } from '@/utils/jsonDoBanco';
 
 export type ScheduleRow = Database['public']['Tables']['class_schedules']['Row'];
 
+/** Quem pode participar de um horário ou aula (§ 6, D3). */
+export type ClassAudience = Database['public']['Enums']['class_audience'];
+
+/** Rótulos da § 3: selo **Fixos** / **Livres**; "ambos" não tem selo e no formulário é **Fixos e livres**. */
+export const AUDIENCE_LABELS: Readonly<Record<ClassAudience, string>> = {
+  fixed: 'Fixos',
+  free: 'Livres',
+  both: 'Fixos e livres',
+};
+
+/** Selo do público na grade e nas aulas: "ambos" fica sem selo (§ 3). */
+export function seloDoPublico(publico: ClassAudience): string | null {
+  return publico === 'both' ? null : AUDIENCE_LABELS[publico];
+}
+
+/** Texto do § 6, antes de encerrar ou editar um horário com troca permanente. */
+export function avisoDeTrocasPermanentes(quantidade: number): string {
+  return `${quantidade} aluno(s) têm troca permanente com este horário.`;
+}
+
 /** Professor escalado num horário — nome e cor, sem dado pessoal. */
 export interface ScheduleTeacherRef {
   id: string;
@@ -28,13 +48,12 @@ const RECUSAS_COM_MENSAGEM = ['22023', '23514', '23505', 'P0002'] as const;
 
 /**
  * Horários de uma turma, com os professores — três consultas no total,
- * não uma por horário. [#70]
+ * não uma por horário. [#70] `groupId` nulo: os horários "só livres" sem
+ * turma (§ 6, T7).
  */
-export async function fetchSchedulesForGroup(groupId: string): Promise<ScheduleWithTeachers[]> {
-  const { data: horarios, error } = await supabase
-    .from('class_schedules')
-    .select('*')
-    .eq('group_id', groupId)
+export async function fetchSchedulesForGroup(groupId: string | null): Promise<ScheduleWithTeachers[]> {
+  const base = supabase.from('class_schedules').select('*');
+  const { data: horarios, error } = await (groupId === null ? base.is('group_id', null) : base.eq('group_id', groupId))
     .order('weekday', { ascending: true })
     .order('start_time', { ascending: true });
   if (error !== null) {
@@ -80,7 +99,9 @@ export async function fetchSchedulesForGroup(groupId: string): Promise<ScheduleW
 /** Horário a salvar. `id` nulo cria; preenchido edita. */
 export interface ScheduleInput {
   id: string | null;
-  groupId: string;
+  /** Nulo só no horário "só livres" (o banco recusa nulo com outro público). */
+  groupId: string | null;
+  audience: ClassAudience;
   title: string;
   /** 0 = domingo … 6 = sábado. */
   weekday: number;
@@ -109,12 +130,14 @@ const SALVAR = 'salvar_horario_da_grade';
 /** Cria ou edita um horário e gera as aulas dele (só admin). */
 export async function saveSchedule(input: ScheduleInput): Promise<ScheduleSaveResult> {
   const { data, error } = await supabase.rpc(SALVAR, {
-    p_group_id: input.groupId,
+    // Os tipos gerados não sabem que o argumento aceita nulo (horário "só livres", § 6).
+    p_group_id: input.groupId as string,
     p_title: input.title.trim(),
     p_weekday: input.weekday,
     p_start_time: input.startTime,
     p_valid_from: input.validFromIso,
     p_teacher_ids: input.teacherIds,
+    p_audience: input.audience,
     // Omitidos em vez de nulos: no banco, o padrão deles já é nulo.
     ...(input.validUntilIso !== null ? { p_valid_until: input.validUntilIso } : {}),
     ...(input.id !== null ? { p_id: input.id } : {}),
@@ -154,4 +177,18 @@ export async function endSchedule(scheduleId: string, lastDayIso: string): Promi
     throw new Error(`Resposta inesperada do banco (${ENCERRAR}.acao).`);
   }
   return { action: acao, removed: lerInteiro(resultado, 'removidas', ENCERRAR) };
+}
+
+const TROCAS_DO_HORARIO = 'trocas_permanentes_do_horario';
+
+/**
+ * Quantos alunos têm troca permanente vigente com o horário (como origem ou
+ * destino). A grade avisa antes de encerrar ou editar (§ 6). Só admin.
+ */
+export async function countPermanentSwapsForSchedule(scheduleId: string): Promise<number> {
+  const { data, error } = await supabase.rpc(TROCAS_DO_HORARIO, { p_schedule_id: scheduleId });
+  if (error !== null) {
+    throw error;
+  }
+  return new Set(data.map((linha) => linha.user_id)).size;
 }

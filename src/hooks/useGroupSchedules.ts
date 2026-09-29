@@ -19,7 +19,7 @@ interface UseGroupSchedulesResult {
  * Não carrega sozinho: a tela chama `reload` no foco (volta do formulário de
  * horário), e carregar também na montagem dobraria a requisição. [#70]
  */
-export function useGroupSchedules(groupId: string): UseGroupSchedulesResult {
+export function useGroupSchedules(groupId: string | null): UseGroupSchedulesResult {
   const [schedules, setSchedules] = useState<ScheduleWithTeachers[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

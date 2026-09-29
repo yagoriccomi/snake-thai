@@ -8,6 +8,7 @@ import type {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { ClassType } from '@/services/classes.service';
+import type { ClassAudience } from '@/services/schedules.service';
 
 /** Dados de uma aula trafegados entre a lista, o detalhe e a edição. */
 export interface ClassNavParams {
@@ -32,6 +33,8 @@ export interface ScheduleFormParams {
   /** `AAAA-MM-DD`; `null` = sem fim. */
   validUntil: string | null;
   teacherIds: string[];
+  /** Quem pode participar (§ 6). */
+  audience: ClassAudience;
 }
 
 /** Stack interna da aba "Dados" (perfil + cadastro/gestão de alunos pelo admin). */
@@ -50,10 +53,10 @@ export type DadosStackParamList = {
   ExcluirConta: undefined;
   /** Turmas (admin): criar, renomear, excluir/arquivar e reativar. */
   Turmas: undefined;
-  /** Grade semanal de uma turma (admin). */
-  GradeTurma: { groupId: string; groupName: string };
+  /** Grade semanal de uma turma (admin). `groupId` nulo: os horários "só livres" sem turma (§ 6, T7). */
+  GradeTurma: { groupId: string | null; groupName: string };
   /** Criar (sem `schedule`) ou editar um horário da grade (admin). */
-  HorarioForm: { groupId: string; groupName: string; schedule?: ScheduleFormParams };
+  HorarioForm: { groupId: string | null; groupName: string; schedule?: ScheduleFormParams };
   /** Política de Privacidade e Termos de Uso vigentes, com a data do aceite. */
   DocumentosLegais: undefined;
   /** Dados da academia que entram nos termos (admin): CNPJ, prazos, foro. */

@@ -127,6 +127,12 @@ export function TurmasScreen({ navigation }: DadosStackScreenProps<'Turmas'>): R
     [navigation],
   );
 
+  // Horários "só livres" sem turma (§ 6, T7) não pertencem a nenhum cartão.
+  const abrirGradeSemTurma = useCallback(
+    () => navigation.navigate('GradeTurma', { groupId: null, groupName: 'Aulas só para livres' }),
+    [navigation],
+  );
+
   const aoExcluir = useCallback(
     (resultado: GroupRemovalResult) => {
       const nomeDaTurma = turmaAExcluir?.name ?? 'A turma';
@@ -223,6 +229,21 @@ export function TurmasScreen({ navigation }: DadosStackScreenProps<'Turmas'>): R
     () => (
       <View style={styles.header}>
         <Button title="Nova turma" onPress={abrirCriacao} />
+        <Pressable
+          onPress={abrirGradeSemTurma}
+          style={[styles.card, styles.semTurma]}
+          accessibilityRole="button"
+          accessibilityLabel="Aulas só para livres"
+          accessibilityHint="Abre os horários sem turma, que só alunos de horário livre veem"
+        >
+          <View style={styles.semTurmaTexto}>
+            <AppText variant="body">Aulas só para livres</AppText>
+            <AppText variant="caption" color={colors.textSecondary}>
+              Horários sem turma, que só alunos de horário livre veem.
+            </AppText>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.primaryText} />
+        </Pressable>
         {ativas.length > 0 ? (
           <Text style={styles.sectionLabel}>
             {ativas.length === 1 ? '1 TURMA ATIVA' : `${ativas.length} TURMAS ATIVAS`}
@@ -230,7 +251,7 @@ export function TurmasScreen({ navigation }: DadosStackScreenProps<'Turmas'>): R
         ) : null}
       </View>
     ),
-    [styles, abrirCriacao, ativas.length],
+    [styles, abrirCriacao, abrirGradeSemTurma, colors, ativas.length],
   );
 
   const rodape = useMemo(
@@ -366,6 +387,17 @@ function makeStyles(colors: ColorScheme, fonts: Fonts, minHitSlop: number) {
     },
     header: {
       marginBottom: 8,
+    },
+    semTurma: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginTop: 12,
+      marginBottom: 0,
+    },
+    semTurmaTexto: {
+      flex: 1,
+      gap: 2,
     },
     sectionLabel: {
       fontFamily: fonts.bodySemiBold,
