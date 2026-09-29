@@ -1,3 +1,4 @@
+import { lerErroDoBanco } from '@/lib/functionsError';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
 
@@ -15,6 +16,9 @@ export type PlanRow = Database['public']['Tables']['plans']['Row'];
 /** Periodicidade de cobrança aceita pelo domínio. */
 export type BillingPeriod = Database['public']['Enums']['billing_period'];
 
+/** Modalidade do plano (contrato § 5, D1): fixo, livre (com cota) ou à vontade. */
+export type ScheduleMode = Database['public']['Enums']['plan_schedule_mode'];
+
 /** Dados necessários para criar ou editar um plano. */
 export interface PlanInput {
   name: string;
@@ -25,6 +29,9 @@ export interface PlanInput {
   /** Dia do vencimento, de 1 a 28. */
   dueDay: number;
   isActive: boolean;
+  scheduleMode: ScheduleMode;
+  /** Aulas por semana; só no plano livre (ignorada nos outros). */
+  weeklyQuota: number | null;
 }
 
 /** Rótulos de exibição de cada periodicidade, na ordem em que aparecem na UI. */
@@ -34,6 +41,27 @@ export const BILLING_PERIOD_LABELS: Readonly<Record<BillingPeriod, string>> = {
   semiannual: 'Semestral',
   annual: 'Anual',
 };
+
+/** Rótulos da § 3 do contrato, iguais no app e na web. */
+export const SCHEDULE_MODE_LABELS: Readonly<Record<ScheduleMode, string>> = {
+  fixed: 'Horário fixo',
+  free: 'Horário livre',
+  unlimited: 'À vontade',
+};
+
+/** Cota do plano livre: de 1 a 6 aulas por semana (`plans_cota_coerente`). */
+export const MIN_WEEKLY_QUOTA = 1;
+export const MAX_WEEKLY_QUOTA = 6;
+
+/** SQLSTATE da recusa escrita pelo banco para a pessoa: plano com histórico (T4). */
+const CODIGOS_COM_FRASE_DO_PLANO = ['23514'] as const;
+
+/** O que o plano pede do aluno, em uma linha (lista de planos, mockup da linha A). */
+export function resumoDaModalidade(plan: Pick<PlanRow, 'schedule_mode' | 'weekly_quota'>): string {
+  if (plan.schedule_mode === 'free') return `${plan.weekly_quota ?? MIN_WEEKLY_QUOTA}x por semana`;
+  if (plan.schedule_mode === 'unlimited') return 'Sem cota · meta do aluno';
+  return 'Segue a grade da turma';
+}
 
 /** Menor e maior dia de vencimento aceitos (28 existe em todo mês). */
 export const MIN_DUE_DAY = 1;
@@ -109,7 +137,8 @@ export async function updatePlan(id: string, input: PlanInput): Promise<PlanRow>
     .select('*')
     .single();
   if (error !== null) {
-    throw error;
+    // Plano com histórico não muda de modalidade nem de cota (T4): a frase é do banco.
+    throw lerErroDoBanco(error, CODIGOS_COM_FRASE_DO_PLANO);
   }
   return data;
 }
@@ -145,5 +174,8 @@ function toRow(input: PlanInput): Database['public']['Tables']['plans']['Insert'
     billing_period: input.billingPeriod,
     due_day: input.dueDay,
     is_active: input.isActive,
+    schedule_mode: input.scheduleMode,
+    // A cota só existe no livre; nos outros o banco exige nulo (`plans_cota_coerente`).
+    weekly_quota: input.scheduleMode === 'free' ? input.weeklyQuota : null,
   };
 }

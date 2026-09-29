@@ -133,6 +133,8 @@ describe('usePlans — falha de carga não pode virar lista vazia silenciosa', (
         priceCents: 100,
         billingPeriod: 'monthly',
         dueDay: 10,
+        scheduleMode: 'fixed',
+        weeklyQuota: null,
         isActive: true,
       }),
     ).rejects.toThrow('RLS');

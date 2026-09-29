@@ -31,6 +31,9 @@ jest.mock('@/hooks/useExportarMeusDados', () => ({
   useExportarMeusDados: () => ({ exportar: jest.fn(), exportando: false, erro: null }),
 }));
 jest.mock('@/components/AppVersionFooter', () => ({ AppVersionFooter: () => null }));
+jest.mock('@/services/contato.service', () => ({
+  fetchContatoDaAcademia: jest.fn().mockResolvedValue({ whatsapp: null, email: null }),
+}));
 
 import { PortalProvider } from '@/components/Portal';
 import { DadosScreen } from '@/screens/dados/DadosScreen';

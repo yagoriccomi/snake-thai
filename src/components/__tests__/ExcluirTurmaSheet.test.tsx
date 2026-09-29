@@ -96,6 +96,15 @@ describe('ExcluirTurmaSheet', () => {
     expect(getByText(/só vê eventos e fica com 100% de frequência/)).toBeTruthy();
   });
 
+  it('deveDizerQueAFrequenciaContaAsAulasDaTurmaAteAgora', async () => {
+    // D58: mudar de turma não recomeça mais o mês (o texto antigo dizia o contrário).
+    mockPreview.mockResolvedValue(COM_HISTORICO);
+    const { findByText, queryByText } = renderFolha();
+
+    expect(await findByText('A frequência dos alunos continua contando as aulas desta turma até agora.')).toBeTruthy();
+    expect(queryByText(/reinicia a frequência do mês/)).toBeNull();
+  });
+
   it('deveLiberarDeCaraATurmaSemAlunosEApagarDeVez', async () => {
     mockPreview.mockResolvedValue({ ...COM_HISTORICO, students: 0, pastClasses: 0, frozenMonths: 0, canDeleteForGood: true });
     const { findByRole, getByText } = renderFolha();
