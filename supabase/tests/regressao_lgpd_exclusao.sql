@@ -48,8 +48,8 @@ insert into public.absence_justifications (id, class_id, user_id, message, proof
   ('f7000000-0000-4000-8000-00000000e001','f7000000-0000-4000-8000-00000000c001','f7000000-0000-4000-8000-000000000001',
    'Consulta médica', 'cloudinary', 'justificativas/f7000000-0000-4000-8000-000000000001/f7000000-0000-4000-8000-00000000c001');
 
-insert into public.attendance_monthly (user_id, reference_month, group_id, total_classes, counted_classes, attended, justified, frequency_percent)
-values ('f7000000-0000-4000-8000-000000000001', date '2030-01-01', 'turma-lgpd', 8, 8, 6, 1, 87.5);
+insert into public.attendance_monthly (user_id, reference_month, group_id, schedule_mode, expected, attended, excused, cancelled, frequency_percent, total_classes, counted_classes, justified)
+values ('f7000000-0000-4000-8000-000000000001', date '2030-01-01', 'turma-lgpd', 'fixed', 7, 6, 1, 0, 85.71, 7, 7, 1);
 
 insert into public.legal_documents (id, kind, version, content)
 values ('f7000000-0000-4000-8000-00000000a001', 'privacy_policy', 'lgpd-teste', 'texto de teste')

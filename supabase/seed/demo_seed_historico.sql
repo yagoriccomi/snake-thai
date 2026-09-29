@@ -77,9 +77,10 @@ update public.classes
 -- ----------------------------------------------------------------------------
 -- 2. Alunos "matriculados" antes do histórico
 --
---    `frequencia_mensal` ignora aulas anteriores ao `created_at` do aluno — é
---    o certo para quem entra no meio do mês. Sem recuar a data, os 3 meses
---    semeados simplesmente não entrariam na conta de ninguém.
+--    A frequência conta a turma e o plano pelos períodos (`student_group_periods`
+--    e `plan_periods`, D58 e T3), que começam no cadastro. Sem recuar a data
+--    do cadastro E o início desses períodos, os 3 meses semeados não
+--    entrariam na conta de ninguém.
 -- ----------------------------------------------------------------------------
 update public.profiles p
    set created_at = (((select primeiro_mes from parametros) - 10) + time '10:00')
@@ -87,6 +88,26 @@ update public.profiles p
  where p.id in (select id from alunos_do_historico)
    and p.created_at > (((select primeiro_mes from parametros) - 10) + time '10:00')
                       at time zone 'America/Sao_Paulo';
+
+-- O período aberto desde o cadastro acompanha a data recuada (só o primeiro:
+-- quem já mudou de turma ou de plano fica como está).
+update public.student_group_periods g
+   set started_at = p.created_at
+  from public.profiles p
+ where g.user_id = p.id
+   and p.id in (select id from alunos_do_historico)
+   and g.ended_at is null
+   and g.start_reason in ('signup', 'backfill')
+   and g.started_at > p.created_at;
+
+update public.plan_periods pp
+   set started_at = p.created_at
+  from public.profiles p
+ where pp.user_id = p.id
+   and p.id in (select id from alunos_do_historico)
+   and pp.ended_at is null
+   and pp.started_at > p.created_at
+   and not exists (select 1 from public.plan_periods o where o.user_id = pp.user_id and o.id <> pp.id);
 
 -- ----------------------------------------------------------------------------
 -- 3. Agenda do início do histórico
@@ -254,9 +275,11 @@ on conflict (class_id, user_id) do nothing;
 -- ----------------------------------------------------------------------------
 -- 9. Congela os meses fechados
 --
---    Em produção o mês congela uma vez e não muda. Aqui a seed apaga e
---    recongela o PRÓPRIO histórico fictício, para uma segunda execução
---    refletir a agenda corrigida — nunca mês fora do período semeado.
+--    Em produção o fechamento diário grava cada mês uma vez e só o regrava
+--    se ele mudar depois (T31). Aqui a seed apaga e regrava o PRÓPRIO
+--    histórico fictício, para uma segunda execução refletir a agenda
+--    corrigida — nunca mês fora do período semeado. O mês cuja Semana Extra
+--    ainda não terminou fica para o fechamento diário (D10).
 -- ----------------------------------------------------------------------------
 delete from public.attendance_monthly m
  using alunos_do_historico al
@@ -269,7 +292,8 @@ select to_char(mes, 'YYYY-MM') as mes_congelado,
   from generate_series(
          (select primeiro_mes from parametros),
          (select mes_corrente from parametros) - interval '1 month',
-         interval '1 month') as mes;
+         interval '1 month') as mes
+ where (now() at time zone 'America/Sao_Paulo')::date > public.fim_do_mes_de_frequencia(mes::date);
 
 -- ----------------------------------------------------------------------------
 -- 10. Mensalidades dos 3 meses anteriores
