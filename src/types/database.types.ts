@@ -1245,7 +1245,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "aceitar_documentos_legais":
+            "abrir_solicitacao":
+{ Args: { "p_class_id": string,"p_kind": Database["public"]['Enums']["roll_call_request_kind"],"p_motivo_id": string }; Returns: string
+                           },
+"aceitar_documentos_legais":
 { Args: { "p_documentos": (string)[] }; Returns: number
                            },
 "ajustar_trocas_ao_fim_do_horario":
@@ -1284,6 +1287,9 @@ isOneToOne: false
 "avisar_justificativa_pendente":
 { Args: { "p_id": string }; Returns: undefined
                            },
+"avisar_solicitacao_pendente":
+{ Args: { "p_id": string }; Returns: undefined
+                           },
 "avisar_troca_aprovada":
 { Args: { "p_pela_chamada": boolean,"p_por": string,"p_swap_id": string }; Returns: undefined
                            },
@@ -1295,6 +1301,11 @@ isOneToOne: false
 "buscar_equipe_para_incluir":
 { Args: { "p_busca": string,"p_class_id": string }; Returns: {
               "color": string,"name": string,"teacher_id": string
+            }[]
+                           },
+"caixa_de_solicitacoes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "categoria": string,"quantidade": number
             }[]
                            },
 "cancelar_aula":
@@ -1324,6 +1335,9 @@ isOneToOne: false
 { Args: { "p_class_id": string,"p_kind": Database["public"]['Enums']["action_reason_kind"],"p_texto": string }; Returns: string
                            },
 "decidir_justificativa":
+{ Args: { "p_decisao": Database["public"]['Enums']["justification_status"],"p_id": string,"p_nota": string }; Returns: undefined
+                           },
+"decidir_solicitacao":
 { Args: { "p_decisao": Database["public"]['Enums']["justification_status"],"p_id": string,"p_nota": string }; Returns: undefined
                            },
 "declarar_aula":
@@ -1467,6 +1481,11 @@ isOneToOne: false
 "is_staff":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"itens_da_solicitacao":
+{ Args: { "p_categoria": string }; Returns: {
+              "class_id": string,"criado_em": string,"id": string,"nome": string,"payment_id": string,"quando": string,"tipo": string,"titulo": string,"user_id": string
+            }[]
+                           },
 "justificativas_do_aluno":
 { Args: { "p_ate"?: string,"p_de"?: string,"p_user_id"?: string }; Returns: {
               "approved_by_name": string,"attempt": number,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"first_attempt": Json,"id": string,"review_note": string,"reviewed_at": string,"reviewed_by_name": string,"scope": Database["public"]['Enums']["justification_scope"],"status": Database["public"]['Enums']["justification_status"],"student_name": string,"user_id": string,"week_start": string
@@ -1516,6 +1535,11 @@ isOneToOne: false
 "minhas_justificativas":
 { Args: Record<PropertyKey, never>; Returns: {
               "approved_by_name": string,"attempt": number,"can_resend": boolean,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"has_attachment": boolean,"id": string,"message": string,"resend_until": string,"reviewed_at": string,"scope": Database["public"]['Enums']["justification_scope"],"status": Database["public"]['Enums']["justification_status"],"week_start": string
+            }[]
+                           },
+"minhas_solicitacoes":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "approved_by_name": string,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"id": string,"kind": Database["public"]['Enums']["roll_call_request_kind"],"status": Database["public"]['Enums']["justification_status"]
             }[]
                            },
 "modalidade_da_semana":
@@ -1579,6 +1603,9 @@ isOneToOne: false
 { Args: { "p_motivo_id": string }; Returns: boolean
                            },
 "pode_decidir_justificativa":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
+"pode_decidir_solicitacao":
 { Args: { "p_id": string }; Returns: boolean
                            },
 "pode_decidir_troca":
@@ -1678,6 +1705,16 @@ isOneToOne: false
                            },
 "senha_padrao_da_academia":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"solicitacao_para_decidir":
+{ Args: { "p_id": string }; Returns: {
+              "anexos": number,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"id": string,"kind": Database["public"]['Enums']["roll_call_request_kind"],"motivo_id": string,"subject_id": string,"subject_name": string,"texto": string
+            }[]
+                           },
+"solicitacoes_decididas":
+{ Args: { "p_ate": string,"p_de": string }; Returns: {
+              "class_id": string,"class_title": string,"id": string,"kind": Database["public"]['Enums']["roll_call_request_kind"],"requester_name": string,"review_note": string,"reviewed_at": string,"reviewed_by_name": string,"status": Database["public"]['Enums']["justification_status"],"subject_name": string
+            }[]
                            },
 "travar_aula_para_chamada":
 { Args: { "p_class_id": string }; Returns: {
