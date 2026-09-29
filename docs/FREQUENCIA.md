@@ -92,6 +92,11 @@ regressão `supabase/tests/regressao_frequencia_regras.sql` com 18 casos verdes.
   (em análise, aprovada por {nome}, negada · reenviar até dd/mm) e o
   **Reenviar**; a 2ª negada mostra o contato da academia (D42). Tudo passa
   pelas RPCs da § 9.1 (`enviar_justificativa`, `reenviar_justificativa`).
+- **Eu estava na aula** (§ 9.3): numa aula que já passou, com chamada feita e
+  sem presença, o aluno pede a presença em até 7 dias (inclusive o à vontade).
+  A equipe da aula ou um admin decide em Solicitações; aprovado, a presença
+  entra como retificação da chamada. O pedido e a resposta ficam em **Meus
+  pedidos**.
 - **Professor / admin:** na chamada, frequência do mês por aluno e toque no
   nome para abrir o histórico. Na agenda, os atalhos **Chamadas pendentes** e
   **Justificativas para revisar** (com contador); a revisão pede **nota

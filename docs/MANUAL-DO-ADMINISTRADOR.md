@@ -289,6 +289,27 @@ app.
 5. O aluno pode reenviar **uma vez**, em até 7 dias depois da negativa. Se a segunda também for
    negada, ele é orientado a procurar a academia, com o contato de Configurações.
 
+### Solicitações
+
+O ícone de caixa no alto do **Painel** (e da aba **Aulas**) abre as **Solicitações**, com o número
+do que falta decidir em cada categoria: **Faltas de alunos · Faltas de professores · Retificação
+de chamadas · Trocas de aula · Pagamentos de mensalidade**.
+
+- **Faltas de alunos:** as justificativas, como acima.
+- **Faltas de professores:** o professor diz que estava na aula (e foi marcado ausente) ou justifica
+  a ausência. Aprovar dá a presença a ele, ou abona a aula para ele.
+- **Retificação de chamadas:** o aluno diz "Eu estava na aula" (o professor da aula também decide);
+  o professor pede para corrigir a chamada de outro professor ou para ser incluído numa aula que deu
+  sem estar escalado. Aqui também aparece **cada retificação feita**, só para você conferir: abra
+  **Ver chamada** e toque em **Conferido**.
+- **Pagamentos de mensalidade:** os comprovantes, que você aprova no **Financeiro**.
+- **Trocas de aula:** chega com a troca de aula.
+
+Toda decisão pede uma **nota**, que fica só para a administração. Quem pediu vê se foi aprovado e,
+na aprovação, quem aprovou; na negativa, vê o contato da academia. Cada pedido vai **uma vez só**,
+em até 7 dias depois da aula, e ninguém decide o próprio pedido. Em **Meus pedidos**, você vê os
+seus.
+
 ---
 
 ## 6. Receber e aprovar pagamentos

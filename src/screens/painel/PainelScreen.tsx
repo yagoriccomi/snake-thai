@@ -14,6 +14,7 @@ import { StatTile } from '@/components/StatTile';
 import { ALUNOS_EM_RISCO_VISIVEIS, LIMIAR_RISCO_EVASAO_PERCENT, MESES_DO_GRAFICO } from '@/constants/painel';
 import type { Fonts } from '@/constants/theme';
 import { useAdminDashboard } from '@/hooks/useAdminDashboard';
+import { useAtalhoDeSolicitacoes } from '@/hooks/useAtalhoDeSolicitacoes';
 import type { PainelStackScreenProps } from '@/navigation/types';
 import type { AlunoEmRisco, PainelResumo } from '@/services/painel.service';
 import type { ColorScheme } from '@/theme/colors';
@@ -34,6 +35,12 @@ const SCREEN_EDGES = ['bottom'] as const;
  * Com os dados na tela, uma falha de recarga vira aviso, não tela de erro.
  */
 export function PainelScreen({ navigation }: PainelStackScreenProps<'PainelHome'>): React.JSX.Element {
+  // A primeira aba do admin: o atalho da caixa fica no cabeçalho dela (§ 9.3).
+  const abrirSolicitacoes = useCallback(
+    () => navigation.navigate('Aulas', { screen: 'Solicitacoes', initial: false }),
+    [navigation],
+  );
+  useAtalhoDeSolicitacoes(navigation, abrirSolicitacoes, true);
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { dados, loading, error, reload } = useAdminDashboard();

@@ -22,8 +22,14 @@ const mockEstado = jest.fn();
 const mockMotivos = jest.fn();
 const mockPrevia = jest.fn();
 const mockMudar = jest.fn();
+const mockProfessores = jest.fn();
+const mockAbrirSolicitacao = jest.fn();
 jest.mock('@/services/chamada.service', () => ({
   fetchEstadoDaChamada: (...args: unknown[]): unknown => mockEstado(...args),
+  fetchProfessoresDaChamada: (...args: unknown[]): unknown => mockProfessores(...args),
+}));
+jest.mock('@/services/solicitacoes.service', () => ({
+  abrirSolicitacao: (...args: unknown[]): unknown => mockAbrirSolicitacao(...args),
 }));
 jest.mock('@/services/cancelamento.service', () => ({
   fetchMotivosDaAula: (...args: unknown[]): unknown => mockMotivos(...args),
@@ -52,13 +58,13 @@ function comoAdmin(color: string | null): void {
   };
 }
 
-function renderTela() {
+function renderTela(dateTimeIso = '2030-03-10T21:00:00Z') {
   const navigation = { navigate: jest.fn(), goBack: jest.fn() };
   const params = {
     classId: AULA,
     title: 'Muay Thai',
     type: 'routine',
-    dateTimeIso: '2030-03-10T21:00:00Z',
+    dateTimeIso,
     groupId: 'turma-a',
     scheduleId: null,
     groupLabel: 'Turma A',
@@ -89,6 +95,8 @@ beforeEach(() => {
     antesDaAula: true, fixos: 18, livres: 32, alunosDoEvento: 0, professores: ['Ana'], admins: 2,
   });
   mockMudar.mockReset().mockResolvedValue(undefined);
+  mockProfessores.mockReset().mockResolvedValue([]);
+  mockAbrirSolicitacao.mockReset().mockResolvedValue('s-1');
 });
 
 describe('DetalheAulaScreen — cancelar e reativar (4.7, § 6.1)', () => {
@@ -214,5 +222,42 @@ describe('DetalheAulaScreen — admin é professor (4.2, contrato § 4)', () => 
     const { findByText } = renderTela();
 
     expect(await findByText(/Não foi possível carregar os professores da aula/)).toBeTruthy();
+  });
+});
+
+describe('DetalheAulaScreen — pedir ao admin (4.9a, § 9.3)', () => {
+  function comoProfessor(): void {
+    mockAuth = { isAdmin: false, isProfessor: true, isStaff: true, profile: { id: EU, role: 'professor', name: 'Júlia', color: '#FB923C' }, refreshProfile: mockRefreshProfile };
+  }
+  const ONTEM = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  it('deveOferecerEuEstavaEJustificarAoProfessorMarcadoAusente', async () => {
+    comoProfessor();
+    mockFetchTeachers.mockResolvedValue({ [AULA]: [{ id: EU, name: 'Júlia', color: '#FB923C', joinedAt: '' }] });
+    mockEstado.mockResolvedValue({ cancelled: false, concludedAt: ONTEM });
+    mockProfessores.mockResolvedValue([{ teacherId: EU, present: false }]);
+    const tela = renderTela(ONTEM);
+
+    fireEvent.press(await tela.findByRole('button', { name: 'Eu estava na aula' }));
+    expect(tela.getByRole('button', { name: 'Justificar ausência' })).toBeTruthy();
+    fireEvent.changeText(tela.getByPlaceholderText('Conte o que aconteceu.'), 'Dei a aula inteira');
+    fireEvent.press(tela.getByRole('button', { name: 'Enviar pedido' }));
+    await waitFor(() => expect(mockAbrirSolicitacao).toHaveBeenCalledWith('teacher_was_present', AULA, 'Dei a aula inteira'));
+  });
+
+  it('deveOferecerCorrigirEIncluirAoProfessorDeFora', async () => {
+    comoProfessor();
+    mockEstado.mockResolvedValue({ cancelled: false, concludedAt: ONTEM });
+    const tela = renderTela(ONTEM);
+    expect(await tela.findByRole('button', { name: 'Corrigir chamada de outro professor' })).toBeTruthy();
+    expect(tela.getByRole('button', { name: 'Me incluir nesta aula' })).toBeTruthy();
+  });
+
+  it('naoDeveOferecerPedidosAoAdmin', async () => {
+    comoAdmin('#FB923C');
+    mockEstado.mockResolvedValue({ cancelled: false, concludedAt: ONTEM });
+    const tela = renderTela(ONTEM);
+    await tela.findByRole('button', { name: 'Editar aula' });
+    expect(tela.queryByText('PEDIR AO ADMIN')).toBeNull();
   });
 });

@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { AVISO_DE_ANEXO_QUE_FALHOU, type JustificationDraft } from '@/components/JustificationSheet';
 import type { AulaDoAluno, ResultadoDaDeclaracao } from '@/services/aulas.service';
 import { enviarJustificativa as enviarAoBanco } from '@/services/justifications.service';
+import { abrirSolicitacao } from '@/services/solicitacoes.service';
 
 export interface AvisoDeCota {
   aula: AulaDoAluno;
@@ -29,6 +30,7 @@ interface Parametros {
 export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
   const [aviso, setAviso] = useState<AvisoDeCota | null>(null);
   const [aulaDaFalta, setAulaDaFalta] = useState<AulaDoAluno | null>(null);
+  const [aulaDoPedido, setAulaDoPedido] = useState<AulaDoAluno | null>(null);
 
   const onVou = useCallback(
     async (aula: AulaDoAluno) => {
@@ -84,9 +86,25 @@ export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
     [userId, aulaDaFalta, recarregar],
   );
 
+  // "Eu estava na aula" (§ 9.3): o banco confere tudo; a linha some depois.
+  const onEuEstava = useCallback((aula: AulaDoAluno) => setAulaDoPedido(aula), []);
+  const fecharPedido = useCallback(() => setAulaDoPedido(null), []);
+  const enviarPedido = useCallback(
+    async (texto: string): Promise<void> => {
+      if (aulaDoPedido === null) return;
+      await abrirSolicitacao('student_was_present', aulaDoPedido.class_id, texto);
+      await recarregar();
+    },
+    [aulaDoPedido, recarregar],
+  );
+
   return {
     aviso,
     aulaDaFalta,
+    aulaDoPedido,
+    onEuEstava,
+    fecharPedido,
+    enviarPedido,
     onVou,
     onNaoVou,
     onDesmarcar,

@@ -7,7 +7,14 @@ import type { AulaDoAluno } from '@/services/aulas.service';
 import { formatDayMonth, formatTime, formatWeekday } from '@/utils/datetime';
 
 /** O que a linha oferece (as ações de troca chegam no 4.9b). */
-export type AcaoDaAula = 'nenhuma' | 'vou' | 'desmarcar' | 'vou-nao-vou' | 'vou-extra' | 'desmarcar-extra';
+export type AcaoDaAula =
+  | 'nenhuma'
+  | 'vou'
+  | 'desmarcar'
+  | 'vou-nao-vou'
+  | 'vou-extra'
+  | 'desmarcar-extra'
+  | 'eu-estava';
 
 export type TomDoSelo = 'neutro' | 'destaque' | 'aviso' | 'erro';
 
@@ -28,11 +35,12 @@ function jaComecou(aula: AulaDoAluno, agora: Date): boolean {
 const EH_DA_GRADE: ReadonlySet<string> = new Set(['turma', 'permanente', 'troca']);
 
 /**
- * A ação da linha pela tabela da § 12.2. Aula cancelada e aula que já começou
- * não têm ação (D26, T26).
+ * A ação da linha pela tabela da § 12.2. Aula cancelada não tem ação (D26);
+ * a que já começou só tem "Eu estava na aula", quando o banco aceita (§ 9.3).
  */
 export function acaoDaAula(aula: AulaDoAluno, agora: Date = new Date()): AcaoDaAula {
-  if (aula.cancelled || jaComecou(aula, agora)) return 'nenhuma';
+  if (aula.cancelled) return 'nenhuma';
+  if (jaComecou(aula, agora)) return aula.can_contest ? 'eu-estava' : 'nenhuma';
 
   if (aula.schedule_mode !== 'fixed' || aula.type === 'event') {
     if (aula.declared_status === 'present') return 'desmarcar';
@@ -115,4 +123,9 @@ export function segundaDaSemana(data: Date): Date {
   const segunda = new Date(data.getFullYear(), data.getMonth(), data.getDate());
   segunda.setDate(segunda.getDate() - ((segunda.getDay() + 6) % 7));
   return segunda;
+}
+
+/** O contexto da folha "Eu estava na aula" (§ 9.3). */
+export function contextoDoEuEstava(aula: Pick<AulaDoAluno, 'title' | 'date_time'>): string {
+  return `${aula.title} · ${diaEHora(aula.date_time)}. Se o professor aprovar, a sua presença entra na chamada.`;
 }

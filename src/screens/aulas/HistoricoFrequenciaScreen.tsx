@@ -250,6 +250,16 @@ export function HistoricoFrequenciaScreen({
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
         ) : null}
+        {proprio ? (
+          <Pressable
+            onPress={() => navigation.navigate('MinhasSolicitacoes')}
+            style={styles.link}
+            accessibilityRole="button"
+          >
+            <Text style={styles.linkTexto}>Meus pedidos</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
       </ScrollView>
       {semanaAJustificar !== null ? (
         <JustificationSheet

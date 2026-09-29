@@ -3,17 +3,19 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { PedidoSheet } from '@/components/PedidoSheet';
 import { PedirCorSheet } from '@/components/PedirCorSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { Selo } from '@/components/Selo';
 import { SituacaoDaAulaSheet } from '@/components/SituacaoDaAulaSheet';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TypeBadge } from '@/components/TypeBadge';
+import { ROTULO_DO_PEDIDO, type TipoDeSolicitacao } from '@/constants/solicitacoes';
 import { useAuth } from '@/context/AuthProvider';
 import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import { fetchMotivosDaAula, type MotivoDaAula } from '@/services/cancelamento.service';
-import { fetchEstadoDaChamada } from '@/services/chamada.service';
+import { fetchEstadoDaChamada, fetchProfessoresDaChamada } from '@/services/chamada.service';
 import {
   addClassTeacher,
   fetchTeachersForClasses,
@@ -21,9 +23,11 @@ import {
   type ClassTeacherRef,
 } from '@/services/classes.service';
 import { updateOwnColor } from '@/services/profile.service';
+import { abrirSolicitacao } from '@/services/solicitacoes.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatDayMonth, formatFullDateTime, formatTime } from '@/utils/datetime';
 import { describeError } from '@/utils/errors';
+import { O_QUE_O_PEDIDO_FAZ, pedidosDoProfessor } from '@/utils/solicitacoes';
 
 const SCREEN_EDGES = ['bottom'] as const;
 const log = createLogger('DetalheAulaScreen');
@@ -58,6 +62,11 @@ export function DetalheAulaScreen({
   const [cancelamento, setCancelamento] = useState<MotivoDaAula | null>(null);
   const [erroDaSituacao, setErroDaSituacao] = useState<string | null>(null);
   const [mudandoSituacao, setMudandoSituacao] = useState<'cancelar' | 'reativar' | null>(null);
+  // Pedidos ao admin (§ 9.3, D28): o que a chamada diz do professor.
+  const [concluida, setConcluida] = useState(false);
+  const [minhaPresenca, setMinhaPresenca] = useState<boolean | null>(null);
+  const [pedindo, setPedindo] = useState<Exclude<TipoDeSolicitacao, 'student_was_present'> | null>(null);
+  const [pedidosFeitos, setPedidosFeitos] = useState<ReadonlySet<TipoDeSolicitacao>>(new Set());
 
   const loadTeachers = useCallback(() => {
     fetchTeachersForClasses([classId])
@@ -79,7 +88,12 @@ export function DetalheAulaScreen({
     try {
       const estado = await fetchEstadoDaChamada(classId);
       setCancelada(estado.cancelled);
+      setConcluida(estado.concludedAt !== null);
       setErroDaSituacao(null);
+      if (isProfessor && estado.concludedAt !== null && profile !== null) {
+        const professores = await fetchProfessoresDaChamada(classId);
+        setMinhaPresenca(professores.find((p) => p.teacherId === profile.id)?.present ?? null);
+      }
       if (!estado.cancelled || !(isAdmin || isProfessor)) {
         setCancelamento(null);
         return;
@@ -91,7 +105,7 @@ export function DetalheAulaScreen({
       log.error('Falha ao carregar a situação da aula', erro, { classId });
       setErroDaSituacao('Não foi possível ver se a aula está cancelada.');
     }
-  }, [classId, isAdmin, isProfessor]);
+  }, [classId, isAdmin, isProfessor, profile]);
 
   useEffect(() => {
     void carregarSituacao();
@@ -100,6 +114,25 @@ export function DetalheAulaScreen({
   const souProfessorDaAula = teachers.some((teacher) => teacher.id === profile?.id);
   // D24: a equipe da aula ou um admin cancela e reativa.
   const podeCancelar = isAdmin || souProfessorDaAula;
+  // O admin corrige pela chamada; só o professor pede (P2 do 4.9a).
+  const pedidos = isProfessor
+    ? pedidosDoProfessor({
+        escalado: souProfessorDaAula,
+        cancelada,
+        concluida,
+        minhaPresenca,
+        dataDaAula: new Date(dateTimeIso),
+      }).filter((tipo) => !pedidosFeitos.has(tipo))
+    : [];
+
+  const enviarPedido = useCallback(
+    async (texto: string) => {
+      if (pedindo === null) return;
+      await abrirSolicitacao(pedindo, classId, texto);
+      setPedidosFeitos((feitos) => new Set(feitos).add(pedindo));
+    },
+    [pedindo, classId],
+  );
 
   const openEdit = useCallback(() => {
     navigation.navigate('CriarAula', { classId, title, type, dateTimeIso, groupId, scheduleId });
@@ -304,12 +337,32 @@ export function DetalheAulaScreen({
           </AppText>
         ) : null}
 
+        {pedidos.length > 0 ? (
+          <View style={styles.cartao}>
+            <Text style={styles.overline}>PEDIR AO ADMIN</Text>
+            {pedidos.map((tipo) => (
+              <Button key={tipo} title={ROTULO_DO_PEDIDO[tipo]} variant="secondary" onPress={() => setPedindo(tipo)} />
+            ))}
+          </View>
+        ) : null}
+
         {erroDaEquipe !== null ? (
           <AppText variant="caption" color={colors.error} accessibilityRole="alert" style={styles.erro}>
             {erroDaEquipe}
           </AppText>
         ) : null}
       </View>
+
+      {pedindo !== null ? (
+        <PedidoSheet
+          key={pedindo}
+          visible
+          titulo={ROTULO_DO_PEDIDO[pedindo]}
+          contexto={`${title} · ${formatFullDateTime(dateTimeIso)}. ${O_QUE_O_PEDIDO_FAZ[pedindo]}`}
+          onClose={() => setPedindo(null)}
+          onEnviar={enviarPedido}
+        />
+      ) : null}
 
       <SituacaoDaAulaSheet
         visible={mudandoSituacao !== null}

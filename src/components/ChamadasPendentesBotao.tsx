@@ -16,8 +16,8 @@ interface AtalhoDaAgendaProps {
 }
 
 /**
- * Um atalho da agenda da equipe com contador: chamadas pendentes (T13) e
- * justificativas para revisar (§ 9.1). Some quando não há nada pendente.
+ * Um atalho da agenda da equipe com contador (as chamadas pendentes, T13).
+ * Some quando não há nada pendente.
  */
 function AtalhoDaAgendaComponent({ icone, titulo, dica, quantidade, onPress }: AtalhoDaAgendaProps): React.JSX.Element | null {
   const { colors, fonts } = useTheme();
@@ -60,22 +60,6 @@ export const ChamadasPendentesBotao = React.memo(function ChamadasPendentesBotao
       icone="clipboard-outline"
       titulo="Chamadas pendentes"
       dica="Abre as aulas que passaram sem chamada"
-      quantidade={quantidade}
-      onPress={onPress}
-    />
-  );
-});
-
-/** As justificativas que quem abre a agenda pode decidir (§ 9.1, D14). */
-export const JustificativasParaRevisarBotao = React.memo(function JustificativasParaRevisarBotao({
-  quantidade,
-  onPress,
-}: ChamadasPendentesBotaoProps): React.JSX.Element {
-  return (
-    <AtalhoDaAgenda
-      icone="document-text-outline"
-      titulo="Justificativas para revisar"
-      dica="Abre as justificativas que você pode aprovar ou negar"
       quantidade={quantidade}
       onPress={onPress}
     />

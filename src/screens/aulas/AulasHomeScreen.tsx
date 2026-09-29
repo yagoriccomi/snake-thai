@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { NotificationOptInCard } from '@/components/NotificationOptInCard';
 import { useAuth } from '@/context/AuthProvider';
 import { usePushNotifications } from '@/context/PushNotificationsProvider';
+import { useAtalhoDeSolicitacoes } from '@/hooks/useAtalhoDeSolicitacoes';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import { AdminAulasList } from '@/screens/aulas/AdminAulasList';
 import { ProfessorAulasList } from '@/screens/aulas/ProfessorAulasList';
@@ -22,6 +23,8 @@ export function AulasHomeScreen({
   const { isAdmin, isProfessor } = useAuth();
   const { colors, spacing } = useTheme();
   const notificacoes = usePushNotifications();
+  const abrirSolicitacoes = useCallback(() => navigation.navigate('Solicitacoes'), [navigation]);
+  useAtalhoDeSolicitacoes(navigation, abrirSolicitacoes, isAdmin || isProfessor);
   const estilos = useMemo(
     () =>
       StyleSheet.create({

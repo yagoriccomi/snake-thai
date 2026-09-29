@@ -6,6 +6,7 @@ const mockFetchAulas = jest.fn();
 const mockFetchMenu = jest.fn();
 const mockDeclarar = jest.fn();
 const mockSubmitJustification = jest.fn();
+const mockAbrirSolicitacao = jest.fn();
 
 jest.mock('@/services/aulas.service', () => ({
   fetchAulasDoAluno: (...args: unknown[]): unknown => mockFetchAulas(...args),
@@ -14,7 +15,10 @@ jest.mock('@/services/aulas.service', () => ({
   definirMetaSemanal: jest.fn(),
 }));
 jest.mock('@/services/justifications.service', () => ({
-  submitJustification: (...args: unknown[]): unknown => mockSubmitJustification(...args),
+  enviarJustificativa: (...args: unknown[]): unknown => mockSubmitJustification(...args),
+}));
+jest.mock('@/services/solicitacoes.service', () => ({
+  abrirSolicitacao: (...args: unknown[]): unknown => mockAbrirSolicitacao(...args),
 }));
 jest.mock('@/context/AuthProvider', () => ({
   useAuth: () => ({ session: { user: { id: 'aluno-1' } }, profile: { id: 'aluno-1', name: 'Aluno' } }),
@@ -69,6 +73,7 @@ beforeEach(() => {
   mockFetchMenu.mockReset().mockResolvedValue([]);
   mockDeclarar.mockReset().mockResolvedValue({ marcadasNaSemana: 1, cota: 3, acimaDaCota: false });
   mockSubmitJustification.mockReset().mockResolvedValue(undefined);
+  mockAbrirSolicitacao.mockReset().mockResolvedValue('s-1');
 });
 
 describe('StudentAulasList (4.4, contrato § 12)', () => {
@@ -104,6 +109,24 @@ describe('StudentAulasList (4.4, contrato § 12)', () => {
 
     await waitFor(() => expect(mockDeclarar).toHaveBeenCalledWith('a-1', false));
     expect(await tela.findByText('Justificar: Muay Thai — Turma Noite')).toBeTruthy();
+  });
+
+  it('devePedirEuEstavaNaAulaQuandoOBancoAceita', async () => {
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+    mockFetchAulas.mockResolvedValue([
+      aulaDoAluno({ class_id: 'a-1', title: 'Muay Thai', date_time: ontem.toISOString(), can_contest: true }),
+      aulaDoAluno({ class_id: 'a-2', title: 'Treino antigo', date_time: ontem.toISOString(), can_contest: false }),
+    ]);
+    const tela = comTema(<StudentAulasList navigation={navegacao() as never} />);
+
+    fireEvent.press(await tela.findByRole('button', { name: 'Eu estava na aula: Muay Thai' }));
+    expect(tela.queryByRole('button', { name: 'Eu estava na aula: Treino antigo' })).toBeNull();
+    fireEvent.changeText(tela.getByPlaceholderText('Conte o que aconteceu.'), 'Cheguei atrasado');
+    fireEvent.press(tela.getByRole('button', { name: 'Enviar pedido' }));
+
+    await waitFor(() => expect(mockAbrirSolicitacao).toHaveBeenCalledWith('student_was_present', 'a-1', 'Cheguei atrasado'));
+    expect(await tela.findByText('Pedido enviado. Acompanhe a resposta em Meus pedidos.')).toBeTruthy();
   });
 
   it('deveMostrarARecusaDoBancoNaTela', async () => {
