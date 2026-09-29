@@ -15,7 +15,7 @@ import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
 import { useAcoesDaAula } from '@/hooks/useAcoesDaAula';
 import { useAulasDoAluno } from '@/hooks/useAulasDoAluno';
-import { useMonthlyFrequency } from '@/hooks/useMonthlyFrequency';
+import { useFrequenciaDoAluno } from '@/hooks/useFrequenciaDoAluno';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import type { AulaDoAluno } from '@/services/aulas.service';
 import { useTheme } from '@/theme/ThemeProvider';
@@ -23,7 +23,6 @@ import { resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
 import { formatDayMonth, formatWeekday } from '@/utils/datetime';
 
 const SCREEN_EDGES = ['bottom'] as const;
-const SEM_ALUNO: readonly string[] = [];
 
 /** Uma seção da agenda: as aulas de um mesmo dia. */
 interface DaySection {
@@ -79,9 +78,7 @@ export function StudentAulasList({ navigation }: StudentAulasListProps): React.J
   const acoes = useAcoesDaAula({ userId, declarar, recarregar });
   const [mudandoMeta, setMudandoMeta] = useState(false);
 
-  const idsDoAluno = useMemo(() => (userId === null ? SEM_ALUNO : [userId]), [userId]);
-  const frequencia = useMonthlyFrequency(idsDoAluno);
-  const minhaFrequencia = userId !== null ? frequencia.byUser[userId] ?? null : null;
+  const frequencia = useFrequenciaDoAluno(userId);
   const recarregarFrequencia = frequencia.reload;
 
   // Volta do menu de aulas ou da chamada: as colunas podem ter mudado.
@@ -169,7 +166,13 @@ export function StudentAulasList({ navigation }: StudentAulasListProps): React.J
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.overline}>MINHAS AULAS</Text>
-            <FrequencyCard frequency={minhaFrequencia} loading={frequencia.loading} onPress={abrirHistorico} />
+            <FrequencyCard
+              semana={frequencia.semana}
+              mes={frequencia.mes}
+              loading={frequencia.loading}
+              error={frequencia.error}
+              onPress={abrirHistorico}
+            />
             {resumo !== null ? (
               <ResumoDaSemanaCard resumo={resumo} onMudarMeta={() => setMudandoMeta(true)} />
             ) : null}

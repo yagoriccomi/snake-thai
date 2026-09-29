@@ -1,29 +1,98 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View, type ListRenderItem } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { AppText } from '@/components/AppText';
-import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
+import { MonthSelector, type MonthOption } from '@/components/MonthSelector';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
-import { useMonthlyFrequency } from '@/hooks/useMonthlyFrequency';
-import { createLogger } from '@/lib/logger';
+import { useFrequenciaDoMes } from '@/hooks/useFrequenciaDoMes';
 import type { AulasStackScreenProps } from '@/navigation/types';
-import { fetchMonthlyHistory, type MonthlyHistoryRow } from '@/services/frequency.service';
+import type { FrequenciaDoMes } from '@/services/frequency.service';
+import { SCHEDULE_MODE_LABELS } from '@/services/plans.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatMonthYear } from '@/utils/datetime';
-import { formatarPercentual } from '@/utils/frequency';
+import { currentMonthIso, formatMonthShort, formatMonthYear, isoDateKey } from '@/utils/datetime';
+import {
+  acumularSemanas,
+  avisoDeMesAberto,
+  dicaDaConta,
+  explicacaoDaSemanaExtra,
+  formatarPercentual,
+  periodoDaSemana,
+  rotulosDaFrequencia,
+  textoDeContagem,
+  tomDoPercentual,
+  type LinhaDaSemana,
+  type TomDoPercentual,
+} from '@/utils/frequency';
 
 const SCREEN_EDGES = ['bottom'] as const;
-const log = createLogger('HistoricoFrequenciaScreen');
+
+type Estilos = ReturnType<typeof makeStyles>;
+
+function estiloDoTom(tom: TomDoPercentual, styles: Estilos) {
+  if (tom === 'acima') return styles.acima;
+  if (tom === 'abaixo') return styles.abaixo;
+  return null;
+}
+
+/** "dd/mm" de uma data `AAAA-MM-DD`, lida como texto (sem fuso). */
+function diaMes(dataIso: string): string {
+  return `${dataIso.slice(8, 10)}/${dataIso.slice(5, 7)}`;
+}
+
+function rodapeDoMes(mes: FrequenciaDoMes): string {
+  const contagem = textoDeContagem(mes.attended, mes.expected);
+  return mes.isClosed ? `${contagem} · fechou em ${diaMes(mes.closesOn)}` : contagem;
+}
+
+interface LinhaProps {
+  linha: LinhaDaSemana;
+  esperadoDoMes: number;
+  styles: Estilos;
+}
+
+/** Uma semana da tabela: período, feitas, % da semana e o acumulado do mês. */
+function LinhaDaTabela({ linha, esperadoDoMes, styles }: LinhaProps): React.JSX.Element {
+  const { semana, feitasAteAqui, percentualAteAqui } = linha;
+  const titulo = semana.isSplit ? semana.label : `${semana.label} · ${periodoDaSemana(semana)}`;
+  const acumulado = `${textoDeContagem(feitasAteAqui, esperadoDoMes)} · ${formatarPercentual(percentualAteAqui)}`;
+  return (
+    <View
+      style={styles.linha}
+      accessible
+      accessibilityLabel={
+        `${titulo}${semana.isSplit ? `, ${periodoDaSemana(semana)}` : ''}: ` +
+        `${textoDeContagem(semana.attendedWeek, semana.expectedWeek)} na semana, ${formatarPercentual(semana.weekPercent)}. ` +
+        `No mês, ${acumulado}.`
+      }
+    >
+      <View style={styles.colSemana}>
+        <Text style={styles.celula}>{titulo}</Text>
+        {semana.isSplit ? <Text style={styles.dica}>{periodoDaSemana(semana)}</Text> : null}
+      </View>
+      <Text style={[styles.celula, styles.num, styles.colFeitas]}>
+        {textoDeContagem(semana.attendedWeek, semana.expectedWeek)}
+      </Text>
+      <Text style={[styles.celula, styles.num, styles.colPct, estiloDoTom(tomDoPercentual(semana.weekPercent), styles)]}>
+        {formatarPercentual(semana.weekPercent)}
+      </Text>
+      <View style={styles.colMes}>
+        <Text style={styles.celula}>{acumulado}</Text>
+        {semana.isSplit ? (
+          <Text style={styles.dica}>neste mês: {textoDeContagem(semana.attendedInMonth, semana.expectedInMonth)}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
 
 /**
- * Frequência de um aluno: o mês corrente, calculado ao vivo, e os meses já
- * fechados, congelados (docs/FREQUENCIA.md).
- *
- * O mesmo aluno pode ter "3/12" no contador e "100%" na frequência — o total
- * é o mês inteiro, o percentual só conta as aulas que já tiveram chamada. A
- * tela explica isso em vez de deixar parecer contradição.
+ * Frequência de um aluno (contrato § 11 e § 3; mockup "Frequência — semanas e
+ * semana extra"): o mês escolhido, cada semana com a parte dela no mês, a
+ * Semana extra e o aviso de mês que ainda vai fechar. A conta é toda do
+ * banco; a tela só soma as parcelas na ordem para o acumulado. [#6]
  */
 export function HistoricoFrequenciaScreen({
   route,
@@ -32,183 +101,181 @@ export function HistoricoFrequenciaScreen({
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const { userId, name } = route.params;
 
-  const ids = useMemo(() => [userId], [userId]);
-  const atual = useMonthlyFrequency(ids);
-  const mesAtual = atual.byUser[userId] ?? null;
+  const mesCorrente = currentMonthIso();
+  const [mesIso, setMesIso] = useState(mesCorrente);
+  const { mes, semanas, historico, loading, error, reload } = useFrequenciaDoMes(userId, mesIso);
 
-  const [historico, setHistorico] = useState<MonthlyHistoryRow[]>([]);
-  const [carregandoHistorico, setCarregandoHistorico] = useState(true);
-  const [erroHistorico, setErroHistorico] = useState<string | null>(null);
-
-  const carregarHistorico = useCallback(async () => {
-    setCarregandoHistorico(true);
-    setErroHistorico(null);
-    try {
-      setHistorico(await fetchMonthlyHistory(userId));
-    } catch (erro) {
-      log.error('Falha ao carregar o histórico mensal', erro);
-      setErroHistorico('Não foi possível carregar o histórico.');
-    } finally {
-      setCarregandoHistorico(false);
-    }
-  }, [userId]);
-
-  useEffect(() => {
-    void carregarHistorico();
-  }, [carregarHistorico]);
-
-  const recarregarAtual = atual.reload;
   useFocusEffect(
     useCallback(() => {
-      void recarregarAtual();
-    }, [recarregarAtual]),
+      void reload();
+    }, [reload]),
   );
 
-  const renderItem = useCallback<ListRenderItem<MonthlyHistoryRow>>(
-    ({ item }) => (
-      <View
-        style={styles.linha}
-        accessible
-        accessibilityLabel={`${formatMonthYear(item.reference_month)}: ${item.attended} de ${item.total_classes} aulas, frequência ${formatarPercentual(Number(item.frequency_percent))}`}
-      >
-        <View style={styles.linhaTexto}>
-          <Text style={styles.mes}>{formatMonthYear(item.reference_month)}</Text>
-          <Text style={styles.detalhe}>
-            {item.attended}/{item.total_classes} aulas
-            {item.justified > 0 ? ` · ${item.justified} justificada(s)` : ''}
-          </Text>
-        </View>
-        <Text style={styles.percentual}>{formatarPercentual(Number(item.frequency_percent))}</Text>
-      </View>
-    ),
-    [styles],
-  );
+  const opcoes = useMemo<MonthOption[]>(() => {
+    const meses = new Set<string>([mesCorrente, mesIso, ...historico.map((linha) => linha.reference_month)]);
+    return [...meses]
+      .sort((a, b) => b.localeCompare(a))
+      .map((valor) => ({ value: valor, label: formatMonthShort(valor), accessibilityLabel: formatMonthYear(valor) }));
+  }, [historico, mesCorrente, mesIso]);
 
-  const cabecalho = (
-    <View style={styles.cabecalho}>
-      <Text style={styles.sobrescrito}>FREQUÊNCIA</Text>
-      <AppText variant="heading" numberOfLines={1}>
-        {name}
-      </AppText>
+  const linhas = useMemo(() => acumularSemanas(semanas, mes?.expected ?? 0), [semanas, mes]);
+  const semanaExtra = useMemo(() => [...semanas].reverse().find((semana) => semana.isSplit) ?? null, [semanas]);
+  const aviso = mes !== null ? avisoDeMesAberto(mes, isoDateKey(new Date())) : null;
 
-      <View style={styles.cartao}>
-        <Text style={styles.cartaoTitulo}>Mês atual</Text>
-        {atual.loading && mesAtual === null ? (
-          <ActivityIndicator color={colors.primary} />
-        ) : atual.error !== null ? (
-          <AppText variant="caption" color={colors.error}>
-            {atual.error}
-          </AppText>
-        ) : mesAtual !== null ? (
-          <>
-            <View style={styles.numeros}>
-              <View style={styles.numero}>
-                <Text style={styles.numeroValor}>
-                  {mesAtual.attended}/{mesAtual.totalClasses}
-                </Text>
-                <Text style={styles.numeroRotulo}>Presença em aulas</Text>
-              </View>
-              <View style={styles.numero}>
-                <Text style={styles.numeroValor}>{formatarPercentual(mesAtual.frequencyPercent)}</Text>
-                <Text style={styles.numeroRotulo}>Frequência</Text>
-              </View>
+  const conteudo = (): React.JSX.Element => {
+    if (loading && mes === null) {
+      return <ActivityIndicator color={colors.primary} style={styles.carregando} />;
+    }
+    if (error !== null || mes === null) {
+      return <ErrorState message={error ?? 'Não foi possível carregar a frequência.'} onRetry={() => void reload()} />;
+    }
+    const rotulos = rotulosDaFrequencia(mes.scheduleMode);
+    return (
+      <>
+        <Text style={styles.overline}>
+          {formatMonthYear(mes.referenceMonth).toUpperCase()} · {SCHEDULE_MODE_LABELS[mes.scheduleMode].toUpperCase()}
+        </Text>
+
+        <View style={styles.cartoes}>
+          <View style={styles.cartao} accessible accessibilityLabel={`${rotulos.mes}: ${formatarPercentual(mes.frequencyPercent)}, ${rodapeDoMes(mes)}`}>
+            <Text style={styles.rotulo}>{rotulos.mes}</Text>
+            <Text style={[styles.valor, tomDoPercentual(mes.frequencyPercent) === 'acima' && styles.acima]}>
+              {formatarPercentual(mes.frequencyPercent)}
+            </Text>
+            <Text style={styles.dica}>{rodapeDoMes(mes)}</Text>
+          </View>
+          {semanaExtra !== null ? (
+            <View
+              style={styles.cartao}
+              accessible
+              accessibilityLabel={`Semana extra: ${formatarPercentual(semanaExtra.weekPercent)}, ${textoDeContagem(semanaExtra.attendedWeek, semanaExtra.expectedWeek)}`}
+            >
+              <Text style={styles.rotulo}>Semana extra</Text>
+              <Text style={[styles.valor, tomDoPercentual(semanaExtra.weekPercent) === 'acima' && styles.acima]}>
+                {formatarPercentual(semanaExtra.weekPercent)}
+              </Text>
+              <Text style={styles.dica}>
+                {textoDeContagem(semanaExtra.attendedWeek, semanaExtra.expectedWeek)} · {periodoDaSemana(semanaExtra)}
+              </Text>
             </View>
-            <AppText variant="caption" color={colors.textSecondary}>
-              A frequência considera só as aulas que já tiveram chamada concluída
-              {mesAtual.justified > 0
-                ? `, sem contar ${mesAtual.justified} falta(s) justificada(s).`
-                : '.'}
-            </AppText>
-          </>
-        ) : (
-          <AppText variant="caption" color={colors.textSecondary}>
-            Sem dados de frequência para este mês.
-          </AppText>
-        )}
-      </View>
+          ) : null}
+        </View>
 
-      <Text style={styles.tituloSecao}>MESES FECHADOS</Text>
-    </View>
-  );
+        <View accessibilityRole="list" accessibilityLabel={`Semanas de ${formatMonthYear(mes.referenceMonth)}`}>
+          <View style={[styles.linha, styles.linhaCabecalho]} importantForAccessibility="no-hide-descendants">
+            <Text style={[styles.cabecalho, styles.colSemana]}>SEMANA</Text>
+            <Text style={[styles.cabecalho, styles.colFeitas]}>FEITAS</Text>
+            <Text style={[styles.cabecalho, styles.colPct]}>{rotulos.semana.toUpperCase()}</Text>
+            <Text style={[styles.cabecalho, styles.colMes]}>NO MÊS (ACUMULADO)</Text>
+          </View>
+          {linhas.map((linha) => (
+            <LinhaDaTabela key={linha.semana.weekStart} linha={linha} esperadoDoMes={mes.expected} styles={styles} />
+          ))}
+        </View>
+
+        {semanaExtra !== null ? (
+          <View style={styles.cartaoTexto}>
+            <Text style={styles.overline}>COMO A SEMANA EXTRA SE DIVIDE</Text>
+            <AppText variant="caption" color={colors.textSecondary}>
+              {explicacaoDaSemanaExtra(mes.scheduleMode)}
+            </AppText>
+          </View>
+        ) : null}
+
+        {aviso !== null ? (
+          <View style={styles.aviso} accessibilityRole="alert">
+            <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+            <AppText variant="caption" style={styles.avisoTexto}>
+              {aviso}
+            </AppText>
+          </View>
+        ) : null}
+
+        <Text style={styles.dica}>{dicaDaConta(mes.scheduleMode)}</Text>
+      </>
+    );
+  };
 
   return (
     <ScreenWrapper edges={SCREEN_EDGES}>
-      <FlatList
-        data={historico}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        ListHeaderComponent={cabecalho}
+      <ScrollView
         contentContainerStyle={styles.conteudo}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          carregandoHistorico ? (
-            <ActivityIndicator color={colors.primary} style={styles.carregando} />
-          ) : erroHistorico !== null ? (
-            <ErrorState message={erroHistorico} onRetry={() => void carregarHistorico()} />
-          ) : (
-            <EmptyState
-              icon="calendar-outline"
-              title="Nenhum mês fechado ainda"
-              message="O mês é fechado no dia 1º seguinte e fica guardado aqui."
-            />
-          )
-        }
-      />
+        refreshControl={<RefreshControl refreshing={loading && mes !== null} onRefresh={() => void reload()} tintColor={colors.primary} />}
+      >
+        <Text style={styles.overline}>FREQUÊNCIA</Text>
+        <AppText variant="heading" numberOfLines={1}>
+          {name}
+        </AppText>
+        <MonthSelector options={opcoes} value={mesIso} onChange={setMesIso} />
+        {conteudo()}
+      </ScrollView>
     </ScreenWrapper>
   );
 }
-
-const keyExtractor = (item: MonthlyHistoryRow): string => item.id;
 
 function makeStyles(
   colors: ReturnType<typeof useTheme>['colors'],
   fonts: ReturnType<typeof useTheme>['fonts'],
 ) {
   return StyleSheet.create({
-    conteudo: { paddingTop: 12, paddingBottom: 32, flexGrow: 1 },
-    cabecalho: { gap: 4, marginBottom: 8 },
-    sobrescrito: {
-      fontFamily: fonts.bodySemiBold,
-      fontSize: 11,
-      letterSpacing: 1.5,
-      color: colors.textSecondary,
-    },
-    cartao: {
-      backgroundColor: colors.surface,
-      borderWidth: 1,
-      borderColor: colors.border,
-      borderRadius: 16,
-      padding: 16,
-      gap: 10,
-      marginTop: 12,
-    },
-    cartaoTitulo: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: colors.textSecondary },
-    numeros: { flexDirection: 'row', gap: 12 },
-    numero: { flex: 1, gap: 2 },
-    numeroValor: { fontFamily: fonts.headingBold, fontSize: 26, color: colors.textPrimary },
-    numeroRotulo: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
-    tituloSecao: {
+    conteudo: { paddingTop: 12, paddingBottom: 32, gap: 12, flexGrow: 1 },
+    carregando: { marginTop: 24 },
+    overline: {
       fontFamily: fonts.bodySemiBold,
       fontSize: 11,
       letterSpacing: 1,
       color: colors.textSecondary,
-      marginTop: 20,
-      marginBottom: 4,
     },
+    cartoes: { flexDirection: 'row', gap: 10 },
+    cartao: {
+      flex: 1,
+      gap: 2,
+      padding: 12,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    cartaoTexto: {
+      gap: 6,
+      padding: 14,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    rotulo: { fontFamily: fonts.body, fontSize: 12.5, color: colors.textSecondary },
+    valor: { fontFamily: fonts.bodyBold, fontSize: 24, color: colors.textPrimary, fontVariant: ['tabular-nums'] },
+    dica: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+    acima: { color: colors.primaryText },
+    abaixo: { color: colors.warning },
     linha: {
       flexDirection: 'row',
       alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
-      paddingVertical: 14,
-      minHeight: 56,
+      gap: 8,
+      paddingVertical: 9,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    linhaTexto: { flex: 1, gap: 2 },
-    mes: { fontFamily: fonts.bodySemiBold, fontSize: 15, color: colors.textPrimary },
-    detalhe: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
-    percentual: { fontFamily: fonts.bodyBold, fontSize: 16, color: colors.textPrimary },
-    carregando: { marginTop: 24 },
+    linhaCabecalho: { paddingTop: 0 },
+    cabecalho: { fontFamily: fonts.bodySemiBold, fontSize: 11, letterSpacing: 0.6, color: colors.textSecondary },
+    celula: { fontFamily: fonts.body, fontSize: 13.5, color: colors.textPrimary },
+    num: { fontFamily: fonts.bodyBold, fontVariant: ['tabular-nums'] },
+    colSemana: { width: 86 },
+    colFeitas: { width: 58 },
+    colPct: { width: 58 },
+    colMes: { flex: 1 },
+    aviso: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 10,
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.borderStrong,
+      backgroundColor: colors.surface,
+    },
+    avisoTexto: { flex: 1 },
   });
 }

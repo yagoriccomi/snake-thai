@@ -113,6 +113,12 @@
 
 ## Passos (4.5b, app) — skill design-de-interface-projeto
 
+**Decisão visual:** sem mockup novo. Os da linha B foram aprovados: o cartão "Semana · Mês" (e
+"Meta da semana · Meta do mês") nas telas Aulas do livre, do fixo e do à vontade, e a tela
+"Frequência — semanas e semana extra". Cores só por token do tema; carregando, erro e "—"
+tratados. As premissas da tela estão na entrega.
+
+
 - `frequency.service.ts`: `fetchFrequenciaDoMes`, `fetchSemanasDoMes` e `fetchFrequenciaSemanal`
   com o percentual nulo tratado;
 - `formatarPercentual`: nulo vira "—", acima de 100% aparece como vem;
@@ -133,6 +139,6 @@
 
 ## Definição de pronto
 
-- [ ] `db-dev test` e `db-dev reset` verdes; `db-dev types` rodado;
-- [ ] CI verde, PR 4.5a mesclado e Registro na main;
+- [x] `db-dev test` e `db-dev reset` verdes; `db-dev types` rodado;
+- [x] CI verde, PR 4.5a (#60) mesclado e Registro na main;
 - [ ] 4.5b: Jest verde, PR mesclado e roteiro do aparelho em `ENTREGA-4.5`.
