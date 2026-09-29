@@ -828,7 +828,7 @@ mais `menu_de_aulas`, `pedir_troca_de_aula`, `desistir_da_troca`, `minhas_trocas
 
 ### 4.11 LGPD (abre G5)
 
-- [ ] Plano · [ ] Banco · [ ] Testes · [ ] Política · [ ] **G5 anotado no Registro**
+- [x] Plano · [x] Banco · [x] Testes · [ ] Política (texto pronto; publicar é do dono) · [ ] **G5 anotado no Registro**
 
 **Banco:**
 
