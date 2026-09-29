@@ -19,7 +19,23 @@ const TIPOS_FINANCEIROS = new Set([
   'comprovante_recusado',
 ]);
 
-const TIPOS_DE_AULA = new Set(['justificativa_pendente', 'aula_sem_chamada', 'aulas_sem_chamada_resumo']);
+// Contrato v4 (§ 10): os avisos de aula, justificativa, chamada e troca abrem
+// Aulas. Solicitações (troca pendente, solicitação) chega nos blocos 4.8/4.9.
+const TIPOS_DE_AULA = new Set([
+  'justificativa_pendente',
+  'aula_sem_chamada',
+  'aulas_sem_chamada_resumo',
+  'aula_cancelada',
+  'aula_reativada',
+  'justificativa_aprovada',
+  'justificativa_negada',
+  'chamada_retificada',
+  'solicitacao_pendente',
+  'troca_pendente',
+  'troca_aprovada',
+  'troca_negada',
+  'troca_aprovada_equipe',
+]);
 
 const CAMPOS_DE_ID = ['paymentId', 'classId', 'justificationId'] as const;
 

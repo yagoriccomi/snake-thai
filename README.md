@@ -36,6 +36,9 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   aula; depois de concluída, toda mudança é **retificação com motivo**, e o
   aluno afetado é avisado. Aulas que passam sem chamada, de qualquer mês, ficam em
   **Chamadas pendentes**, na agenda da equipe.
+- **Cancelar e reativar aula** com motivo: a equipe da aula ou o admin cancela, o app mostra
+  quem será avisado (antes da aula, na hora, mesmo à noite), a aula fica riscada na grade e o fixo
+  tem a aula abonada.
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes. Na tela de envio,

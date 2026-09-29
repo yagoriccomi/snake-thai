@@ -262,6 +262,21 @@ app.
 7. Se tentar sair com marcações não salvas, o app avisa. Uma chamada pela
    metade fica guardada no aparelho (inclusive os incluídos) e volta ao reabrir.
 
+### Cancelar e reativar uma aula
+
+1. Abra a aula e toque em **Cancelar aula**. Você e os professores da aula podem cancelar, antes ou
+   depois dela.
+2. A folha mostra **quem será avisado**. Antes da aula, o aviso sai na hora, mesmo à noite, para
+   os alunos da aula (os fixos da turma, quem vinha por troca ou extra e os livres, se a aula aceita
+   livres), os outros professores e os admins. Depois da aula, só a equipe é avisada.
+3. Escreva o **motivo** (obrigatório). Os alunos veem só que a aula foi cancelada; o motivo fica
+   para a equipe.
+4. A aula continua na grade, **riscada**. Os fixos têm a aula abonada; a chamada, se houver, fica
+   guardada e volta se você reativar.
+5. **Reativar aula** também pede motivo e avisa as mesmas pessoas, respeitando o silêncio das 22h
+   às 7h. Quem tinha trocado para a aula e teve a troca cancelada não a recupera.
+6. Um professor cancela a mesma aula no máximo duas vezes; o admin, sem limite.
+
 ---
 
 ## 6. Receber e aprovar pagamentos
