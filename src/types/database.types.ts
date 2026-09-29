@@ -1251,8 +1251,14 @@ isOneToOne: false
 "ajustar_trocas_ao_fim_do_horario":
 { Args: { "p_schedule_id": string,"p_ultimo_dia": string }; Returns: undefined
                            },
+"anexar_ao_motivo":
+{ Args: { "p_anexo_id": string,"p_motivo_id": string,"p_provider"?: Database["public"]['Enums']["media_provider"] }; Returns: undefined
+                           },
 "anonimizar_titular":
 { Args: { "p_solicitante": string,"p_user_id": string }; Returns: Json
+                           },
+"apagar_motivos_nao_usados":
+{ Args: { "p_agora"?: string }; Returns: number
                            },
 "aulas_do_aluno":
 { Args: { "p_ate": string,"p_de": string }; Returns: {
@@ -1280,6 +1286,9 @@ isOneToOne: false
                            },
 "cota_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: number
+                           },
+"criar_motivo":
+{ Args: { "p_class_id": string,"p_kind": Database["public"]['Enums']["action_reason_kind"],"p_texto": string }; Returns: string
                            },
 "declarar_aula":
 { Args: { "p_class_id": string,"p_vou": boolean }; Returns: Json
@@ -1317,6 +1326,9 @@ isOneToOne: false
                            },
 "encerrar_horario_da_grade":
 { Args: { "p_id": string,"p_ultimo_dia": string }; Returns: Json
+                           },
+"enfileirar_anexos_expirados":
+{ Args: { "p_agora"?: string }; Returns: number
                            },
 "enfileirar_avisos_aula_sem_chamada":
 { Args: { "p_agora"?: string }; Returns: number
@@ -1417,6 +1429,9 @@ isOneToOne: false
 "marcadas_na_semana":
 { Args: { "p_segunda": string,"p_so_extras": boolean,"p_user_id": string }; Returns: number
                            },
+"marcar_retificacao_conferida":
+{ Args: { "p_motivo_id": string }; Returns: undefined
+                           },
 "mark_overdue_payments":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
@@ -1438,6 +1453,11 @@ isOneToOne: false
                            },
 "modalidade_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: Database["public"]['Enums']["plan_schedule_mode"]
+                           },
+"motivos_da_aula":
+{ Args: { "p_class_id": string }; Returns: {
+              "anexos": Json,"author_name": string,"body": string,"created_at": string,"id": string,"kind": Database["public"]['Enums']["action_reason_kind"]
+            }[]
                            },
 "normalizar_declaracao":
 { Args: { "p_class_id": string,"p_user_id": string,"p_valor": Database["public"]['Enums']["attendance_status"] }; Returns: Database["public"]['Enums']["attendance_status"]
@@ -1479,6 +1499,9 @@ isOneToOne: false
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: {
               "inicio_na_semana": string,"plan_id": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"weekly_quota": number
             }[]
+                           },
+"pode_anexar_ao_motivo":
+{ Args: { "p_motivo_id": string }; Returns: boolean
                            },
 "pode_decidir_troca":
 { Args: { "p_id": string }; Returns: boolean
