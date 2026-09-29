@@ -745,7 +745,7 @@ Dois PRs, nesta ordem. O G3 abre no fim do 4.9b.
 
 **4.9b — Troca de aula (abre G3)**
 
-- [ ] Plano · [ ] Banco · [ ] Interface · [ ] Testes · [ ] Aparelho · [ ] **G3 anotado no Registro**
+- [x] Plano · [x] Banco · [ ] Interface · [ ] Testes · [ ] Aparelho · [ ] **G3 anotado no Registro**
 
 **Banco (§ 9.4):**
 
