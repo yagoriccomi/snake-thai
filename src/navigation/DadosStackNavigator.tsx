@@ -14,7 +14,9 @@ import { PlanosScreen } from '@/screens/dados/PlanosScreen';
 import { DadosScreen } from '@/screens/dados/DadosScreen';
 import { EditarAlunoScreen } from '@/screens/dados/EditarAlunoScreen';
 import { ExcluirContaScreen } from '@/screens/dados/ExcluirContaScreen';
-import { GerenciarAlunosScreen } from '@/screens/dados/GerenciarAlunosScreen';
+import { FichaProfessorScreen } from '@/screens/dados/FichaProfessorScreen';
+import { PessoasScreen } from '@/screens/dados/PessoasScreen';
+import { FichaAlunoScreen } from '@/screens/FichaAlunoScreen';
 import { GradeTurmaScreen } from '@/screens/dados/GradeTurmaScreen';
 import { HorarioFormScreen } from '@/screens/dados/HorarioFormScreen';
 import { TurmasScreen } from '@/screens/dados/TurmasScreen';
@@ -51,11 +53,9 @@ export function DadosStackNavigator(): React.JSX.Element {
         component={CadastrarEquipeScreen}
         options={CADASTRO_EQUIPE_OPTIONS}
       />
-      <Stack.Screen
-        name="GerenciarAlunos"
-        component={GerenciarAlunosScreen}
-        options={GERENCIAR_OPTIONS}
-      />
+      <Stack.Screen name="Pessoas" component={PessoasScreen} options={PESSOAS_OPTIONS} />
+      <Stack.Screen name="FichaAluno" component={FichaAlunoScreen} options={FICHA_ALUNO_OPTIONS} />
+      <Stack.Screen name="FichaProfessor" component={FichaProfessorScreen} options={FICHA_PROFESSOR_OPTIONS} />
       <Stack.Screen name="EditarAluno" component={EditarAlunoScreen} options={EDITAR_ALUNO_OPTIONS} />
       <Stack.Screen name="ExcluirConta" component={ExcluirContaScreen} options={EXCLUIR_CONTA_OPTIONS} />
       <Stack.Screen name="DocumentosLegais" component={DocumentosLegaisScreen} options={DOCUMENTOS_LEGAIS_OPTIONS} />
@@ -83,7 +83,9 @@ const CADASTRO_OPTIONS: NativeStackNavigationOptions = { title: 'Cadastrar Aluno
 const CADASTRO_EQUIPE_OPTIONS: NativeStackNavigationOptions = {
   title: 'Cadastrar Equipe',
 };
-const GERENCIAR_OPTIONS: NativeStackNavigationOptions = { title: 'Gerenciar Alunos' };
+const PESSOAS_OPTIONS: NativeStackNavigationOptions = { title: 'Pessoas' };
+const FICHA_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Ficha do aluno' };
+const FICHA_PROFESSOR_OPTIONS: NativeStackNavigationOptions = { title: 'Ficha do professor' };
 const SENHA_OPTIONS: NativeStackNavigationOptions = { title: 'Alterar Senha' };
 const EDITAR_ALUNO_OPTIONS: NativeStackNavigationOptions = { title: 'Editar Aluno' };
 const EXCLUIR_CONTA_OPTIONS: NativeStackNavigationOptions = { title: 'Excluir Conta' };

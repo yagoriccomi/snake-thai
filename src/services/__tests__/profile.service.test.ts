@@ -27,7 +27,7 @@ import {
   deleteUserAccount,
   exportMyData,
   fetchTeachingStaff,
-  fetchManagedProfiles,
+  fetchPessoas,
   fetchUserEmail,
   montarAtualizacaoDoAluno,
   updateStudentByAdmin,
@@ -537,12 +537,12 @@ describe('exclusão de conta e e-mail', () => {
     expect(mockRpc).toHaveBeenNthCalledWith(2, 'export_my_data');
   });
 
-  it('fetchManagedProfilesDeveTrazerAdminsESemContasExcluidas', async () => {
+  it('fetchPessoasDeveTrazerAlunosEEquipeSemContasExcluidas', async () => {
     const chain = mockQuery({ data: [], error: null });
 
-    await fetchManagedProfiles();
+    await fetchPessoas();
 
-    expect(chain.in).toHaveBeenCalledWith('role', ['user', 'admin']);
+    expect(chain.in).toHaveBeenCalledWith('role', ['user', 'professor', 'admin']);
     expect(chain.is).toHaveBeenCalledWith('anonymized_at', null);
   });
 });

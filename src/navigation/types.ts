@@ -47,9 +47,14 @@ export type DadosStackParamList = {
   AlterarSenha: undefined;
   Planos: undefined;
   Configuracoes: undefined;
-  GerenciarAlunos: undefined;
-  /** Edição dos dados de um aluno pelo admin (e exclusão da conta, LGPD). */
-  EditarAluno: { userId: string };
+  /** Pessoas (admin): alunos e equipe, opção A dos mockups da linha E. */
+  Pessoas: undefined;
+  /** Edição dos dados de um aluno pelo admin; `excluir` abre direto a exclusão (LGPD). */
+  EditarAluno: { userId: string; excluir?: boolean };
+  /** A ficha do aluno (§ 12, D32). */
+  FichaAluno: { userId: string };
+  /** A ficha do professor, só para o admin (§ 12, D31). */
+  FichaProfessor: { teacherId: string; name: string };
   /** O titular exclui a própria conta (LGPD art. 18, VI). */
   ExcluirConta: undefined;
   /** Turmas (admin): criar, renomear, excluir/arquivar e reativar. */
@@ -104,6 +109,8 @@ export type AulasStackParamList = {
   MinhasSolicitacoes: undefined;
   /** Os pedidos de troca do fixo (§ 9.4). */
   MinhasTrocas: undefined;
+  /** A ficha do aluno, pelo toque no nome na chamada (§ 12, D32). */
+  FichaAluno: { userId: string };
   /** Revisar troca, aberta pela caixa (§ 9.4). */
   RevisarTroca: { swapId: string };
 };

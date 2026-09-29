@@ -23,7 +23,7 @@ function renderLinha(props: Partial<React.ComponentProps<typeof RollCallRow>> = 
         editada={false}
         editavel
         onMarcar={onMarcar}
-        onAbrirFrequencia={jest.fn()}
+        onAbrirFicha={jest.fn()}
         {...props}
       />
     </ThemeProvider>,

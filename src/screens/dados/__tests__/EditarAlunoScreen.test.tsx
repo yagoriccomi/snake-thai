@@ -22,6 +22,7 @@ jest.mock('@/services/payments.service', () => ({
 // Os seletores buscam turmas e planos no banco; aqui só importa que existem.
 jest.mock('@/components/GroupPicker', () => ({ GroupPicker: () => null }));
 jest.mock('@/components/PlanPicker', () => ({ PlanPicker: () => null }));
+jest.mock('@/hooks/useGroups', () => ({ useGroups: () => ({ groups: [], loading: false, error: null, reload: jest.fn() }) }));
 jest.mock('@/lib/logger', () => ({
   createLogger: () => ({ debug: jest.fn(), info: jest.fn(), warn: jest.fn(), error: jest.fn() }),
 }));

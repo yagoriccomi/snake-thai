@@ -187,18 +187,8 @@ export function DadosScreen({
     }
   }, [session, isAdmin, name, phone, dob, refreshProfile]);
 
-  const goToCreateStudent = useCallback(
-    () => navigation.navigate('CadastrarAluno'),
-    [navigation],
-  );
-  const goToCreateStaff = useCallback(
-    () => navigation.navigate('CadastrarEquipe'),
-    [navigation],
-  );
-  const goToManageStudents = useCallback(
-    () => navigation.navigate('GerenciarAlunos'),
-    [navigation],
-  );
+  // Cadastrar e gerenciar numa tela só (opção A dos mockups da linha E).
+  const goToPeople = useCallback(() => navigation.navigate('Pessoas'), [navigation]);
   const goToPlans = useCallback(() => navigation.navigate('Planos'), [navigation]);
   const goToGroups = useCallback(() => navigation.navigate('Turmas'), [navigation]);
   const goToSettings = useCallback(() => navigation.navigate('Configuracoes'), [navigation]);
@@ -263,23 +253,9 @@ export function DadosScreen({
             <Text style={styles.sectionLabel}>GESTÃO DA ACADEMIA</Text>
             <View style={styles.card}>
               <NavRow
-                icon="person-add-outline"
-                label="Cadastrar novo aluno"
-                onPress={goToCreateStudent}
-                styles={styles}
-                colors={colors}
-              />
-              <NavRow
-                icon="ribbon-outline"
-                label="Cadastrar professor ou admin"
-                onPress={goToCreateStaff}
-                styles={styles}
-                colors={colors}
-              />
-              <NavRow
                 icon="people-outline"
-                label="Gerenciar alunos"
-                onPress={goToManageStudents}
+                label="Pessoas"
+                onPress={goToPeople}
                 styles={styles}
                 colors={colors}
               />

@@ -275,10 +275,8 @@ export function FrequenciaScreen({ navigation, route }: AulasStackScreenProps<'F
     ]);
   }, [descartar]);
 
-  const abrirFrequencia = useCallback(
-    (userId: string, nome: string) => navigation.navigate('HistoricoFrequencia', { userId, name: nome }),
-    [navigation],
-  );
+  // D32: o toque no nome abre a ficha do aluno, que leva à frequência completa.
+  const abrirFicha = useCallback((userId: string) => navigation.navigate('FichaAluno', { userId }), [navigation]);
 
   const retirar = useCallback(
     (userId: string) => {
@@ -337,13 +335,13 @@ export function FrequenciaScreen({ navigation, route }: AulasStackScreenProps<'F
             editada={item.aluno?.edited === true}
             editavel={podeMarcar && !retirados.has(item.userId)}
             onMarcar={rascunhoDaChamada.marcar}
-            onAbrirFrequencia={abrirFrequencia}
+            onAbrirFicha={abrirFicha}
             onRetirar={podeRetirar ? retirar : undefined}
           />
         </View>
       );
     },
-    [mesPorAluno, retirados, rascunho, podeMarcar, rascunhoDaChamada.marcar, abrirFrequencia, retirar, styles.retirado],
+    [mesPorAluno, retirados, rascunho, podeMarcar, rascunhoDaChamada.marcar, abrirFicha, retirar, styles.retirado],
   );
 
   if (chamada.loading && estado === null) {

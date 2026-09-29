@@ -29,8 +29,8 @@ Sem esta camada vende-se "o Snake Thai", não um produto replicável.
 - [x] **P0** Desativar / reativar aluno — trancar matrícula preservando histórico · OK
 - [x] **P0** Excluir aluno com apagamento LGPD · OK
 - [x] **P0** Promover / rebaixar admin — botão na lista de alunos, com trava do último admin · OK
-- [ ] **P1** Busca, filtro e ordenação na lista de alunos · FALTA
-- [ ] **P1** Ficha do aluno (histórico de presença + financeiro consolidado) · FALTA
+- [x] **P1** Busca, filtro e ordenação na lista de alunos · OK (tela Pessoas, 4.10)
+- [x] **P1** Ficha do aluno (histórico de presença + financeiro consolidado) · OK (4.10)
 - [ ] **P1** Papéis intermediários (professor, recepção) · FALTA
 - [ ] **P2** Foto, contato de emergência, responsável para menores · FALTA
 - [ ] **P2** Importação de alunos em massa (CSV) · FALTA

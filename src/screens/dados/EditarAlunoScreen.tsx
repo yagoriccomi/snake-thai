@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
 import { BottomSheet } from '@/components/BottomSheet';
 import { Button } from '@/components/Button';
+import { AvisoDeMudancaDeTurma } from '@/components/AvisoDeMudancaDeTurma';
 import { ConfirmarExclusaoSheet } from '@/components/ConfirmarExclusaoSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
@@ -70,7 +71,7 @@ export function EditarAlunoScreen({
   navigation,
   route,
 }: DadosStackScreenProps<'EditarAluno'>): React.JSX.Element {
-  const { userId } = route.params;
+  const { userId, excluir: abrirExclusao } = route.params;
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
 
@@ -94,6 +95,14 @@ export function EditarAlunoScreen({
   const [erroDoEmail, setErroDoEmail] = useState<string | null>(null);
 
   const [folhaDeExclusao, setFolhaDeExclusao] = useState(false);
+
+  // "Excluir conta" na folha de Pessoas: a confirmação abre assim que o perfil chega.
+  const exclusaoJaAberta = useRef(false);
+  useEffect(() => {
+    if (abrirExclusao !== true || perfil === null || exclusaoJaAberta.current) return;
+    exclusaoJaAberta.current = true;
+    setFolhaDeExclusao(true);
+  }, [abrirExclusao, perfil]);
 
   const aplicarPerfil = useCallback((carregado: Profile) => {
     setPerfil(carregado);
@@ -289,6 +298,7 @@ export function EditarAlunoScreen({
         />
 
         <GroupPicker label="Turma" value={groupId} onChange={setGroupId} />
+        {perfil !== null ? <AvisoDeMudancaDeTurma turmaAtual={perfil.group_id} turmaNova={groupId} /> : null}
         <PlanPicker label="Plano" value={planId} onChange={setPlanId} />
 
         <Text style={styles.rotulo}>Situação</Text>
