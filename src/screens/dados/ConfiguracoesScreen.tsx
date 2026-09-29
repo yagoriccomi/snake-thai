@@ -11,6 +11,7 @@ import {
 
 import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { DiasDeAulaPicker } from '@/components/DiasDeAulaPicker';
 import { ErrorState } from '@/components/ErrorState';
 import { Input } from '@/components/Input';
 import { PlanPicker } from '@/components/PlanPicker';
@@ -21,13 +22,21 @@ import { useDefaultStudentPassword } from '@/hooks/useDefaultStudentPassword';
 import { createLogger } from '@/lib/logger';
 import { countAccountsWithoutFirstAccess, updateDefaultStudentPassword } from '@/services/settings.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import {
+  DDI_DO_BRASIL,
+  formatarWhatsapp,
+  whatsappDigitadoValido,
+  whatsappParaCampo,
+  whatsappParaGravar,
+} from '@/utils/contato';
+import { DIAS_DE_AULA_PADRAO, ordenarDiasDeAula, resumoDosDiasDeAula } from '@/utils/diasDeAula';
 import { describeError } from '@/utils/errors';
 import { maskPhone, onlyDigits } from '@/utils/masks';
 import { isValidEmail } from '@/utils/validation';
 
 /** Campos com mensagem de erro no formulário de configuração. */
 type SettingsErrors = Partial<
-  Record<'name' | 'color' | 'dueDay' | 'password' | 'email' | 'form', string>
+  Record<'name' | 'color' | 'dueDay' | 'password' | 'email' | 'whatsapp' | 'weekdays' | 'form', string>
 >;
 
 const log = createLogger('ConfiguracoesScreen');
@@ -62,6 +71,15 @@ const MIN_PASSWORD_LENGTH = 8;
 /** Cor em hexadecimal de 6 dígitos, como o banco exige. */
 const HEX_COLOR_PATTERN = /^#[0-9a-f]{6}$/i;
 
+/** Textos do mockup da linha A (Dias de aula) e da linha H (contato). */
+export const TEXTOS_DAS_CONFIGURACOES = {
+  diasDeAula:
+    'A semana vai de segunda a domingo. Os dias marcados são os dias de aula: eles decidem como a semana extra se divide entre dois meses e contam o prazo da justificativa. Mudar os dias vale para as semanas que ainda não fecharam; mês fechado não muda.',
+  whatsapp: 'Com DDD. Abre a conversa direto no WhatsApp.',
+  contato:
+    'Aparece para alunos e professores quando um pedido é negado, quando a justificativa é negada pela segunda vez e em Dados › Falar com a academia. Não aparece na tela de entrar.',
+} as const;
+
 /**
  * Configurações da academia (somente administrador) — Painel, lista agrupada.
  *
@@ -84,6 +102,8 @@ export function ConfiguracoesScreen(): React.JSX.Element {
   const [pixKey, setPixKey] = useState('');
   const [pixHolder, setPixHolder] = useState('');
   const [contactEmail, setContactEmail] = useState('');
+  const [contactWhatsapp, setContactWhatsapp] = useState('');
+  const [classWeekdays, setClassWeekdays] = useState<number[]>([...DIAS_DE_AULA_PADRAO]);
   const [contactPhone, setContactPhone] = useState('');
   const [address, setAddress] = useState('');
   const [dueDay, setDueDay] = useState('');
@@ -114,6 +134,8 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     setPixKey(settings.pix_key ?? '');
     setPixHolder(settings.pix_holder_name ?? '');
     setContactEmail(settings.contact_email ?? '');
+    setContactWhatsapp(whatsappParaCampo(settings.contact_whatsapp));
+    setClassWeekdays(ordenarDiasDeAula(settings.class_weekdays));
     setContactPhone(
       settings.contact_phone !== null ? maskPhone(settings.contact_phone) : '',
     );
@@ -168,6 +190,12 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     if (contactEmail.trim() !== '' && !isValidEmail(contactEmail)) {
       validation.email = 'E-mail de contato inválido.';
     }
+    if (!whatsappDigitadoValido(contactWhatsapp)) {
+      validation.whatsapp = 'WhatsApp inválido: informe o DDD e o número.';
+    }
+    if (classWeekdays.length === 0) {
+      validation.weekdays = 'Escolha pelo menos um dia de aula.';
+    }
     setErrors(validation);
     if (Object.keys(validation).length > 0) {
       return;
@@ -181,6 +209,8 @@ export function ConfiguracoesScreen(): React.JSX.Element {
         pix_key: emptyToNull(pixKey),
         pix_holder_name: emptyToNull(pixHolder),
         contact_email: emptyToNull(contactEmail),
+        contact_whatsapp: whatsappParaGravar(contactWhatsapp),
+        class_weekdays: ordenarDiasDeAula(classWeekdays),
         contact_phone:
           contactPhone.trim() === '' ? null : onlyDigits(contactPhone),
         address: emptyToNull(address),
@@ -205,6 +235,8 @@ export function ConfiguracoesScreen(): React.JSX.Element {
     pixKey,
     pixHolder,
     contactEmail,
+    contactWhatsapp,
+    classWeekdays,
     contactPhone,
     address,
     dueDay,
@@ -312,6 +344,29 @@ export function ConfiguracoesScreen(): React.JSX.Element {
               onChangeText={setContactEmail}
               error={errors.email}
             />
+            <AppText variant="caption" style={styles.fieldLabel}>
+              WhatsApp
+            </AppText>
+            <View style={styles.whatsappRow}>
+              <View style={styles.ddi} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                <Text style={styles.ddiText}>+{DDI_DO_BRASIL}</Text>
+              </View>
+              <Input
+                placeholder="(00) 00000-0000"
+                keyboardType="phone-pad"
+                accessibilityLabel="WhatsApp, DDD e número"
+                value={contactWhatsapp}
+                onChangeText={(valor) => {
+                  setSaved(false);
+                  setContactWhatsapp(maskPhone(valor));
+                }}
+                error={errors.whatsapp}
+                containerStyle={styles.flex1}
+              />
+            </View>
+            <AppText variant="caption" style={styles.fieldHint}>
+              {TEXTOS_DAS_CONFIGURACOES.whatsapp}
+            </AppText>
             <Input
               label="Telefone"
               placeholder="(00) 00000-0000"
@@ -320,8 +375,23 @@ export function ConfiguracoesScreen(): React.JSX.Element {
               onChangeText={handlePhoneChange}
             />
             <Input label="Endereço" value={address} onChangeText={setAddress} />
+            <AppText variant="caption" style={styles.fieldHint}>
+              {TEXTOS_DAS_CONFIGURACOES.contato}
+            </AppText>
 
             <Text style={styles.sectionLabel}>OPERAÇÃO</Text>
+            <AppText variant="caption" style={styles.fieldLabel}>
+              Dias de aula
+            </AppText>
+            <DiasDeAulaPicker value={classWeekdays} onChange={setClassWeekdays} />
+            {errors.weekdays !== undefined ? (
+              <AppText variant="caption" color={colors.error} style={styles.fieldHint}>
+                {errors.weekdays}
+              </AppText>
+            ) : null}
+            <AppText variant="caption" style={[styles.fieldHint, styles.spacedBelow]}>
+              {TEXTOS_DAS_CONFIGURACOES.diasDeAula}
+            </AppText>
             <Input
               label="Senha de primeiro acesso"
               autoCapitalize="none"
@@ -395,12 +465,18 @@ export function ConfiguracoesScreen(): React.JSX.Element {
             <Text style={styles.sectionLabel}>CONTATO</Text>
             <View style={styles.card}>
               <ValueRow label="E-mail" value={dash(contactEmail)} styles={styles} />
+              <ValueRow
+                label="WhatsApp"
+                value={settings !== null && settings.contact_whatsapp !== null ? formatarWhatsapp(settings.contact_whatsapp) : '—'}
+                styles={styles}
+              />
               <ValueRow label="Telefone" value={dash(contactPhone)} styles={styles} />
               <ValueRow label="Endereço" value={dash(address)} styles={styles} last />
             </View>
 
             <Text style={styles.sectionLabel}>OPERAÇÃO</Text>
             <View style={styles.card}>
+              <ValueRow label="Dias de aula" value={resumoDosDiasDeAula(classWeekdays)} styles={styles} />
               <ValueRow
                 label="Senha de primeiro acesso"
                 value={senhaPadrao.error !== null ? 'Indisponível' : dash(studentPassword)}
@@ -539,6 +615,38 @@ function makeStyles(
     hint: {
       marginTop: 8,
       marginLeft: 4,
+    },
+    fieldLabel: {
+      marginBottom: 6,
+    },
+    fieldHint: {
+      marginTop: -4,
+      marginBottom: 12,
+      color: colors.textSecondary,
+    },
+    spacedBelow: {
+      marginTop: 8,
+    },
+    whatsappRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    ddi: {
+      minHeight: 48,
+      minWidth: 56,
+      paddingHorizontal: 10,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    ddiText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 15,
+      color: colors.textSecondary,
     },
     savedHint: {
       marginTop: 12,

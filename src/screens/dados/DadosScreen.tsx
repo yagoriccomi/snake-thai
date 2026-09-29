@@ -6,6 +6,7 @@ import { AppText } from '@/components/AppText';
 import { AppVersionFooter } from '@/components/AppVersionFooter';
 import { Button } from '@/components/Button';
 import { CampoDeCor } from '@/components/CampoDeCor';
+import { FalarComAcademiaSheet } from '@/components/FalarComAcademiaSheet';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
@@ -67,6 +68,7 @@ export function DadosScreen({
     chooseBiometric,
   } = useAuth();
   const notificacoes = usePushNotifications();
+  const [falandoComAcademia, setFalandoComAcademia] = useState(false);
   const [biometricBusy, setBiometricBusy] = useState(false);
   const [biometricError, setBiometricError] = useState<string | null>(null);
 
@@ -528,6 +530,13 @@ export function DadosScreen({
           <Text style={styles.sectionLabel}>CONTA</Text>
           <View style={styles.card}>
             <NavRow
+              icon="chatbubbles-outline"
+              label="Falar com a academia"
+              onPress={() => setFalandoComAcademia(true)}
+              styles={styles}
+              colors={colors}
+            />
+            <NavRow
               icon="document-text-outline"
               label="Termos e privacidade"
               onPress={goToDocumentosLegais}
@@ -576,6 +585,7 @@ export function DadosScreen({
 
         <AppVersionFooter />
       </ScrollView>
+      <FalarComAcademiaSheet visible={falandoComAcademia} onClose={() => setFalandoComAcademia(false)} />
     </ScreenWrapper>
   );
 }

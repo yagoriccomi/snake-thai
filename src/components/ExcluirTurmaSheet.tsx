@@ -180,8 +180,7 @@ export function ExcluirTurmaSheet({ turma, destinos, onClose, onExcluida }: Excl
                 </AppText>
               ) : null}
               <AppText variant="caption" color={colors.textSecondary}>
-                Trocar de turma no meio do mês reinicia a frequência do mês: a conta passa a valer da entrada na
-                turma nova, e as aulas da turma antiga saem do mês. Se puder, faça isso na virada do mês.
+                A frequência dos alunos continua contando as aulas desta turma até agora.
               </AppText>
             </View>
           ) : null}

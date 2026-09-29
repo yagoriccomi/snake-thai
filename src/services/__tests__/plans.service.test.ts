@@ -17,6 +17,7 @@ import {
   createPlan,
   deactivatePlan,
   fetchPlans,
+  resumoDaModalidade,
   updatePlan,
   type PlanInput,
 } from '@/services/plans.service';
@@ -42,6 +43,8 @@ const ENTRADA: PlanInput = {
   billingPeriod: 'monthly',
   dueDay: 10,
   isActive: true,
+  scheduleMode: 'fixed',
+  weeklyQuota: null,
 };
 
 function mockQuery(resultado: Parameters<typeof createQueryChain>[0]): QueryChainMock {
@@ -144,6 +147,38 @@ describe('updatePlan', () => {
     const chain = mockQuery({ data: PLANO, error: null });
     await updatePlan('plan-1', ENTRADA);
     expect(chain.eq).toHaveBeenCalledWith('id', 'plan-1');
+  });
+
+  it('deveMostrarAFraseDoBancoQuandoOPlanoTemHistorico', async () => {
+    // T4: plano com histórico não muda de modalidade nem de cota.
+    const frase = 'Plano com histórico: crie outro plano e mova os alunos.';
+    mockQuery({ data: null, error: { message: frase, code: '23514' } });
+    await expect(updatePlan('plan-1', { ...ENTRADA, scheduleMode: 'free', weeklyQuota: 3 })).rejects.toMatchObject({
+      message: frase,
+    });
+  });
+});
+
+describe('modalidade e cota', () => {
+  it('deveGravarACotaSoNoPlanoLivre', async () => {
+    const chain = mockQuery({ data: PLANO, error: null });
+    await createPlan({ ...ENTRADA, scheduleMode: 'free', weeklyQuota: 3 });
+    expect(chain.insert).toHaveBeenCalledWith(expect.objectContaining({ schedule_mode: 'free', weekly_quota: 3 }));
+  });
+
+  it('deveGravarCotaNulaForaDoLivreMesmoSeATelaMandarUmNumero', async () => {
+    // plans_cota_coerente: fixo e à vontade exigem cota nula.
+    const chain = mockQuery({ data: PLANO, error: null });
+    await createPlan({ ...ENTRADA, scheduleMode: 'unlimited', weeklyQuota: 4 });
+    expect(chain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ schedule_mode: 'unlimited', weekly_quota: null }),
+    );
+  });
+
+  it('deveResumirCadaModalidadeComoNoMockup', () => {
+    expect(resumoDaModalidade({ schedule_mode: 'free', weekly_quota: 3 })).toBe('3x por semana');
+    expect(resumoDaModalidade({ schedule_mode: 'fixed', weekly_quota: null })).toBe('Segue a grade da turma');
+    expect(resumoDaModalidade({ schedule_mode: 'unlimited', weekly_quota: null })).toBe('Sem cota · meta do aluno');
   });
 });
 

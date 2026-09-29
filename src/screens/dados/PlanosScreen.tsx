@@ -25,10 +25,15 @@ import { usePlans } from '@/hooks/usePlans';
 import {
   BILLING_PERIOD_LABELS,
   MAX_DUE_DAY,
+  MAX_WEEKLY_QUOTA,
   MIN_DUE_DAY,
+  MIN_WEEKLY_QUOTA,
+  SCHEDULE_MODE_LABELS,
+  resumoDaModalidade,
   type BillingPeriod,
   type PlanInput,
   type PlanRow,
+  type ScheduleMode,
 } from '@/services/plans.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { centsToInput, formatCents, parseCurrencyToCents } from '@/utils/currency';
@@ -53,6 +58,20 @@ const PERIOD_OPTIONS: ReadonlyArray<SegmentOption<BillingPeriod>> = PERIOD_ORDER
   (period) => ({ value: period, label: BILLING_PERIOD_LABELS[period] }),
 );
 
+/** Modalidades na ordem do mockup (linha A): fixo, livre, à vontade. */
+const MODE_OPTIONS: ReadonlyArray<SegmentOption<ScheduleMode>> = (['fixed', 'free', 'unlimited'] as const).map(
+  (mode) => ({ value: mode, label: SCHEDULE_MODE_LABELS[mode] }),
+);
+
+/** Cota sugerida ao escolher "Horário livre" (o admin ajusta de 1 a 6). */
+const COTA_SUGERIDA = 3;
+
+export const TEXTOS_DA_MODALIDADE = {
+  dica: 'Fixo: segue a grade da turma. Livre: escolhe as aulas até a cota da semana. À vontade: vai quando quiser; a frequência é só a meta que ele mesmo define.',
+  planoEmUso:
+    'Plano com aluno ativo não muda de modalidade nem de cota. Para mudar, crie outro plano e mova os alunos.',
+} as const;
+
 /**
  * Gestão de planos (somente administrador) — Painel, vitrine de cartões.
  *
@@ -75,6 +94,8 @@ export function PlanosScreen(): React.JSX.Element {
   const [price, setPrice] = useState('');
   const [period, setPeriod] = useState<BillingPeriod>('monthly');
   const [dueDay, setDueDay] = useState('10');
+  const [mode, setMode] = useState<ScheduleMode>('fixed');
+  const [quota, setQuota] = useState(COTA_SUGERIDA);
   const [errors, setErrors] = useState<PlanErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -86,6 +107,8 @@ export function PlanosScreen(): React.JSX.Element {
     setPrice('');
     setPeriod('monthly');
     setDueDay('10');
+    setMode('fixed');
+    setQuota(COTA_SUGERIDA);
     setErrors({});
   }, []);
 
@@ -102,6 +125,8 @@ export function PlanosScreen(): React.JSX.Element {
     setPrice(centsToInput(plan.price_cents));
     setPeriod(plan.billing_period);
     setDueDay(String(plan.due_day));
+    setMode(plan.schedule_mode);
+    setQuota(plan.weekly_quota ?? COTA_SUGERIDA);
     setErrors({});
     setFormOpen(true);
   }, []);
@@ -135,6 +160,8 @@ export function PlanosScreen(): React.JSX.Element {
       billingPeriod: period,
       dueDay: parsedDueDay,
       isActive: true,
+      scheduleMode: mode,
+      weeklyQuota: mode === 'free' ? quota : null,
     };
 
     setSubmitting(true);
@@ -156,6 +183,8 @@ export function PlanosScreen(): React.JSX.Element {
     dueDay,
     period,
     description,
+    mode,
+    quota,
     editingId,
     add,
     edit,
@@ -229,12 +258,16 @@ export function PlanosScreen(): React.JSX.Element {
                 </Text>
               </View>
             )}
+            <View style={styles.pillMode}>
+              <Text style={styles.pillModeText}>{SCHEDULE_MODE_LABELS[item.schedule_mode]}</Text>
+            </View>
             <Text style={styles.cardDue}>
               {inactive
                 ? BILLING_PERIOD_LABELS[item.billing_period]
                 : `vence dia ${item.due_day}`}
             </Text>
           </View>
+          <Text style={styles.cardDue}>{resumoDaModalidade(item)}</Text>
         </View>
       );
     },
@@ -285,6 +318,54 @@ export function PlanosScreen(): React.JSX.Element {
             error={errors.dueDay}
             containerStyle={styles.dueDay}
           />
+          <AppText variant="caption" style={styles.label}>
+            Modalidade
+          </AppText>
+          <SegmentedControl options={MODE_OPTIONS} value={mode} onChange={setMode} />
+          <AppText variant="caption" color={colors.textSecondary} style={styles.hint}>
+            {TEXTOS_DA_MODALIDADE.dica}
+          </AppText>
+          {mode === 'free' ? (
+            <View style={styles.quotaBlock}>
+              <AppText variant="caption" style={styles.label}>
+                Aulas por semana
+              </AppText>
+              <View style={styles.quotaRow}>
+                <Pressable
+                  onPress={() => setQuota((atual) => Math.max(MIN_WEEKLY_QUOTA, atual - 1))}
+                  disabled={quota <= MIN_WEEKLY_QUOTA}
+                  style={[styles.quotaButton, quota <= MIN_WEEKLY_QUOTA ? styles.quotaButtonOff : null]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Menos uma aula por semana"
+                  accessibilityState={{ disabled: quota <= MIN_WEEKLY_QUOTA }}
+                >
+                  <Ionicons name="remove" size={20} color={colors.textPrimary} />
+                </Pressable>
+                <Text style={styles.quotaValue} accessibilityLiveRegion="polite">
+                  {quota}
+                </Text>
+                <Pressable
+                  onPress={() => setQuota((atual) => Math.min(MAX_WEEKLY_QUOTA, atual + 1))}
+                  disabled={quota >= MAX_WEEKLY_QUOTA}
+                  style={[styles.quotaButton, quota >= MAX_WEEKLY_QUOTA ? styles.quotaButtonOff : null]}
+                  accessibilityRole="button"
+                  accessibilityLabel="Mais uma aula por semana"
+                  accessibilityState={{ disabled: quota >= MAX_WEEKLY_QUOTA }}
+                >
+                  <Ionicons name="add" size={20} color={colors.textPrimary} />
+                </Pressable>
+                <AppText variant="caption" color={colors.textSecondary}>
+                  {`${quota}x por semana · de ${MIN_WEEKLY_QUOTA} a ${MAX_WEEKLY_QUOTA}`}
+                </AppText>
+              </View>
+            </View>
+          ) : null}
+          <View style={styles.notice}>
+            <Ionicons name="information-circle-outline" size={20} color={colors.textSecondary} />
+            <AppText variant="caption" color={colors.textSecondary} style={styles.noticeText}>
+              {TEXTOS_DA_MODALIDADE.planoEmUso}
+            </AppText>
+          </View>
           {errors.form !== undefined ? (
             <AppText variant="caption" color={colors.error}>
               {errors.form}
@@ -321,8 +402,12 @@ export function PlanosScreen(): React.JSX.Element {
       price,
       period,
       dueDay,
+      mode,
+      quota,
       errors,
       colors.error,
+      colors.textPrimary,
+      colors.textSecondary,
       handlePress,
       submitting,
       resetForm,
@@ -418,6 +503,53 @@ function makeStyles(
     dueDay: {
       marginTop: 16,
     },
+    hint: {
+      marginTop: 6,
+      marginBottom: 12,
+    },
+    quotaBlock: {
+      marginBottom: 12,
+    },
+    quotaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    quotaButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quotaButtonOff: {
+      opacity: 0.4,
+    },
+    quotaValue: {
+      fontFamily: fonts.bodyBold,
+      fontSize: 28,
+      minWidth: 32,
+      textAlign: 'center',
+      color: colors.textPrimary,
+      fontVariant: ['tabular-nums'],
+    },
+    notice: {
+      flexDirection: 'row',
+      gap: 10,
+      alignItems: 'flex-start',
+      padding: 12,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      marginBottom: 12,
+    },
+    noticeText: {
+      flex: 1,
+    },
     cancel: {
       marginTop: 12,
     },
@@ -469,6 +601,18 @@ function makeStyles(
       fontFamily: fonts.bodySemiBold,
       fontSize: 11,
       color: colors.primaryText,
+    },
+    pillMode: {
+      borderWidth: 1,
+      borderColor: colors.textSecondary,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 2,
+    },
+    pillModeText: {
+      fontFamily: fonts.bodySemiBold,
+      fontSize: 11,
+      color: colors.textSecondary,
     },
     pillOff: {
       backgroundColor: 'rgba(255,255,255,0.06)',

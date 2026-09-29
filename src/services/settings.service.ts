@@ -24,12 +24,14 @@ export type AcademySettingsInput = Pick<
   | 'logo_url'
   | 'primary_color'
   | 'contact_email'
+  | 'contact_whatsapp'
   | 'contact_phone'
   | 'address'
   | 'pix_key'
   | 'pix_holder_name'
   | 'default_due_day'
   | 'default_plan_id'
+  | 'class_weekdays'
 >;
 
 /** Identificador da linha única (a coluna `id` é sempre `true`). */
