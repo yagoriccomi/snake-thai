@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { AppVersionFooter } from '@/components/AppVersionFooter';
 import { Button } from '@/components/Button';
+import { CampoDeCor } from '@/components/CampoDeCor';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
@@ -14,6 +15,7 @@ import { useExportarMeusDados } from '@/hooks/useExportarMeusDados';
 import type { DadosStackScreenProps } from '@/navigation/types';
 import { updateOwnColor, updateProfile } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
+import { MENSAGEM_COR_INVALIDA, ehCorValida } from '@/utils/cor';
 import { describeError } from '@/utils/errors';
 import {
   dateBrToIso,
@@ -26,8 +28,6 @@ import {
 import { isValidBirthDate, isValidName, isValidPhone } from '@/utils/validation';
 
 type ProfileErrors = Partial<Record<'name' | 'phone' | 'dob' | 'form', string>>;
-
-const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
 /** Iniciais para o avatar: primeira + última palavra do nome (ou do e-mail). */
 function initialsFrom(name: string, email: string): string {
@@ -59,6 +59,7 @@ export function DadosScreen({
     session,
     isAdmin,
     isProfessor,
+    isStaff,
     signOut,
     refreshProfile,
     biometricEnabled,
@@ -79,14 +80,17 @@ export function DadosScreen({
     if (userId === undefined) {
       return;
     }
-    if (!HEX_COLOR_REGEX.test(color)) {
-      setColorError('Cor inválida — use o formato #RRGGBB.');
+    const valor = color.trim().toUpperCase();
+    // Só o admin pode ficar sem cor (§ 4): campo vazio apaga a cor dele.
+    const apagar = isAdmin && valor === '';
+    if (!apagar && !ehCorValida(valor)) {
+      setColorError(MENSAGEM_COR_INVALIDA);
       return;
     }
     setColorError(null);
     setColorSaving(true);
     try {
-      await updateOwnColor(userId, color);
+      await updateOwnColor(userId, apagar ? null : valor);
       await refreshProfile();
       setColorSaved(true);
     } catch (saveError) {
@@ -94,7 +98,7 @@ export function DadosScreen({
     } finally {
       setColorSaving(false);
     }
-  }, [session, color, refreshProfile]);
+  }, [session, color, isAdmin, refreshProfile]);
 
   const email = session?.user.email ?? '';
   const cpfDisplay =
@@ -388,34 +392,25 @@ export function DadosScreen({
           ) : null}
         </View>
 
-        {/* Minha cor (somente professor) */}
-        {isProfessor ? (
+        {/* Minha cor (professor e admin: quem dá aula, § 4) */}
+        {isStaff ? (
           <View style={styles.group}>
             <Text style={styles.sectionLabel}>MINHA COR</Text>
             <View style={styles.card}>
-              <View style={styles.colorRow}>
-                <View
-                  style={[
-                    styles.colorPreview,
-                    HEX_COLOR_REGEX.test(color) ? { backgroundColor: color } : null,
-                  ]}
-                />
-                <Input
-                  label="Cor hexadecimal"
-                  placeholder="#39FF14"
-                  autoCapitalize="characters"
-                  value={color}
-                  onChangeText={(value) => {
-                    setColorSaved(false);
-                    setColor(value);
-                  }}
-                  error={colorError ?? undefined}
-                  containerStyle={styles.colorInput}
-                />
-              </View>
+              <CampoDeCor
+                label={isAdmin ? 'Cor hexadecimal (opcional)' : 'Cor hexadecimal'}
+                value={color}
+                onChangeText={(value) => {
+                  setColorSaved(false);
+                  setColor(value);
+                }}
+                error={colorError ?? undefined}
+                containerStyle={styles.colorRow}
+              />
               <AppText variant="caption" color={colors.textSecondary} style={styles.colorHint}>
-                Aparece ao lado do seu nome nas aulas; a borda da aula também usa esta
-                cor.
+                {isAdmin
+                  ? 'Com uma cor, você também dá aula: entra nas aulas e pode ser escalado na grade. Ela aparece ao lado do seu nome e na borda das aulas. Para deixar de dar aula, apague a cor e salve.'
+                  : 'Aparece ao lado do seu nome nas aulas; a borda da aula também usa esta cor.'}
               </AppText>
               <Button
                 title="Salvar cor"
@@ -809,22 +804,8 @@ function makeStyles(
       marginLeft: 4,
     },
     colorRow: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: 10,
       padding: 14,
       paddingBottom: 0,
-    },
-    colorPreview: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: colors.border,
-      marginBottom: 8,
-    },
-    colorInput: {
-      flex: 1,
     },
     colorHint: {
       paddingHorizontal: 14,

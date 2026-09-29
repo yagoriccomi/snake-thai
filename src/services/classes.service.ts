@@ -1,6 +1,10 @@
+import { lerErroDoBanco } from '@/lib/functionsError';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
 import type { Profile } from '@/types/models';
+
+/** SQLSTATE das recusas de vínculo com a aula que o banco escreve para a pessoa. */
+const CODIGOS_COM_FRASE_DA_AULA = ['23514'] as const;
 
 /** Tipos derivados do esquema para o módulo de Aulas. */
 export type ClassRow = Database['public']['Tables']['classes']['Row'];
@@ -304,7 +308,8 @@ export async function addClassTeacher(classId: string, teacherId: string): Promi
     .from('class_teachers')
     .insert({ class_id: classId, teacher_id: teacherId });
   if (error !== null) {
-    throw error;
+    // O banco explica a recusa (ex.: "Escolha a sua cor antes de entrar na aula.", T24).
+    throw lerErroDoBanco(error, CODIGOS_COM_FRASE_DA_AULA);
   }
 }
 
@@ -316,6 +321,7 @@ export async function removeClassTeacher(classId: string, teacherId: string): Pr
     .eq('class_id', classId)
     .eq('teacher_id', teacherId);
   if (error !== null) {
-    throw error;
+    // Ex.: "A equipe de uma aula que já começou só muda pela chamada."
+    throw lerErroDoBanco(error, CODIGOS_COM_FRASE_DA_AULA);
   }
 }

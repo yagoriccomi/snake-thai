@@ -1,7 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AppText } from '@/components/AppText';
 import { Button } from '@/components/Button';
+import { PedirCorSheet } from '@/components/PedirCorSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TypeBadge } from '@/components/TypeBadge';
@@ -14,8 +16,10 @@ import {
   removeClassTeacher,
   type ClassTeacherRef,
 } from '@/services/classes.service';
+import { updateOwnColor } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { formatFullDateTime } from '@/utils/datetime';
+import { describeError } from '@/utils/errors';
 
 const SCREEN_EDGES = ['bottom'] as const;
 const log = createLogger('DetalheAulaScreen');
@@ -29,6 +33,9 @@ const log = createLogger('DetalheAulaScreen');
  * - Professor que ainda não é: **entrar na aula** (se incluir) — sem isso,
  *   a chamada fica só leitura, porque "veem todas as aulas" não é o mesmo
  *   que gerenciar todas. [#55]
+ * - Admin também dá aula (contrato § 4): além de editar e fazer a chamada,
+ *   **entra e sai** da aula. Sem cor, a folha pede a cor antes de entrar
+ *   (T24), porque o trilho de cor da aula depende dela.
  */
 export function DetalheAulaScreen({
   navigation,
@@ -36,16 +43,22 @@ export function DetalheAulaScreen({
 }: AulasStackScreenProps<'DetalheAula'>): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
-  const { isAdmin, isProfessor, profile } = useAuth();
+  const { isAdmin, isProfessor, profile, refreshProfile } = useAuth();
   const { classId, title, type, dateTimeIso, groupId, scheduleId, groupLabel } = route.params;
   const [teachers, setTeachers] = useState<ClassTeacherRef[]>([]);
   const [working, setWorking] = useState(false);
+  const [erroDaEquipe, setErroDaEquipe] = useState<string | null>(null);
+  const [pedindoCor, setPedindoCor] = useState(false);
 
   const loadTeachers = useCallback(() => {
     fetchTeachersForClasses([classId])
-      .then((porAula) => setTeachers(porAula[classId] ?? []))
+      .then((porAula) => {
+        setTeachers(porAula[classId] ?? []);
+        setErroDaEquipe(null);
+      })
       .catch((erro: unknown) => {
         log.error('Falha ao carregar professores da aula', erro);
+        setErroDaEquipe(`Não foi possível carregar os professores da aula. ${describeError(erro)}`);
       });
   }, [classId]);
 
@@ -70,27 +83,52 @@ export function DetalheAulaScreen({
     if (profile === null) {
       return;
     }
+    // Só o admin fica sem cor (o professor sempre tem): pede a cor antes (T24).
+    if (profile.color === null) {
+      setPedindoCor(true);
+      return;
+    }
     setWorking(true);
+    setErroDaEquipe(null);
     try {
       await addClassTeacher(classId, profile.id);
       loadTeachers();
     } catch (erro) {
       log.error('Falha ao entrar na aula', erro);
+      setErroDaEquipe(describeError(erro));
     } finally {
       setWorking(false);
     }
   }, [classId, profile, loadTeachers]);
+
+  /** Folha da cor: salva a cor, recarrega o perfil e só então entra na aula. */
+  const salvarCorEEntrar = useCallback(
+    async (cor: string) => {
+      if (profile === null) {
+        return;
+      }
+      await updateOwnColor(profile.id, cor);
+      await refreshProfile();
+      await addClassTeacher(classId, profile.id);
+      setPedindoCor(false);
+      setErroDaEquipe(null);
+      loadTeachers();
+    },
+    [classId, profile, refreshProfile, loadTeachers],
+  );
 
   const handleLeave = useCallback(async () => {
     if (profile === null) {
       return;
     }
     setWorking(true);
+    setErroDaEquipe(null);
     try {
       await removeClassTeacher(classId, profile.id);
       loadTeachers();
     } catch (erro) {
       log.error('Falha ao sair da aula', erro);
+      setErroDaEquipe(describeError(erro));
     } finally {
       setWorking(false);
     }
@@ -137,6 +175,21 @@ export function DetalheAulaScreen({
           </View>
         )}
 
+        {isAdmin && (
+          <Button
+            title={souProfessorDaAula ? 'Sair da aula' : 'Entrar nesta aula'}
+            variant="secondary"
+            onPress={() => void (souProfessorDaAula ? handleLeave() : handleJoin())}
+            loading={working}
+            style={styles.equipeBtn}
+            accessibilityHint={
+              souProfessorDaAula
+                ? 'Remove você dos professores desta aula'
+                : 'Inclui você como um dos professores desta aula'
+            }
+          />
+        )}
+
         {isProfessor && souProfessorDaAula && (
           <View style={styles.actions}>
             <Button
@@ -174,7 +227,19 @@ export function DetalheAulaScreen({
             />
           </View>
         )}
+
+        {erroDaEquipe !== null ? (
+          <AppText variant="caption" color={colors.error} accessibilityRole="alert" style={styles.erro}>
+            {erroDaEquipe}
+          </AppText>
+        ) : null}
       </View>
+
+      <PedirCorSheet
+        visible={pedindoCor}
+        onClose={() => setPedindoCor(false)}
+        onConfirmar={salvarCorEEntrar}
+      />
     </ScreenWrapper>
   );
 }
@@ -245,6 +310,12 @@ function makeStyles(
     },
     actionBtn: {
       flex: 1,
+    },
+    equipeBtn: {
+      marginTop: 12,
+    },
+    erro: {
+      marginTop: 12,
     },
   });
 }

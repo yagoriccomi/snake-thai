@@ -26,7 +26,7 @@ import {
   deleteMyAccount,
   deleteUserAccount,
   exportMyData,
-  fetchAllProfessors,
+  fetchTeachingStaff,
   fetchManagedProfiles,
   fetchUserEmail,
   montarAtualizacaoDoAluno,
@@ -91,12 +91,11 @@ describe('updateUserRole — promoção e rebaixamento da equipe', () => {
     expect(chain.eq).toHaveBeenCalledWith('id', ALUNO_ID);
   });
 
-  it('deveLimparACorAoPromoverAAdministrador', async () => {
+  it('deveManterACorAoPromoverAAdministrador', async () => {
     const chain = mockQuery({ data: null, error: null });
     await updateUserRole(ALUNO_ID, 'admin');
-    // A cor é exclusiva de professor: sem limpá-la na mesma operação, o banco
-    // recusa a promoção pela constraint profiles_color_only_for_professor.
-    expect(chain.update).toHaveBeenCalledWith({ role: 'admin', color: null });
+    // Contrato § 4: o admin com cor também dá aula, então promover não mexe na cor.
+    expect(chain.update).toHaveBeenCalledWith({ role: 'admin' });
   });
 
   it('deveDevolverACorAoRebaixarParaProfessor', async () => {
@@ -173,18 +172,19 @@ describe('resetStudentPassword', () => {
   });
 });
 
-describe('fetchAllProfessors', () => {
-  it('deveFiltrarSomenteOPapelProfessor', async () => {
+describe('fetchTeachingStaff', () => {
+  it('deveListarProfessoresEAdminsComCorENuncaAlunos', async () => {
     const chain = mockQuery({ data: [], error: null });
-    await fetchAllProfessors();
-    // Sem este filtro, o seletor de professores do admin listaria alunos e
-    // administradores junto — confuso na hora de montar uma aula.
-    expect(chain.eq).toHaveBeenCalledWith('role', 'professor');
+    await fetchTeachingStaff();
+    // Contrato § 4: o admin com cor dá aula. Sem cor, o banco recusaria o
+    // vínculo (T24), e aluno nunca entra na equipe da aula.
+    expect(chain.in).toHaveBeenCalledWith('role', ['professor', 'admin']);
+    expect(chain.not).toHaveBeenCalledWith('color', 'is', null);
   });
 
   it('devePropagarFalhaDeRede', async () => {
     mockQuery(NETWORK_FAILURE);
-    await expect(fetchAllProfessors()).rejects.toEqual(NETWORK_FAILURE.error);
+    await expect(fetchTeachingStaff()).rejects.toEqual(NETWORK_FAILURE.error);
   });
 });
 
@@ -357,11 +357,23 @@ describe('updateOwnColor', () => {
 
   it('devePropagarARecusaDaConstraintQuandoQuemChamaNaoEhProfessor', async () => {
     // Ex.: um aluno tentando se autoatribuir uma cor — a constraint
-    // `profiles_color_only_for_professor` barra no banco.
+    // `profiles_color_by_role` barra no banco.
     mockQuery(RLS_DENIED);
     await expect(updateOwnColor(ALUNO_ID, '#00AAFF')).rejects.toEqual(
       RLS_DENIED.error,
     );
+  });
+
+  it('deveGravarNuloQuandoOAdminApagaACor', async () => {
+    const chain = mockQuery({ data: null, error: null });
+    await updateOwnColor(PROFESSOR_ID, null);
+    expect(chain.update).toHaveBeenCalledWith({ color: null });
+  });
+
+  it('deveMostrarAFraseDoBancoQuandoOAdminEscaladoApagaACor', async () => {
+    const frase = 'Você está em aulas que ainda vão acontecer. Saia delas antes de apagar a sua cor.';
+    mockQuery({ data: null, error: { message: frase, code: '23514' } });
+    await expect(updateOwnColor(PROFESSOR_ID, null)).rejects.toMatchObject({ message: frase });
   });
 });
 

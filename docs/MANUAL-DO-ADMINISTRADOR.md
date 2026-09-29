@@ -141,6 +141,21 @@ Como administrador, você:
 
 Os alunos veem só as aulas da própria turma (e os eventos abertos a todos).
 
+### Dar aula como administrador (a partir da versão 2.0.0)
+
+O administrador também pode dar aula. Para isso, ele precisa de uma **cor**: é ela que
+aparece ao lado do nome dele e na borda das aulas, como a dos professores.
+
+- **Escolher ou trocar a cor:** **Dados → Minha cor**. Para o administrador, a cor é
+  opcional. Sem cor, ele só administra.
+- **Entrar numa aula:** no detalhe da aula, **Entrar nesta aula**. Se você ainda não tem
+  cor, o app pede a cor antes de entrar. **Sair da aula** desfaz.
+- **Na grade semanal:** administradores com cor aparecem na lista de professores como
+  "**Nome · admin**".
+- **Apagar a cor:** em **Dados → Minha cor**, apague o campo e salve. Se você está em
+  alguma aula que ainda vai acontecer, o app recusa: saia dessas aulas antes.
+- **Promover um professor a administrador** mantém a cor dele. Ele continua dando aula.
+
 ### Montar a grade semanal
 
 1. **Dados → Turmas e grade semanal** → no cartão da turma, **Grade semanal**.

@@ -36,6 +36,11 @@ interface AuthContextValue {
   profile: Profile | null;
   isAdmin: boolean;
   isProfessor: boolean;
+  /**
+   * Professor ou admin: quem pode dar aula (contrato § 4). O admin só entra
+   * numa aula com cor (T24); `isProfessor` continua sendo só o papel professor.
+   */
+  isStaff: boolean;
   /** True quando o usuário precisa confirmar biometria para navegar. */
   adminLocked: boolean;
   /** Registra a escolha do usuário sobre o desbloqueio biométrico. */
@@ -96,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
   const isAdmin = profile?.role === 'admin';
   const isProfessor = profile?.role === 'professor';
+  const isStaff = isAdmin || isProfessor;
 
   // Sessão inicial + listener de mudanças de autenticação.
   useEffect(() => {
@@ -286,6 +292,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       profile,
       isAdmin,
       isProfessor,
+      isStaff,
       adminLocked,
       biometricEnabled,
       biometricAvailable,
@@ -302,6 +309,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       profile,
       isAdmin,
       isProfessor,
+      isStaff,
       adminLocked,
       biometricEnabled,
       biometricAvailable,

@@ -11,7 +11,7 @@ jest.mock('@/services/groups.service', () => ({
 }));
 
 jest.mock('@/services/profile.service', () => ({
-  fetchAllProfessors: (...args: unknown[]): unknown => mockFetchProfessors(...args),
+  fetchTeachingStaff: (...args: unknown[]): unknown => mockFetchProfessors(...args),
 }));
 
 import { GroupPicker } from '@/components/GroupPicker';
@@ -111,6 +111,22 @@ describe('ProfessorMultiPicker', () => {
     const { findByText } = comTema(<ProfessorMultiPicker value={['p-1', 'p-antigo']} onChange={onChange} />);
 
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(['p-1']));
-    expect(await findByText(/não está mais ativo saiu da seleção/)).toBeTruthy();
+    expect(await findByText(/não pode mais ser escalada \(inativa ou sem cor\) saiu da seleção/)).toBeTruthy();
+  });
+
+  it('deveIdentificarOAdminQueDaAulaComoNoMockup', async () => {
+    mockFetchProfessors.mockResolvedValue([
+      professor('p-1', 'Rafael'),
+      professor('a-1', 'Júlia', { role: 'admin' }),
+    ]);
+    const onChange = jest.fn();
+    const { findByRole, getByRole } = comTema(<ProfessorMultiPicker label="Professores" value={['a-1']} onChange={onChange} />);
+
+    // O resumo do campo e a lista mostram "{nome} · admin" (linha A, "Novo horário").
+    fireEvent.press(await findByRole('button', { name: 'Professores: Júlia · admin' }));
+    fireEvent.press(getByRole('checkbox', { name: 'Rafael' }));
+
+    expect(onChange).toHaveBeenCalledWith(['a-1', 'p-1']);
+    expect(getByRole('checkbox', { name: 'Júlia · admin' })).toBeTruthy();
   });
 });
