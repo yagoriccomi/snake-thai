@@ -1223,6 +1223,9 @@ isOneToOne: false
             "aceitar_documentos_legais":
 { Args: { "p_documentos": (string)[] }; Returns: number
                            },
+"ajustar_trocas_ao_fim_do_horario":
+{ Args: { "p_schedule_id": string,"p_ultimo_dia": string }; Returns: undefined
+                           },
 "anonimizar_titular":
 { Args: { "p_solicitante": string,"p_user_id": string }; Returns: Json
                            },
@@ -1236,6 +1239,9 @@ isOneToOne: false
                            },
 "contas_sem_primeiro_acesso":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"contato_da_academia":
+{ Args: Record<PropertyKey, never>; Returns: Json
                            },
 "cota_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: number
@@ -1311,6 +1317,9 @@ isOneToOne: false
 "horario_permitido_para_push":
 { Args: { "p_agora": string }; Returns: string
                            },
+"inicio_da_semana_de_aula":
+{ Args: { "p_segunda": string }; Returns: string
+                           },
 "is_admin":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
@@ -1331,7 +1340,7 @@ isOneToOne: false
                            },
 "ocorrencias_da_grade":
 { Args: { "p_agora": string,"p_schedule_id": string }; Returns: {
-              "date_time": string,"group_id": string,"occurrence_date": string,"schedule_id": string,"title": string
+              "audience": Database["public"]['Enums']["class_audience"],"date_time": string,"group_id": string,"occurrence_date": string,"schedule_id": string,"title": string
             }[]
                            },
 "painel_admin_resumo":
@@ -1413,7 +1422,7 @@ isOneToOne: false
 { Args: { "p_ausentes": (string)[],"p_class_id": string,"p_presentes": (string)[] }; Returns: string
                            },
 "salvar_horario_da_grade":
-{ Args: { "p_group_id": string,"p_id"?: string,"p_start_time": string,"p_teacher_ids"?: (string)[],"p_title": string,"p_valid_from": string,"p_valid_until"?: string,"p_weekday": number }; Returns: Json
+{ Args: { "p_audience"?: Database["public"]['Enums']["class_audience"],"p_group_id": string,"p_id"?: string,"p_start_time": string,"p_teacher_ids"?: (string)[],"p_title": string,"p_valid_from": string,"p_valid_until"?: string,"p_weekday": number }; Returns: Json
                            },
 "saude_das_rotinas":
 { Args: { "p_referencia"?: string }; Returns: {
@@ -1425,6 +1434,11 @@ isOneToOne: false
                            },
 "senha_padrao_da_academia":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"trocas_permanentes_do_horario":
+{ Args: { "p_schedule_id": string }; Returns: {
+              "papel": string,"started_at": string,"student_name": string,"user_id": string
+            }[]
                            },
 "valor_proporcional":
 { Args: { "dia_entrada": number,"dias_no_mes": number,"preco_cents": number }; Returns: number
