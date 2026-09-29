@@ -217,6 +217,7 @@ falha real.
 
 ## `create-staff`
 
-O **administrador** cadastra professor ou administrador já com nome e CPF (e a cor, no
-caso do professor). A pessoa ainda troca a senha padrão e aceita os termos no primeiro
+O **administrador** cadastra professor ou administrador já com nome e CPF. A cor é
+obrigatória para o professor e opcional para o administrador: com cor, o administrador
+também dá aula (contrato v4, § 4). A pessoa ainda troca a senha padrão e aceita os termos no primeiro
 acesso. Contrato em `supabase/functions/create-staff/index.ts`.
