@@ -233,12 +233,10 @@ end $$;
 -- F2.7 — o upsert de justificativa do APK 1.8 continua funcionando (§ 15)
 -- =====================================================================
 set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
+-- 4.4: sem o "Não vou" antes. A aula já passou, e declarar numa aula que
+-- começou é recusado (T26); justificar não exige a declaração (§ 9.1 a).
 do $$
 begin
-  insert into public.attendance (class_id, user_id, declared_status)
-  values ('e3000000-0000-4000-8000-00000000c001', 'e3000000-0000-4000-8000-000000000002', 'absent')
-  on conflict (class_id, user_id) do update set declared_status = excluded.declared_status;
-
   insert into public.absence_justifications (class_id, user_id, message)
   values ('e3000000-0000-4000-8000-00000000c001', 'e3000000-0000-4000-8000-000000000002', 'Consulta médica')
   on conflict (class_id, user_id) do update set message = excluded.message;
@@ -1385,20 +1383,27 @@ end $$;
 -- =====================================================================
 -- F7.10 — "Vou" carimba declared_at; "Não vou" limpa (T29)
 -- =====================================================================
+-- 4.4: a c042 é o destino de uma troca pendente dele (declarar nela é recusado,
+-- § 9.2). O carimbo da T29 é conferido num evento, que qualquer aluno declara.
+reset role;
+set local request.jwt.claims = '{}';
+insert into public.classes (id, title, type, date_time)
+values ('e3000000-0000-4000-8000-00000000c049', 'Evento da T29', 'event', now() + interval '3 days');
+set local role authenticated;
 set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000002","role":"authenticated"}';
 do $$
 begin
   insert into public.attendance (class_id, user_id, declared_status)
-  values ('e3000000-0000-4000-8000-00000000c042', 'e3000000-0000-4000-8000-000000000002', 'present')
+  values ('e3000000-0000-4000-8000-00000000c049', 'e3000000-0000-4000-8000-000000000002', 'present')
   on conflict (class_id, user_id) do update set declared_status = excluded.declared_status;
   if (select declared_at from public.attendance
-       where class_id = 'e3000000-0000-4000-8000-00000000c042' and user_id = 'e3000000-0000-4000-8000-000000000002') is null then
+       where class_id = 'e3000000-0000-4000-8000-00000000c049' and user_id = 'e3000000-0000-4000-8000-000000000002') is null then
     raise exception 'FALHOU F7.10: "Vou" não carimbou declared_at';
   end if;
   update public.attendance set declared_status = 'absent'
-   where class_id = 'e3000000-0000-4000-8000-00000000c042' and user_id = 'e3000000-0000-4000-8000-000000000002';
+   where class_id = 'e3000000-0000-4000-8000-00000000c049' and user_id = 'e3000000-0000-4000-8000-000000000002';
   if (select declared_at from public.attendance
-       where class_id = 'e3000000-0000-4000-8000-00000000c042' and user_id = 'e3000000-0000-4000-8000-000000000002') is not null then
+       where class_id = 'e3000000-0000-4000-8000-00000000c049' and user_id = 'e3000000-0000-4000-8000-000000000002') is not null then
     raise exception 'FALHOU F7.10: "Não vou" deixou declared_at';
   end if;
   raise notice 'OK F7.10: declared_at segue a declaração';

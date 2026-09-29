@@ -295,9 +295,13 @@ begin
 end $$;
 
 -- G10 — encerrar
+-- A chamada da massa é gravada pelo sistema (sem as claims do admin, que só
+-- a gravaria pela RPC: § 6, trava corrigida no 4.4).
 reset role;
+set local request.jwt.claims = '{}';
 update public.classes set attendance_taken_at = timestamptz '2030-04-22 20:30-03'
  where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2030-04-22';
+set local request.jwt.claims = '{"sub":"f6100000-0000-4000-8000-000000000001","role":"authenticated"}';
 set local role authenticated;
 do $$
 declare v jsonb;
