@@ -1251,6 +1251,9 @@ isOneToOne: false
 "ajustar_trocas_ao_fim_do_horario":
 { Args: { "p_schedule_id": string,"p_ultimo_dia": string }; Returns: undefined
                            },
+"anexar_a_justificativa":
+{ Args: { "p_id": string,"p_provider"?: Database["public"]['Enums']["media_provider"] }; Returns: undefined
+                           },
 "anexar_ao_motivo":
 { Args: { "p_anexo_id": string,"p_motivo_id": string,"p_provider"?: Database["public"]['Enums']["media_provider"] }; Returns: undefined
                            },
@@ -1277,6 +1280,9 @@ isOneToOne: false
 { Args: { "p_referencia"?: string }; Returns: {
               "class_id": string,"date_time": string,"group_id": string,"title": string
             }[]
+                           },
+"avisar_justificativa_pendente":
+{ Args: { "p_id": string }; Returns: undefined
                            },
 "avisar_troca_aprovada":
 { Args: { "p_pela_chamada": boolean,"p_por": string,"p_swap_id": string }; Returns: undefined
@@ -1316,6 +1322,9 @@ isOneToOne: false
                            },
 "criar_motivo":
 { Args: { "p_class_id": string,"p_kind": Database["public"]['Enums']["action_reason_kind"],"p_texto": string }; Returns: string
+                           },
+"decidir_justificativa":
+{ Args: { "p_decisao": Database["public"]['Enums']["justification_status"],"p_id": string,"p_nota": string }; Returns: undefined
                            },
 "declarar_aula":
 { Args: { "p_class_id": string,"p_vou": boolean }; Returns: Json
@@ -1379,6 +1388,9 @@ isOneToOne: false
                            },
 "enfileirar_resumo_aulas_sem_chamada":
 { Args: { "p_agora"?: string }; Returns: number
+                           },
+"enviar_justificativa":
+{ Args: { "p_class_id": string,"p_scope": Database["public"]['Enums']["justification_scope"],"p_texto": string,"p_week_start": string }; Returns: string
                            },
 "excluir_turma":
 { Args: { "p_deixar_sem_turma"?: boolean,"p_destino"?: string,"p_group_id": string }; Returns: Json
@@ -1455,6 +1467,16 @@ isOneToOne: false
 "is_staff":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"justificativas_do_aluno":
+{ Args: { "p_ate"?: string,"p_de"?: string,"p_user_id"?: string }; Returns: {
+              "approved_by_name": string,"attempt": number,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"first_attempt": Json,"id": string,"review_note": string,"reviewed_at": string,"reviewed_by_name": string,"scope": Database["public"]['Enums']["justification_scope"],"status": Database["public"]['Enums']["justification_status"],"student_name": string,"user_id": string,"week_start": string
+            }[]
+                           },
+"justificativas_para_revisar":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "attempt": number,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"has_attachment": boolean,"id": string,"message": string,"scope": Database["public"]['Enums']["justification_scope"],"student_name": string,"user_id": string,"week_start": string
+            }[]
+                           },
 "limite_de_7_dias":
 { Args: { "p_quando": string }; Returns: string
                            },
@@ -1490,6 +1512,11 @@ isOneToOne: false
                            },
 "meta_vigente":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: number
+                           },
+"minhas_justificativas":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "approved_by_name": string,"attempt": number,"can_resend": boolean,"class_date_time": string,"class_id": string,"class_title": string,"created_at": string,"has_attachment": boolean,"id": string,"message": string,"resend_until": string,"reviewed_at": string,"scope": Database["public"]['Enums']["justification_scope"],"status": Database["public"]['Enums']["justification_status"],"week_start": string
+            }[]
                            },
 "modalidade_da_semana":
 { Args: { "p_segunda": string,"p_user_id": string }; Returns: Database["public"]['Enums']["plan_schedule_mode"]
@@ -1551,6 +1578,9 @@ isOneToOne: false
 "pode_anexar_ao_motivo":
 { Args: { "p_motivo_id": string }; Returns: boolean
                            },
+"pode_decidir_justificativa":
+{ Args: { "p_id": string }; Returns: boolean
+                           },
 "pode_decidir_troca":
 { Args: { "p_id": string }; Returns: boolean
                            },
@@ -1593,6 +1623,9 @@ isOneToOne: false
                            },
 "reativar_turma":
 { Args: { "p_group_id": string }; Returns: undefined
+                           },
+"reenviar_justificativa":
+{ Args: { "p_id": string,"p_texto": string }; Returns: undefined
                            },
 "registrar_dispositivo_push":
 { Args: { "p_plataforma": Database["public"]['Enums']["push_platform"],"p_token": string,"p_variante": Database["public"]['Enums']["app_variant"] }; Returns: string
