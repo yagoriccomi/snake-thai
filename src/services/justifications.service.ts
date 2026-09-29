@@ -45,9 +45,8 @@ export class JustificativaInvalidaError extends Error {
  * Envia a justificativa de falta do aluno — ou a substitui, enquanto ainda
  * estiver pendente de revisão.
  *
- * Pré-condição: a declaração de ausência já precisa estar gravada
- * (`declareAttendance(..., 'absent')`); sem ela o banco recusa, porque não há
- * falta declarada a justificar.
+ * Não exige "Não vou" antes (contrato § 9.1 a): o banco confere se a aula é da
+ * grade do aluno e se o prazo (D13) ainda vale.
  *
  * Reenviar sem anexo REMOVE o anexo anterior — o gatilho do banco o manda para
  * a fila de eliminação (LGPD). É intencional: a justificativa enviada é a que
@@ -102,18 +101,6 @@ export async function submitJustification(
   if (error !== null) {
     throw error;
   }
-}
-
-/** Justificativas do próprio aluno. */
-export async function fetchOwnJustifications(userId: string): Promise<JustificationRow[]> {
-  const { data, error } = await supabase
-    .from('absence_justifications')
-    .select('*')
-    .eq('user_id', userId);
-  if (error !== null) {
-    throw error;
-  }
-  return data;
 }
 
 /** Justificativas de uma aula — visão do professor da aula e do admin (RLS). */

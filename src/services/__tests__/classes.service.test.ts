@@ -16,7 +16,6 @@ jest.mock('@/lib/supabase', () => ({
 import {
   addClassTeacher,
   createClassAsProfessor,
-  declareAttendance,
   fetchTeachersForClasses,
   removeClassTeacher,
   updateClass,
@@ -151,31 +150,6 @@ describe('addClassTeacher / removeClassTeacher', () => {
     expect(chain.eq).toHaveBeenCalledWith('teacher_id', TEACHER_ID);
   });
 });
-
-const STUDENT_ID = 'student-1';
-
-describe('declareAttendance', () => {
-  it('deveGravarADeclaracaoSemTocarNaChamadaOficial', async () => {
-    const chain = mockQuery({ data: null, error: null });
-    await declareAttendance(CLASS_ID, STUDENT_ID, 'absent');
-    // A presença só é efetivada pela chamada do professor: a declaração do
-    // aluno nunca pode viajar em `status` — o banco recusaria com 42501.
-    expect(chain.upsert).toHaveBeenCalledWith(
-      { class_id: CLASS_ID, user_id: STUDENT_ID, declared_status: 'absent' },
-      { onConflict: 'class_id,user_id' },
-    );
-    const [payload] = chain.upsert.mock.calls[0] as [Record<string, unknown>];
-    expect(payload).not.toHaveProperty('status');
-  });
-
-  it('devePropagarARecusaDoBanco', async () => {
-    mockQuery(RLS_DENIED);
-    await expect(declareAttendance(CLASS_ID, STUDENT_ID, 'present')).rejects.toEqual(
-      RLS_DENIED.error,
-    );
-  });
-});
-
 
 describe('updateClass', () => {
   it('deveDesvincularDaGradeQuandoAAulaVeioDela', async () => {
