@@ -53,7 +53,9 @@ Academia**. É aqui que o sistema deixa de ser genérico e passa a ser o **seu**
 | **Chave PIX** | A chave para onde os alunos enviam a mensalidade. **Sem ela, o aluno não consegue pagar.** |
 | **Nome do titular do PIX** | Aparece para o aluno conferir antes de pagar. |
 | **Dia de vencimento padrão** | O dia do mês (1 a 28) usado como sugestão ao criar planos. |
-| **Contato e endereço** | Informações da academia. |
+| **Contato: E-mail e WhatsApp** | O contato que alunos e professores veem em **Dados → Falar com a academia** e nos pedidos negados (a partir da versão 2.0.0). O WhatsApp tem o **+55** fixo: digite o DDD e o número. Sem nenhum dos dois, o app diz "A academia ainda não cadastrou um contato. Procure a recepção." Nunca aparece na tela de entrar. |
+| **Telefone e endereço** | Informações da academia. O telefone não aparece em "Falar com a academia". |
+| **Dias de aula** | Os dias da semana em que a academia tem aula (padrão: segunda a sábado). Eles decidem como a semana que cai entre dois meses é dividida e contam o prazo da justificativa. Mudar os dias vale para as semanas que ainda não fecharam. |
 | **Senha de primeiro acesso** | A senha provisória que toda conta nova (aluno, professor ou admin) recebe, e a que volta ao redefinir o acesso. A pessoa é obrigada a trocá-la no primeiro acesso. Só administradores a veem. Ao trocá-la, o app avisa quantas contas ainda não entraram: redefina a senha delas em Gerenciar alunos. |
 
 Toque em **Salvar configurações**. A mudança vale na hora — inclusive a cor,
@@ -75,12 +77,19 @@ Em **Dados → Planos e Mensalidades** você define quanto custa treinar.
 2. Digite o **valor**. Pode usar vírgula: `129,90`.
 3. Escolha a **periodicidade**: Mensal, Trimestral, Semestral ou Anual.
 4. Defina o **dia de vencimento** (1 a 28).
-5. Toque em **Criar plano**.
+5. Escolha a **modalidade** (a partir da versão 2.0.0):
+   - **Horário fixo:** o aluno segue a grade da turma (é como era antes).
+   - **Horário livre:** o aluno escolhe as aulas até a cota da semana. Ajuste as
+     **aulas por semana** (de 1 a 6) nos botões **−** e **+**.
+   - **À vontade:** o aluno vai quando quiser; a frequência é a meta que ele mesmo define.
+6. Toque em **Criar plano**.
 
 ### Editar ou desativar
 
 - O **lápis** edita um plano. Mudar o preço **não altera cobranças já geradas** —
   só vale para as próximas. Ninguém é cobrado a mais retroativamente.
+- **Plano que já teve aluno não muda de modalidade nem de cota.** Mudar reescreveria
+  a frequência de quem já treinou nele. Para mudar, crie outro plano e mova os alunos.
 - O **arquivo** (caixa) desativa um plano. Ele some das novas contratações, mas
   **não é apagado**: os pagamentos que já apontavam para ele continuam
   intactos. Por isso não existe "excluir plano" — só desativar.
