@@ -260,6 +260,12 @@ export function HistoricoFrequenciaScreen({
             <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
           </Pressable>
         ) : null}
+        {proprio && mes?.scheduleMode === 'fixed' ? (
+          <Pressable onPress={() => navigation.navigate('MinhasTrocas')} style={styles.link} accessibilityRole="button">
+            <Text style={styles.linkTexto}>Minhas trocas</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+          </Pressable>
+        ) : null}
       </ScrollView>
       {semanaAJustificar !== null ? (
         <JustificationSheet

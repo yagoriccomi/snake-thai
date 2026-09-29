@@ -4,6 +4,7 @@ import { AVISO_DE_ANEXO_QUE_FALHOU, type JustificationDraft } from '@/components
 import type { AulaDoAluno, ResultadoDaDeclaracao } from '@/services/aulas.service';
 import { enviarJustificativa as enviarAoBanco } from '@/services/justifications.service';
 import { abrirSolicitacao } from '@/services/solicitacoes.service';
+import { desistirDaTroca, pedirTroca, type TipoDeTroca } from '@/services/trocas.service';
 
 export interface AvisoDeCota {
   aula: AulaDoAluno;
@@ -31,6 +32,8 @@ export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
   const [aviso, setAviso] = useState<AvisoDeCota | null>(null);
   const [aulaDaFalta, setAulaDaFalta] = useState<AulaDoAluno | null>(null);
   const [aulaDoPedido, setAulaDoPedido] = useState<AulaDoAluno | null>(null);
+  const [aulaParaTrocar, setAulaParaTrocar] = useState<AulaDoAluno | null>(null);
+  const [aulaDaDesistencia, setAulaDaDesistencia] = useState<AulaDoAluno | null>(null);
 
   const onVou = useCallback(
     async (aula: AulaDoAluno) => {
@@ -98,10 +101,37 @@ export function useAcoesDaAula({ userId, declarar, recarregar }: Parametros) {
     [aulaDoPedido, recarregar],
   );
 
+  // Troca de aula (§ 9.4): o banco confere todas as recusas.
+  const onTrocar = useCallback((aula: AulaDoAluno) => setAulaParaTrocar(aula), []);
+  const fecharTroca = useCallback(() => setAulaParaTrocar(null), []);
+  const enviarTroca = useCallback(
+    async (de: string, tipo: TipoDeTroca, texto: string | null): Promise<void> => {
+      if (aulaParaTrocar === null) return;
+      await pedirTroca(de, aulaParaTrocar.class_id, tipo, texto);
+      await recarregar();
+    },
+    [aulaParaTrocar, recarregar],
+  );
+  const onDesistir = useCallback((aula: AulaDoAluno) => setAulaDaDesistencia(aula), []);
+  const fecharDesistencia = useCallback(() => setAulaDaDesistencia(null), []);
+  const confirmarDesistencia = useCallback(async (): Promise<void> => {
+    if (aulaDaDesistencia?.swap_id == null) return;
+    await desistirDaTroca(aulaDaDesistencia.swap_id);
+    await recarregar();
+  }, [aulaDaDesistencia, recarregar]);
+
   return {
     aviso,
     aulaDaFalta,
     aulaDoPedido,
+    aulaParaTrocar,
+    onTrocar,
+    fecharTroca,
+    enviarTroca,
+    aulaDaDesistencia,
+    onDesistir,
+    fecharDesistencia,
+    confirmarDesistencia,
     onEuEstava,
     fecharPedido,
     enviarPedido,

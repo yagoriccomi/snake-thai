@@ -4,12 +4,14 @@ import { ActivityIndicator, RefreshControl, SectionList, StyleSheet, Text, View 
 import { AppText } from '@/components/AppText';
 import { AulaDoAlunoRow } from '@/components/AulaDoAlunoRow';
 import { AvisoAcimaDaCota } from '@/components/AvisoAcimaDaCota';
+import { DesistirDaTrocaSheet } from '@/components/DesistirDaTrocaSheet';
 import { ErrorState } from '@/components/ErrorState';
 import { JustificationSheet } from '@/components/JustificationSheet';
 import { PedidoSheet } from '@/components/PedidoSheet';
 import { ResumoDaSemanaCard } from '@/components/ResumoDaSemanaCard';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { SegmentedControl, type SegmentOption } from '@/components/SegmentedControl';
+import { TrocarAulaSheet } from '@/components/TrocarAulaSheet';
 import { useAuth } from '@/context/AuthProvider';
 import { useAcademySettings } from '@/hooks/useAcademySettings';
 import { useAcoesDaAula } from '@/hooks/useAcoesDaAula';
@@ -17,7 +19,7 @@ import { useMenuDeAulas } from '@/hooks/useAulasDoAluno';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import type { AulaDoAluno } from '@/services/aulas.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { contextoDoEuEstava, resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
+import { contextoDoEuEstava, diaEHora, resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
 import { formatDayMonth, formatWeekday } from '@/utils/datetime';
 import { DIAS_DE_AULA_PADRAO } from '@/utils/diasDeAula';
 
@@ -74,8 +76,8 @@ function blocosDaSemana(segunda: Date, aulas: readonly AulaDoAluno[], diasDeAula
 /**
  * **Aulas da semana** (contrato § 12.2, mockups da linha G): esta semana e a
  * próxima, um bloco por dia de aula, a mesma tela para livre, à vontade e fixo.
- * As ações de troca (**Trocar para esta**, **Desistir da troca**) chegam no
- * bloco 4.9b; as colunas já vêm do banco.
+ * No fixo, **Trocar para esta** abre a folha Trocar aula (§ 9.4), com as
+ * originais possíveis tiradas das linhas desta semana.
  */
 export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana'>): React.JSX.Element {
   const { colors, fonts } = useTheme();
@@ -98,7 +100,7 @@ export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana
   const blocos = useMemo(() => blocosDaSemana(segunda, aulas, diasDeAula), [segunda, aulas, diasDeAula]);
   const resumo = useMemo(() => resumoDaSemana(aulas), [aulas]);
 
-  const { onVou, onNaoVou, onDesmarcar, onEuEstava } = acoes;
+  const { onVou, onNaoVou, onDesmarcar, onEuEstava, onDesistir, onTrocar } = acoes;
   const renderItem = useCallback(
     ({ item }: { item: AulaDoAluno }) => (
       <AulaDoAlunoRow
@@ -109,9 +111,11 @@ export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana
         onNaoVou={(aula) => void onNaoVou(aula)}
         onDesmarcar={(aula) => void onDesmarcar(aula)}
         onEuEstava={onEuEstava}
+        onTrocar={onTrocar}
+        onDesistir={onDesistir}
       />
     ),
-    [declarando, onVou, onNaoVou, onDesmarcar, onEuEstava],
+    [declarando, onVou, onNaoVou, onDesmarcar, onEuEstava, onDesistir, onTrocar],
   );
 
   return (
@@ -190,6 +194,23 @@ export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana
           contexto={contextoDoEuEstava(acoes.aulaDoPedido)}
           onClose={acoes.fecharPedido}
           onEnviar={acoes.enviarPedido}
+        />
+      ) : null}
+      {acoes.aulaDaDesistencia !== null ? (
+        <DesistirDaTrocaSheet
+          key={acoes.aulaDaDesistencia.class_id}
+          descricao={`${acoes.aulaDaDesistencia.title} · ${diaEHora(acoes.aulaDaDesistencia.date_time)}`}
+          onClose={acoes.fecharDesistencia}
+          onDesistir={acoes.confirmarDesistencia}
+        />
+      ) : null}
+      {acoes.aulaParaTrocar !== null ? (
+        <TrocarAulaSheet
+          key={acoes.aulaParaTrocar.class_id}
+          nova={acoes.aulaParaTrocar}
+          aulasDaSemana={aulas}
+          onClose={acoes.fecharTroca}
+          onPedir={acoes.enviarTroca}
         />
       ) : null}
     </ScreenWrapper>

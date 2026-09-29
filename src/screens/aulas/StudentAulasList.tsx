@@ -5,12 +5,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { AulaDoAlunoRow } from '@/components/AulaDoAlunoRow';
 import { AvisoAcimaDaCota } from '@/components/AvisoAcimaDaCota';
+import { DesistirDaTrocaSheet } from '@/components/DesistirDaTrocaSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { FrequencyCard } from '@/components/FrequencyCard';
 import { JustificationSheet } from '@/components/JustificationSheet';
-import { PedidoSheet } from '@/components/PedidoSheet';
 import { MetaSemanalSheet } from '@/components/MetaSemanalSheet';
+import { PedidoSheet } from '@/components/PedidoSheet';
 import { ResumoDaSemanaCard } from '@/components/ResumoDaSemanaCard';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
@@ -20,7 +21,7 @@ import { useFrequenciaDoAluno } from '@/hooks/useFrequenciaDoAluno';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import type { AulaDoAluno } from '@/services/aulas.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { contextoDoEuEstava, resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
+import { contextoDoEuEstava, diaEHora, resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
 import { formatDayMonth, formatWeekday } from '@/utils/datetime';
 
 const SCREEN_EDGES = ['bottom'] as const;
@@ -120,7 +121,7 @@ export function StudentAulasList({ navigation }: StudentAulasListProps): React.J
     void recarregarFrequencia();
   }, [recarregar, recarregarFrequencia]);
 
-  const { onVou, onNaoVou, onDesmarcar, onEuEstava } = acoes;
+  const { onVou, onNaoVou, onDesmarcar, onEuEstava, onDesistir } = acoes;
   const renderItem = useCallback(
     ({ item }: { item: AulaDoAluno }) => (
       <AulaDoAlunoRow
@@ -131,9 +132,10 @@ export function StudentAulasList({ navigation }: StudentAulasListProps): React.J
         onNaoVou={(aula) => void onNaoVou(aula)}
         onDesmarcar={(aula) => void onDesmarcar(aula)}
         onEuEstava={onEuEstava}
+        onDesistir={onDesistir}
       />
     ),
-    [declarando, onVou, onNaoVou, onDesmarcar, onEuEstava],
+    [declarando, onVou, onNaoVou, onDesmarcar, onEuEstava, onDesistir],
   );
 
   if (erro !== null && aulas.length === 0) {
@@ -228,6 +230,14 @@ export function StudentAulasList({ navigation }: StudentAulasListProps): React.J
           contexto={contextoDoEuEstava(acoes.aulaDoPedido)}
           onClose={acoes.fecharPedido}
           onEnviar={acoes.enviarPedido}
+        />
+      ) : null}
+      {acoes.aulaDaDesistencia !== null ? (
+        <DesistirDaTrocaSheet
+          key={acoes.aulaDaDesistencia.class_id}
+          descricao={`${acoes.aulaDaDesistencia.title} · ${diaEHora(acoes.aulaDaDesistencia.date_time)}`}
+          onClose={acoes.fecharDesistencia}
+          onDesistir={acoes.confirmarDesistencia}
         />
       ) : null}
       {mudandoMeta && resumo !== null && resumo.alvo !== null ? (

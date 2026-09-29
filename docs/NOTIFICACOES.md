@@ -20,8 +20,8 @@
 | Justificativa aprovada / negada | Aluno | Na decisão (tentativa 2 negada: "procure o professor ou a administração"); o toque abre **Minhas justificativas** |
 | Chamada corrigida | O aluno cuja presença mudou | Na retificação |
 | Nova solicitação para analisar | Quem pode decidir: no "Eu estava na aula", os professores da aula; nos pedidos de professor, os admins (menos quem pediu) | Quando o pedido chega; o toque abre **Solicitações** |
-| Pedido de troca de aula | Professores da aula nova (sem nenhum, os admins; na permanente, também os admins) | Quando o aluno pede |
-| Troca aprovada / negada | Aluno (quem decidiu fica de fora) | Na decisão ou na chamada que aprova |
+| Pedido de troca de aula | Professores da aula nova (sem nenhum, os admins; na permanente, também os admins) | Quando o aluno pede; o toque abre **Solicitações › Trocas de aula** |
+| Troca aprovada / negada | Aluno (quem decidiu fica de fora) | Na decisão ou na chamada que aprova; o toque abre Aulas |
 | Troca de aula (equipe) | Professores da aula antiga e da nova; admins só na permanente | Na aprovação |
 
 Os tipos do contrato v4 (os oito últimos) são montados pela `send-push` desde o bloco 4.7b; um tipo que

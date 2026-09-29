@@ -6,7 +6,8 @@
 
 export type DestinoDaNotificacao =
   | { aba: 'Financeiro'; tela: 'FinanceiroHome' }
-  | { aba: 'Aulas'; tela: 'AulasHome' | 'MinhasJustificativas' | 'JustificativasParaRevisar' | 'Solicitacoes' };
+  | { aba: 'Aulas'; tela: 'AulasHome' | 'MinhasJustificativas' | 'JustificativasParaRevisar' | 'Solicitacoes' }
+  | { aba: 'Aulas'; tela: 'ItensDaSolicitacao'; params: { categoria: 'trocas_de_aula' } };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -23,6 +24,8 @@ const TIPOS_FINANCEIROS = new Set([
 // justificativa e de solicitação, a lista de quem os recebe.
 const PARA_REVISAR = new Set(['justificativa_pendente']);
 const SOLICITACOES = new Set(['solicitacao_pendente']);
+// § 9.4: o pedido de troca abre Solicitações › Trocas de aula.
+const TROCA_PENDENTE = 'troca_pendente';
 const MINHAS_JUSTIFICATIVAS = new Set(['justificativa_aprovada', 'justificativa_negada']);
 const TIPOS_DE_AULA = new Set([
   'aula_sem_chamada',
@@ -30,7 +33,6 @@ const TIPOS_DE_AULA = new Set([
   'aula_cancelada',
   'aula_reativada',
   'chamada_retificada',
-  'troca_pendente',
   'troca_aprovada',
   'troca_negada',
   'troca_aprovada_equipe',
@@ -54,6 +56,9 @@ export function destinoDaNotificacao(data: unknown): DestinoDaNotificacao | null
   if (PARA_REVISAR.has(tipo)) return { aba: 'Aulas', tela: 'JustificativasParaRevisar' };
   if (MINHAS_JUSTIFICATIVAS.has(tipo)) return { aba: 'Aulas', tela: 'MinhasJustificativas' };
   if (SOLICITACOES.has(tipo)) return { aba: 'Aulas', tela: 'Solicitacoes' };
+  if (tipo === TROCA_PENDENTE) {
+    return { aba: 'Aulas', tela: 'ItensDaSolicitacao', params: { categoria: 'trocas_de_aula' } };
+  }
   if (TIPOS_DE_AULA.has(tipo)) return { aba: 'Aulas', tela: 'AulasHome' };
   return null;
 }
