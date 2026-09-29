@@ -1483,6 +1483,11 @@ isOneToOne: false
               "approved_by_name": string,"attendance_delay_days": number,"audience": Database["public"]['Enums']["class_audience"],"cancelled": boolean,"class_id": string,"date_time": string,"declared_status": Database["public"]['Enums']["attendance_status"],"edited": boolean,"edited_at": string,"edited_by_name": string,"group_name": string,"justification_status": Database["public"]['Enums']["justification_status"],"origem": string,"previous_status": Database["public"]['Enums']["attendance_status"],"status": Database["public"]['Enums']["attendance_status"],"swap_kind": Database["public"]['Enums']["class_swap_kind"],"swap_other_date_time": string,"title": string
             }[]
                            },
+"historico_de_aulas_do_professor":
+{ Args: { "p_ate": string,"p_de": string,"p_teacher_id": string }; Returns: {
+              "added_in_roll_call": boolean,"attendance_delay_days": number,"cancelled": boolean,"class_id": string,"date_time": string,"edited": boolean,"group_name": string,"present": boolean,"scheduled": boolean,"title": string
+            }[]
+                           },
 "horario_na_grade":
 { Args: { "p_quando": string,"p_schedule_id": string,"p_user_id": string }; Returns: boolean
                            },
@@ -1626,6 +1631,12 @@ isOneToOne: false
 { Args: { "p_limite": number }; Returns: {
               "delivery_id": string,"ticket_id": string
             }[]
+                           },
+"perfil_do_aluno":
+{ Args: { "p_user_id": string }; Returns: Json
+                           },
+"perfil_do_professor":
+{ Args: { "p_mes": string,"p_teacher_id": string }; Returns: Json
                            },
 "plano_aberto_e_fixo":
 { Args: { "p_user_id": string }; Returns: boolean
