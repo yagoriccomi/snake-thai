@@ -347,16 +347,23 @@ update public.absence_justifications
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000003","role":"authenticated"}';
 
--- T11c — quem revisa não reescreve o que o aluno enviou
+-- T11c — quem revisa não reescreve o que o aluno enviou. Contrato v4, § 9.1:
+-- decidida, a justificativa sai da vista do professor (D22), então o UPDATE
+-- nem a alcança; enquanto pendente, a trava recusaria (42501).
 do $$
+declare n integer;
 begin
   begin
     update public.absence_justifications set message = 'Editado pelo professor'
      where id = 'd0000000-0000-4000-8000-0000000000e1';
-    raise exception 'FALHOU T11c: revisor alterou o conteúdo';
+    get diagnostics n = row_count;
+    if n <> 0 then
+      raise exception 'FALHOU T11c: revisor alterou o conteúdo';
+    end if;
   exception when insufficient_privilege then
-    raise notice 'OK T11c: revisor não altera o conteúdo';
+    null;
   end;
+  raise notice 'OK T11c: revisor não altera o conteúdo';
 end $$;
 
 -- =====================================================================
