@@ -17,6 +17,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Input } from '@/components/Input';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
+import { Stepper } from '@/components/Stepper';
 import {
   SegmentedControl,
   type SegmentOption,
@@ -330,34 +331,14 @@ export function PlanosScreen(): React.JSX.Element {
               <AppText variant="caption" style={styles.label}>
                 Aulas por semana
               </AppText>
-              <View style={styles.quotaRow}>
-                <Pressable
-                  onPress={() => setQuota((atual) => Math.max(MIN_WEEKLY_QUOTA, atual - 1))}
-                  disabled={quota <= MIN_WEEKLY_QUOTA}
-                  style={[styles.quotaButton, quota <= MIN_WEEKLY_QUOTA ? styles.quotaButtonOff : null]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Menos uma aula por semana"
-                  accessibilityState={{ disabled: quota <= MIN_WEEKLY_QUOTA }}
-                >
-                  <Ionicons name="remove" size={20} color={colors.textPrimary} />
-                </Pressable>
-                <Text style={styles.quotaValue} accessibilityLiveRegion="polite">
-                  {quota}
-                </Text>
-                <Pressable
-                  onPress={() => setQuota((atual) => Math.min(MAX_WEEKLY_QUOTA, atual + 1))}
-                  disabled={quota >= MAX_WEEKLY_QUOTA}
-                  style={[styles.quotaButton, quota >= MAX_WEEKLY_QUOTA ? styles.quotaButtonOff : null]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Mais uma aula por semana"
-                  accessibilityState={{ disabled: quota >= MAX_WEEKLY_QUOTA }}
-                >
-                  <Ionicons name="add" size={20} color={colors.textPrimary} />
-                </Pressable>
-                <AppText variant="caption" color={colors.textSecondary}>
-                  {`${quota}x por semana · de ${MIN_WEEKLY_QUOTA} a ${MAX_WEEKLY_QUOTA}`}
-                </AppText>
-              </View>
+              <Stepper
+                value={quota}
+                min={MIN_WEEKLY_QUOTA}
+                max={MAX_WEEKLY_QUOTA}
+                onChange={setQuota}
+                unidade="aula por semana"
+                legenda={`${quota}x por semana · de ${MIN_WEEKLY_QUOTA} a ${MAX_WEEKLY_QUOTA}`}
+              />
             </View>
           ) : null}
           <View style={styles.notice}>
@@ -509,32 +490,6 @@ function makeStyles(
     },
     quotaBlock: {
       marginBottom: 12,
-    },
-    quotaRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-    },
-    quotaButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 10,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.surface,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    quotaButtonOff: {
-      opacity: 0.4,
-    },
-    quotaValue: {
-      fontFamily: fonts.bodyBold,
-      fontSize: 28,
-      minWidth: 32,
-      textAlign: 'center',
-      color: colors.textPrimary,
-      fontVariant: ['tabular-nums'],
     },
     notice: {
       flexDirection: 'row',

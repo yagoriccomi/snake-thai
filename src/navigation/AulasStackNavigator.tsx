@@ -5,6 +5,7 @@ import {
 } from '@react-navigation/native-stack';
 
 import type { AulasStackParamList } from '@/navigation/types';
+import { AulasDaSemanaScreen } from '@/screens/aulas/AulasDaSemanaScreen';
 import { AulasHomeScreen } from '@/screens/aulas/AulasHomeScreen';
 import { CriarAulaScreen } from '@/screens/aulas/CriarAulaScreen';
 import { DetalheAulaScreen } from '@/screens/aulas/DetalheAulaScreen';
@@ -46,6 +47,7 @@ export function AulasStackNavigator(): React.JSX.Element {
         component={FrequenciaScreen}
         options={FREQUENCIA_OPTIONS}
       />
+      <Stack.Screen name="AulasDaSemana" component={AulasDaSemanaScreen} options={AULAS_DA_SEMANA_OPTIONS} />
       <Stack.Screen
         name="HistoricoFrequencia"
         component={HistoricoFrequenciaScreen}
@@ -59,3 +61,4 @@ const HOME_OPTIONS: NativeStackNavigationOptions = { title: 'Aulas' };
 const DETALHE_OPTIONS: NativeStackNavigationOptions = { title: 'Aula' };
 const FREQUENCIA_OPTIONS: NativeStackNavigationOptions = { title: 'Chamada' };
 const HISTORICO_OPTIONS: NativeStackNavigationOptions = { title: 'Frequência' };
+const AULAS_DA_SEMANA_OPTIONS: NativeStackNavigationOptions = { title: 'Aulas da semana' };

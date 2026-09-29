@@ -87,6 +87,8 @@ export type AulasStackParamList = {
    * attendance_monthly e a função frequencia_mensal decidem). [FREQUENCIA.md]
    */
   HistoricoFrequencia: { userId: string; name: string };
+  /** Menu de aulas do aluno (§ 12.2): esta semana e a próxima. */
+  AulasDaSemana: undefined;
 };
 
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */

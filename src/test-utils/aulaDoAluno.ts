@@ -1,0 +1,43 @@
+import type { AulaDoAluno } from '@/services/aulas.service';
+
+/** Uma aula do aluno com valores neutros, para os testes mudarem só o que importa. */
+export function aulaDoAluno(parcial: Partial<AulaDoAluno> = {}): AulaDoAluno {
+  return {
+    class_id: 'aula-1',
+    title: 'Muay Thai',
+    type: 'routine',
+    date_time: '2030-03-12T22:00:00.000Z',
+    group_id: 'turma-a',
+    group_name: 'Turma A',
+    audience: 'both',
+    cancelled: false,
+    declared_status: null,
+    status: null,
+    justification_id: null,
+    justification_status: null,
+    schedule_mode: 'free',
+    weekly_target: 3,
+    marked_in_week: 0,
+    can_justify: false,
+    justify_until: null,
+    can_contest: false,
+    contest_until: null,
+    teachers: [],
+    origem: null,
+    is_recurring: true,
+    schedule_ends_on: null,
+    can_mark_extra: false,
+    can_swap_from: false,
+    can_swap_from_permanent: false,
+    can_swap_to: false,
+    swap_id: null,
+    swap_kind: null,
+    swap_status: null,
+    swap_decided_via: null,
+    swap_role: null,
+    swap_other_class_id: null,
+    swap_other_date_time: null,
+    can_cancel_swap: false,
+    ...parcial,
+  };
+}
