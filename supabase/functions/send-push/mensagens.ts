@@ -15,7 +15,18 @@ export type TipoDeNotificacao =
   | 'comprovante_recusado'
   | 'justificativa_pendente'
   | 'aula_sem_chamada'
-  | 'aulas_sem_chamada_resumo';
+  | 'aulas_sem_chamada_resumo'
+  // Contrato v4, § 10.
+  | 'aula_cancelada'
+  | 'aula_reativada'
+  | 'justificativa_aprovada'
+  | 'justificativa_negada'
+  | 'chamada_retificada'
+  | 'solicitacao_pendente'
+  | 'troca_pendente'
+  | 'troca_aprovada'
+  | 'troca_negada'
+  | 'troca_aprovada_equipe';
 
 /** Canais Android criados pelo app: dá para silenciar cada um nas configurações. */
 export type CanalAndroid = 'financeiro' | 'frequencia';
@@ -141,7 +152,8 @@ export function conteudoDaNotificacao(n: NotificacaoDaFila, quantidade = 1): Con
     case 'justificativa_pendente':
       return {
         title: 'Justificativa de falta para revisar',
-        body: `${descricaoDaAula(n)}.`,
+        // A semanal não tem aula (§ 10).
+        body: n.class_id === null ? 'Justificativa semanal para revisar.' : `${descricaoDaAula(n)}.`,
         channelId: 'frequencia',
         data: payload,
       };
@@ -161,5 +173,69 @@ export function conteudoDaNotificacao(n: NotificacaoDaFila, quantidade = 1): Con
         data: payload,
       };
     }
+    case 'aula_cancelada':
+      return { title: 'Aula cancelada', body: `${descricaoDaAula(n)}.`, channelId: 'frequencia', data: payload };
+    case 'aula_reativada':
+      return { title: 'Aula confirmada de novo', body: `${descricaoDaAula(n)}.`, channelId: 'frequencia', data: payload };
+    case 'justificativa_aprovada':
+      return { title: 'Justificativa aprovada', body: 'Sua falta foi abonada.', channelId: 'frequencia', data: payload };
+    case 'justificativa_negada':
+      return {
+        title: 'Justificativa negada',
+        body: numero(n.data, 'tentativa') === 2
+          ? 'Para mais informações, procure o professor da aula ou a administração da academia.'
+          : 'Você pode reenviar em até 7 dias.',
+        channelId: 'frequencia',
+        data: payload,
+      };
+    case 'chamada_retificada':
+      return {
+        title: 'Chamada corrigida',
+        body: `${descricaoDaAula(n)}: sua presença foi atualizada.`,
+        channelId: 'frequencia',
+        data: payload,
+      };
+    case 'solicitacao_pendente':
+      return { title: 'Nova solicitação para analisar', body: 'Abra Solicitações no app.', channelId: 'frequencia', data: payload };
+    case 'troca_pendente':
+      return {
+        title: 'Pedido de troca de aula',
+        body: `${descricaoDaAula(n)}. Abra Solicitações no app.`,
+        channelId: 'frequencia',
+        data: payload,
+      };
+    case 'troca_aprovada': {
+      if (numero(n.data, 'permanente') === 1) {
+        return { title: 'Troca permanente aprovada', body: 'Sua grade de aulas mudou. Veja no app.', channelId: 'frequencia', data: payload };
+      }
+      return {
+        title: 'Troca aprovada',
+        body: numero(n.data, 'pela_chamada') === 1
+          ? `${descricaoDaAula(n)}: sua presença confirmou a troca.`
+          : `${descricaoDaAula(n)}: esperamos você nesta aula.`,
+        channelId: 'frequencia',
+        data: payload,
+      };
+    }
+    case 'troca_negada':
+      return { title: 'Troca negada', body: 'Veja os detalhes no app.', channelId: 'frequencia', data: payload };
+    case 'troca_aprovada_equipe': {
+      const entrada = numero(n.data, 'entrada') === 1;
+      const pelaChamada = numero(n.data, 'pela_chamada') === 1;
+      let corpo = `${descricaoDaAula(n)}: um aluno trocou esta aula por outra.`;
+      if (entrada) {
+        corpo = pelaChamada ? `${descricaoDaAula(n)}: um aluno veio por troca.` : `${descricaoDaAula(n)}: um aluno vem por troca.`;
+      }
+      return {
+        title: numero(n.data, 'permanente') === 1 ? 'Troca permanente' : 'Troca de aula',
+        body: corpo,
+        channelId: 'frequencia',
+        data: payload,
+      };
+    }
+    default:
+      // Tipo que esta versão não conhece (o banco pode sair antes): texto
+      // genérico em vez de derrubar o lote inteiro (§ 10, § 14).
+      return { title: 'Snake Thai', body: 'Abra o app para ver a novidade.', channelId: 'frequencia', data: { tipo: n.kind } };
   }
 }

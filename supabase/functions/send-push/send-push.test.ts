@@ -137,3 +137,44 @@ Deno.test('buscarRecibos pede os ids e devolve o mapa', async () => {
   igual(resultado, { recibos: { t1: { status: 'error', details: { error: 'DeviceNotRegistered' } } } });
   igual(JSON.parse(falsa.chamadas[0]?.body ?? '{}'), { ids: ['t1', 't2'] });
 });
+
+Deno.test('contrato v4: os 10 tipos novos com os textos da § 10', () => {
+  const aula = { class_id: 'c-1', class_title: 'Muay Thai', class_date_time: '2026-10-01T22:00:00Z' };
+  igual(conteudoDaNotificacao(base('aula_cancelada', aula)).title, 'Aula cancelada');
+  igual(conteudoDaNotificacao(base('aula_cancelada', aula)).body, 'Muay Thai, 01/10 às 19:00.');
+  igual(conteudoDaNotificacao(base('aula_reativada', aula)).title, 'Aula confirmada de novo');
+  igual(conteudoDaNotificacao(base('justificativa_aprovada')).body, 'Sua falta foi abonada.');
+  igual(conteudoDaNotificacao(base('justificativa_negada', { data: { tentativa: 1 } })).body, 'Você pode reenviar em até 7 dias.');
+  igual(
+    conteudoDaNotificacao(base('justificativa_negada', { data: { tentativa: 2 } })).body,
+    'Para mais informações, procure o professor da aula ou a administração da academia.',
+  );
+  igual(conteudoDaNotificacao(base('chamada_retificada', aula)).body, 'Muay Thai, 01/10 às 19:00: sua presença foi atualizada.');
+  igual(conteudoDaNotificacao(base('solicitacao_pendente')).body, 'Abra Solicitações no app.');
+  igual(conteudoDaNotificacao(base('troca_pendente', aula)).body, 'Muay Thai, 01/10 às 19:00. Abra Solicitações no app.');
+  igual(conteudoDaNotificacao(base('troca_aprovada', { ...aula, data: { permanente: 0, pela_chamada: 0 } })).body,
+    'Muay Thai, 01/10 às 19:00: esperamos você nesta aula.');
+  igual(conteudoDaNotificacao(base('troca_aprovada', { ...aula, data: { permanente: 0, pela_chamada: 1 } })).body,
+    'Muay Thai, 01/10 às 19:00: sua presença confirmou a troca.');
+  igual(conteudoDaNotificacao(base('troca_aprovada', { data: { permanente: 1 } })).title, 'Troca permanente aprovada');
+  igual(conteudoDaNotificacao(base('troca_negada')).body, 'Veja os detalhes no app.');
+  igual(conteudoDaNotificacao(base('troca_aprovada_equipe', { ...aula, data: { permanente: 0, entrada: 1, pela_chamada: 0 } })).body,
+    'Muay Thai, 01/10 às 19:00: um aluno vem por troca.');
+  igual(conteudoDaNotificacao(base('troca_aprovada_equipe', { ...aula, data: { permanente: 0, entrada: 1, pela_chamada: 1 } })).body,
+    'Muay Thai, 01/10 às 19:00: um aluno veio por troca.');
+  igual(conteudoDaNotificacao(base('troca_aprovada_equipe', { ...aula, data: { permanente: 1, entrada: 0 } })).title, 'Troca permanente');
+  igual(conteudoDaNotificacao(base('troca_aprovada_equipe', { ...aula, data: { permanente: 0, entrada: 0 } })).body,
+    'Muay Thai, 01/10 às 19:00: um aluno trocou esta aula por outra.');
+});
+
+Deno.test('a justificativa semanal não tem aula', () => {
+  igual(conteudoDaNotificacao(base('justificativa_pendente')).body, 'Justificativa semanal para revisar.');
+});
+
+Deno.test('tipo desconhecido vira texto genérico e não derruba o lote', () => {
+  const desconhecido = base('tipo_que_ainda_nao_existe' as NotificacaoDaFila['kind'], { class_id: 'c-1' });
+  const conteudo = conteudoDaNotificacao(desconhecido);
+  igual(conteudo.title, 'Snake Thai');
+  igual(conteudo.data, { tipo: 'tipo_que_ainda_nao_existe' });
+  igual(montarEnvios([{ ...desconhecido, outbox_id: 'o', recipient_id: 'r', device_id: 'd', expo_token: 'ExponentPushToken[d]' }]).length, 1);
+});
