@@ -173,14 +173,6 @@ export async function fetchSemanasDoMes(userId: string, mes: string): Promise<Se
 /** Linha do histórico mensal (gravada quando o mês fecha, regravada se ele mudar). */
 export type MonthlyHistoryRow = Database['public']['Tables']['attendance_monthly']['Row'];
 
-/** Aula de rotina que passou sem chamada concluída. */
-export interface MissedRollCall {
-  classId: string;
-  title: string;
-  dateTimeIso: string;
-  groupId: string | null;
-}
-
 /** Meses fechados de um aluno, do mais recente para o mais antigo. */
 export async function fetchMonthlyHistory(userId: string): Promise<MonthlyHistoryRow[]> {
   const { data, error } = await supabase
@@ -192,21 +184,4 @@ export async function fetchMonthlyHistory(userId: string): Promise<MonthlyHistor
     throw error;
   }
   return data;
-}
-
-/**
- * Aulas do mês corrente que passaram sem chamada. O banco já filtra por papel:
- * o admin recebe todas, o professor só as suas, o aluno nenhuma.
- */
-export async function fetchMissedRollCalls(): Promise<MissedRollCall[]> {
-  const { data, error } = await supabase.rpc('aulas_sem_chamada');
-  if (error !== null) {
-    throw error;
-  }
-  return data.map((linha) => ({
-    classId: linha.class_id,
-    title: linha.title,
-    dateTimeIso: linha.date_time,
-    groupId: linha.group_id,
-  }));
 }
