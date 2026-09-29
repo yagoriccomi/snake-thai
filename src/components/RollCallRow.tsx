@@ -1,59 +1,53 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import { AppText } from '@/components/AppText';
-import { JustificationReview } from '@/components/JustificationReview';
-import type { AttendanceStatus, StudentRef } from '@/services/classes.service';
-import type { MonthlyFrequency } from '@/services/frequency.service';
-import type { JustificationRow, JustificationStatus } from '@/services/justifications.service';
+import { Selo } from '@/components/Selo';
+import type { AttendanceStatus } from '@/services/classes.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { formatarPercentual } from '@/utils/frequency';
+import type { SeloDaAula } from '@/utils/aulasDoAluno';
+import { temMarcacao, type LinhaDaChamada } from '@/utils/chamada';
 import type { Marcacao } from '@/utils/rollCall';
 
 const TAMANHO_DO_ICONE = 20;
 
 interface RollCallRowProps {
-  student: StudentRef;
-  /** O que está marcado NA TELA (ainda não gravado até concluir). */
+  linha: LinhaDaChamada;
+  /** O que está marcado NA TELA (ainda não gravado até salvar). */
   marcacao: Marcacao;
-  declarado: AttendanceStatus | undefined;
-  frequencia: MonthlyFrequency | undefined;
-  justificativa: JustificationRow | undefined;
-  /** Falso para quem só visualiza e antes de a aula começar. */
+  selo: SeloDaAula | null;
+  detalhes: readonly string[];
+  /** Selo "Editada" (D20: o professor vê só a marca). */
+  editada: boolean;
+  /** Falso para quem só visualiza, antes de a aula começar e no conflito do rascunho. */
   editavel: boolean;
-  podeRevisar: boolean;
-  revisando: boolean;
   onMarcar: (userId: string, status: AttendanceStatus) => void;
-  onAbrirHistorico: (student: StudentRef) => void;
-  onRevisar: (justificationId: string, status: Exclude<JustificationStatus, 'pending'>) => void;
-  onAbrirAnexo: (justificationId: string) => void;
+  onAbrirFrequencia: (userId: string, nome: string) => void;
+  /** Só para incluídos: tira da chamada. */
+  onRetirar?: (userId: string) => void;
 }
 
 /**
- * Um aluno na chamada: nome, frequência, declaração e os dois símbolos. O
- * marcado fica preenchido com a cor (verde presença, vermelho falta) e o outro
- * fica cinza; sem marcação, os dois ficam cinza.
+ * Um aluno na chamada (mockups das linhas C e G): nome, selos, detalhes e os
+ * dois símbolos. O marcado fica preenchido (verde presença, vermelho falta);
+ * sem marcação, os dois ficam cinza. Quem trocou esta aula por outra só
+ * aparece para constar, sem símbolos.
  *
- * Memoizado: marcar um aluno re-renderiza só a linha dele, não a lista.
+ * Memoizado: marcar um aluno re-renderiza só a linha dele. [#68]
  */
 function RollCallRowComponent({
-  student,
+  linha,
   marcacao,
-  declarado,
-  frequencia,
-  justificativa,
+  selo,
+  detalhes,
+  editada,
   editavel,
-  podeRevisar,
-  revisando,
   onMarcar,
-  onAbrirHistorico,
-  onRevisar,
-  onAbrirAnexo,
+  onAbrirFrequencia,
+  onRetirar,
 }: RollCallRowProps): React.JSX.Element {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const nome = student.name ?? 'Aluno pendente';
+  const { colors, fonts } = useTheme();
+  const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
   const presente = marcacao === 'present';
   const ausente = marcacao === 'absent';
 
@@ -61,77 +55,71 @@ function RollCallRowComponent({
     <View style={styles.linha}>
       <View style={styles.info}>
         <Pressable
-          onPress={() => onAbrirHistorico(student)}
+          onPress={() => onAbrirFrequencia(linha.userId, linha.nome)}
           style={styles.nome}
           accessibilityRole="button"
-          accessibilityLabel={`Frequência de ${nome}`}
-          accessibilityHint="Abre o histórico mensal do aluno"
+          accessibilityLabel={`Frequência de ${linha.nome}`}
+          accessibilityHint="Abre a frequência do aluno"
         >
-          <AppText variant="body">{nome}</AppText>
-          {frequencia !== undefined ? (
-            <AppText variant="caption" color={colors.textSecondary}>
-              Frequência {formatarPercentual(frequencia.frequencyPercent)} · {frequencia.attended}/
-              {frequencia.totalClasses} no mês
-            </AppText>
+          <Text style={styles.nomeTexto} numberOfLines={1}>
+            {linha.nome}
+          </Text>
+          {selo !== null || editada ? (
+            <View style={styles.selos}>
+              {selo !== null ? <Selo texto={selo.texto} tom={selo.tom} /> : null}
+              {editada ? <Selo texto="Editada" tom="aviso" /> : null}
+            </View>
           ) : null}
-          {declarado !== undefined ? (
-            <AppText variant="caption" color={colors.textSecondary}>
-              {declarado === 'present' ? 'Declarou que vem' : 'Declarou que não vem'}
-            </AppText>
-          ) : null}
+          {detalhes.map((detalhe) => (
+            <Text key={detalhe} style={styles.detalhe}>
+              {detalhe}
+            </Text>
+          ))}
         </Pressable>
-        {justificativa !== undefined ? (
-          <JustificationReview
-            justification={justificativa}
-            canReview={podeRevisar}
-            busy={revisando}
-            onReview={onRevisar}
-            onOpenAttachment={onAbrirAnexo}
-          />
+        {onRetirar !== undefined && editavel ? (
+          <Pressable
+            onPress={() => onRetirar(linha.userId)}
+            style={styles.retirar}
+            accessibilityRole="button"
+            accessibilityLabel={`Retirar ${linha.nome} da chamada`}
+          >
+            <Text style={styles.retirarTexto}>Retirar da chamada</Text>
+          </Pressable>
         ) : null}
       </View>
 
-      <View style={styles.simbolos}>
-        <Pressable
-          onPress={() => onMarcar(student.id, 'present')}
-          disabled={!editavel}
-          style={[
-            styles.simbolo,
-            presente ? { backgroundColor: colors.success, borderColor: colors.success } : null,
-          ]}
-          accessibilityRole="button"
-          accessibilityState={{ selected: presente, disabled: !editavel }}
-          accessibilityLabel={`Presente: ${nome}`}
-        >
-          <Ionicons
-            name="checkmark"
-            size={TAMANHO_DO_ICONE}
-            color={presente ? colors.onPrimary : colors.textSecondary}
-          />
-        </Pressable>
-        <Pressable
-          onPress={() => onMarcar(student.id, 'absent')}
-          disabled={!editavel}
-          style={[
-            styles.simbolo,
-            ausente ? { backgroundColor: colors.error, borderColor: colors.error } : null,
-          ]}
-          accessibilityRole="button"
-          accessibilityState={{ selected: ausente, disabled: !editavel }}
-          accessibilityLabel={`Falta: ${nome}`}
-        >
-          <Ionicons
-            name="close"
-            size={TAMANHO_DO_ICONE}
-            color={ausente ? colors.onPrimary : colors.textSecondary}
-          />
-        </Pressable>
-      </View>
+      {temMarcacao(linha.origem) ? (
+        <View style={styles.simbolos}>
+          <Pressable
+            onPress={() => onMarcar(linha.userId, 'present')}
+            disabled={!editavel}
+            style={[styles.simbolo, presente ? { backgroundColor: colors.success, borderColor: colors.success } : null]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: presente, disabled: !editavel }}
+            accessibilityLabel={`Presente: ${linha.nome}`}
+          >
+            <Ionicons name="checkmark" size={TAMANHO_DO_ICONE} color={presente ? colors.onPrimary : colors.textSecondary} />
+          </Pressable>
+          <Pressable
+            onPress={() => onMarcar(linha.userId, 'absent')}
+            disabled={!editavel}
+            style={[styles.simbolo, ausente ? { backgroundColor: colors.error, borderColor: colors.error } : null]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: ausente, disabled: !editavel }}
+            accessibilityLabel={`Falta: ${linha.nome}`}
+          >
+            <Ionicons name="close" size={TAMANHO_DO_ICONE} color={ausente ? colors.onPrimary : colors.textSecondary} />
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
 
-function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
+function makeStyles(
+  colors: ReturnType<typeof useTheme>['colors'],
+  fonts: ReturnType<typeof useTheme>['fonts'],
+) {
   return StyleSheet.create({
     linha: {
       flexDirection: 'row',
@@ -141,8 +129,13 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors']) {
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.border,
     },
-    info: { flex: 1 },
-    nome: { minHeight: 44, justifyContent: 'center' },
+    info: { flex: 1, gap: 2 },
+    nome: { minHeight: 44, justifyContent: 'center', gap: 3 },
+    nomeTexto: { fontFamily: fonts.bodySemiBold, fontSize: 15, color: colors.textPrimary },
+    selos: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    detalhe: { fontFamily: fonts.body, fontSize: 12, color: colors.textSecondary },
+    retirar: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+    retirarTexto: { fontFamily: fonts.bodySemiBold, fontSize: 13, color: colors.error },
     simbolos: { flexDirection: 'row', gap: 10 },
     simbolo: {
       width: 44,

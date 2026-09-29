@@ -103,36 +103,6 @@ export async function submitJustification(
   }
 }
 
-/** Justificativas de uma aula — visão do professor da aula e do admin (RLS). */
-export async function fetchJustificationsForClass(classId: string): Promise<JustificationRow[]> {
-  const { data, error } = await supabase
-    .from('absence_justifications')
-    .select('*')
-    .eq('class_id', classId);
-  if (error !== null) {
-    throw error;
-  }
-  return data;
-}
-
-/**
- * Aprova ou recusa uma justificativa. Só o professor da aula ou o admin; quem
- * revisou e quando são carimbados pelo banco, não enviados daqui — o app não
- * escolhe em nome de quem a revisão ficou registrada.
- */
-export async function reviewJustification(
-  justificationId: string,
-  status: Exclude<JustificationStatus, 'pending'>,
-): Promise<void> {
-  const { error } = await supabase
-    .from('absence_justifications')
-    .update({ status })
-    .eq('id', justificationId);
-  if (error !== null) {
-    throw error;
-  }
-}
-
 /** URL assinada do anexo (dono, professor da aula ou admin — decide a RLS). */
 export async function fetchJustificationAttachmentUrl(
   justificationId: string,

@@ -1,5 +1,4 @@
 import { supabase } from '@/lib/supabase';
-import type { ClassType } from '@/services/classes.service';
 import type { Database } from '@/types/database.types';
 
 /**
@@ -8,23 +7,6 @@ import type { Database } from '@/types/database.types';
  * cliente criaria duas versões da regra, e as exceções do denominador
  * (docs/FREQUENCIA.md) são exatamente o tipo de coisa que diverge em silêncio.
  */
-
-/** Frequência de um aluno no mês corrente (fuso de São Paulo). */
-export interface MonthlyFrequency {
-  userId: string;
-  /** Primeiro dia do mês, `AAAA-MM-DD`. */
-  referenceMonth: string;
-  /** Aulas de rotina do mês INTEIRO — o "12" de "Presença em Aulas: 0/12". */
-  totalClasses: number;
-  /** Das aulas já ocorridas, as que tiveram chamada concluída. */
-  countedClasses: number;
-  /** Presenças confirmadas pelo professor. */
-  attended: number;
-  /** Faltas com justificativa aprovada (saem do denominador). */
-  justified: number;
-  /** 0–100, duas casas. Denominador zero vale 100. */
-  frequencyPercent: number;
-}
 
 /** Modalidade da semana ou do mês (fixo, livre, à vontade). */
 export type ModoDaFrequencia = Database['public']['Enums']['plan_schedule_mode'];
@@ -199,31 +181,6 @@ export interface MissedRollCall {
   groupId: string | null;
 }
 
-/**
- * Frequência do mês corrente para vários alunos numa chamada só — a tela do
- * professor não pode disparar uma requisição por aluno. [#70]
- *
- * Alunos que o chamador não pode ver são descartados pelo banco, sem erro.
- */
-export async function fetchMonthlyFrequency(userIds: string[]): Promise<MonthlyFrequency[]> {
-  if (userIds.length === 0) {
-    return [];
-  }
-  const { data, error } = await supabase.rpc('frequencia_mensal', { p_user_ids: userIds });
-  if (error !== null) {
-    throw error;
-  }
-  return data.map((linha) => ({
-    userId: linha.user_id,
-    referenceMonth: linha.reference_month,
-    totalClasses: linha.total_classes,
-    countedClasses: linha.counted_classes,
-    attended: linha.attended,
-    justified: linha.justified,
-    frequencyPercent: Number(linha.frequency_percent),
-  }));
-}
-
 /** Meses fechados de um aluno, do mais recente para o mais antigo. */
 export async function fetchMonthlyHistory(userId: string): Promise<MonthlyHistoryRow[]> {
   const { data, error } = await supabase
@@ -231,63 +188,6 @@ export async function fetchMonthlyHistory(userId: string): Promise<MonthlyHistor
     .select('*')
     .eq('user_id', userId)
     .order('reference_month', { ascending: false });
-  if (error !== null) {
-    throw error;
-  }
-  return data;
-}
-
-/** O que a tela de chamada precisa saber da aula para oferecer "Concluir chamada". */
-export interface RollCallState {
-  type: ClassType;
-  dateTimeIso: string;
-  /** `null` enquanto a chamada não foi concluída. */
-  concludedAt: string | null;
-}
-
-/** Estado da chamada de uma aula (horário e conclusão). */
-export async function fetchRollCallState(classId: string): Promise<RollCallState> {
-  const { data, error } = await supabase
-    .from('classes')
-    .select('type, date_time, attendance_taken_at')
-    .eq('id', classId)
-    .single();
-  if (error !== null) {
-    throw error;
-  }
-  return {
-    type: data.type,
-    dateTimeIso: data.date_time,
-    concludedAt: data.attendance_taken_at,
-  };
-}
-
-/** A chamada montada na tela, pronta para ir ao banco de uma vez. */
-export interface RollCallSubmission {
-  presentes: string[];
-  ausentes: string[];
-}
-
-/**
- * Grava a chamada inteira e a conclui — UMA requisição, disparada só quando o
- * professor toca em "Concluir chamada". Marcar aluno por aluno não toca o
- * banco: a tela recarregava a cada toque e voltava ao topo.
- *
- * Atômico: ou tudo é gravado, ou nada. Aluno fora das duas listas volta a "sem
- * chamada"; a declaração do aluno é preservada. O banco recusa aula que não
- * começou e quem não é professor da aula nem admin.
- *
- * @returns O instante da conclusão (o original, se já estava concluída).
- */
-export async function saveRollCall(
-  classId: string,
-  chamada: RollCallSubmission,
-): Promise<string> {
-  const { data, error } = await supabase.rpc('salvar_chamada', {
-    p_class_id: classId,
-    p_presentes: chamada.presentes,
-    p_ausentes: chamada.ausentes,
-  });
   if (error !== null) {
     throw error;
   }

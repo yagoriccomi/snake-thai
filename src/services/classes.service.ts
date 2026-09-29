@@ -84,51 +84,6 @@ export async function updateClass(
 }
 
 /**
- * Aluno na lista de chamada — o mínimo para identificá-lo em tela. Não é o
- * `Profile` inteiro de propósito: quem faz a chamada não precisa (nem deve
- * receber) CPF, telefone e data de nascimento.
- */
-export interface StudentRef {
-  id: string;
-  name: string | null;
-  /** Situação da matrícula: quem trancou some da chamada nova. */
-  status: 'active' | 'inactive' | null;
-}
-
-/**
- * Alunos elegíveis a uma aula: os da turma informada; para eventos globais
- * (`groupId` nulo), todos os alunos.
- */
-export async function fetchStudentsForGroup(
-  groupId: string | null,
-): Promise<StudentRef[]> {
-  // Do DIRETÓRIO, não de `profiles`: o professor precisa listar os alunos
-  // para fazer a chamada, e a RLS de profiles não o deixa vê-los (nem deve —
-  // ali há CPF, telefone e nascimento). A chamada só precisa de id e nome. [#54]
-  const base = supabase.from('diretorio_perfis').select('id, name, status').eq('role', 'user');
-  const query = groupId !== null ? base.eq('group_id', groupId) : base;
-  const { data, error } = await query.order('name', { ascending: true });
-  if (error !== null) {
-    throw error;
-  }
-  return data.filter((linha): linha is StudentRef => linha.id !== null);
-}
-
-/** Presenças registradas para uma aula (visão do admin). */
-export async function fetchAttendanceForClass(
-  classId: string,
-): Promise<AttendanceRow[]> {
-  const { data, error } = await supabase
-    .from('attendance')
-    .select('*')
-    .eq('class_id', classId);
-  if (error !== null) {
-    throw error;
-  }
-  return data;
-}
-
-/**
  * Um professor vinculado a uma aula — o suficiente para desenhar a bolinha
  * (nome + cor) e a faixa da borda. `joinedAt` decide a ORDEM das faixas: quem
  * entrou primeiro na aula ocupa a primeira faixa, da esquerda pra direita.

@@ -1,4 +1,5 @@
 import type { AttendanceStatus } from '@/services/classes.service';
+import type { IncluidoLocal } from '@/utils/chamada';
 import type { RascunhoDeChamada } from '@/utils/rollCall';
 
 /**
@@ -9,8 +10,11 @@ import type { RascunhoDeChamada } from '@/utils/rollCall';
  * sem mock nenhum. [#2][#30]
  */
 
-/** Muda quando o formato gravado mudar; rascunho de outra versão é descartado. */
-export const VERSAO_DO_RASCUNHO = 1;
+/**
+ * Muda quando o formato gravado mudar; rascunho de outra versão é descartado.
+ * v2 (4.6c): guarda também os alunos incluídos na tela.
+ */
+export const VERSAO_DO_RASCUNHO = 2;
 
 /** Prefixo das chaves no armazenamento cifrado. */
 export const PREFIXO_DO_RASCUNHO = 'rollcall_draft.';
@@ -39,6 +43,8 @@ export interface RascunhoGuardado {
    */
   base: { marcacoes: MarcacoesGravadas; concluidaEm: string | null };
   marcacoes: MarcacoesGravadas;
+  /** Alunos incluídos na tela (pela busca) e ainda não gravados. */
+  incluidos: IncluidoLocal[];
 }
 
 /** O que fazer com um rascunho encontrado ao abrir a chamada. */
@@ -97,6 +103,17 @@ export function restringirAosAlunos(
 const ehObjeto = (valor: unknown): valor is Record<string, unknown> =>
   typeof valor === 'object' && valor !== null && !Array.isArray(valor);
 
+function lerIncluidos(valor: unknown): IncluidoLocal[] | null {
+  if (!Array.isArray(valor)) return null;
+  const incluidos: IncluidoLocal[] = [];
+  for (const item of valor) {
+    if (!ehObjeto(item) || typeof item.id !== 'string') return null;
+    if (item.nome !== null && typeof item.nome !== 'string') return null;
+    incluidos.push({ id: item.id, nome: item.nome });
+  }
+  return incluidos;
+}
+
 function lerMarcacoes(valor: unknown): MarcacoesGravadas | null {
   if (!ehObjeto(valor)) return null;
   const marcacoes: Record<string, AttendanceStatus> = {};
@@ -128,7 +145,8 @@ export function interpretarRascunhoGuardado(texto: string): RascunhoGuardado | n
 
   const marcacoesDaBase = lerMarcacoes(bruto.base.marcacoes);
   const marcacoes = lerMarcacoes(bruto.marcacoes);
-  if (marcacoesDaBase === null || marcacoes === null) return null;
+  const incluidos = lerIncluidos(bruto.incluidos);
+  if (marcacoesDaBase === null || marcacoes === null || incluidos === null) return null;
 
   return {
     versao: VERSAO_DO_RASCUNHO,
@@ -136,6 +154,7 @@ export function interpretarRascunhoGuardado(texto: string): RascunhoGuardado | n
     salvoEm: bruto.salvoEm,
     base: { marcacoes: marcacoesDaBase, concluidaEm },
     marcacoes,
+    incluidos,
   };
 }
 
@@ -184,12 +203,14 @@ export function avaliarRascunho({
     return 'vencido';
   }
 
-  const gravadoNaAula = restringirAosAlunos(gravado, alunoIds);
-  if (mesmasMarcacoes(restringirAosAlunos(guardado.marcacoes, alunoIds), gravadoNaAula)) {
+  // Os incluídos na tela também são "da aula" para o rascunho.
+  const idsDaAula = [...alunoIds, ...guardado.incluidos.map((incluido) => incluido.id)];
+  const gravadoNaAula = restringirAosAlunos(gravado, idsDaAula);
+  if (mesmasMarcacoes(restringirAosAlunos(guardado.marcacoes, idsDaAula), gravadoNaAula)) {
     return 'identico';
   }
 
-  const baseNaAula = restringirAosAlunos(guardado.base.marcacoes, alunoIds);
+  const baseNaAula = restringirAosAlunos(guardado.base.marcacoes, idsDaAula);
   if (!mesmasMarcacoes(baseNaAula, gravadoNaAula) || guardado.base.concluidaEm !== concluidaEm) {
     return 'conflito';
   }

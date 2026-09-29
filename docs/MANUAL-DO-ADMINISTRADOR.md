@@ -230,15 +230,33 @@ app.
 
 ### Fazer a chamada
 
-1. Abra a aula e toque em **Fazer chamada**.
-2. Para cada aluno, toque no **✓** (presente) ou no **✗** (falta). O símbolo
-   escolhido fica colorido e o outro fica cinza; tocar de novo desmarca.
-3. Nada é gravado enquanto você marca — a lista não recarrega nem volta ao
-   topo. Toque em **Concluir chamada** no rodapé para gravar tudo de uma vez.
-4. Antes de gravar, o app mostra quantas presenças e faltas serão
-   registradas. **Aluno sem marcação é registrado como falta.**
-5. Precisa corrigir? Reabra a chamada, ajuste e toque em **Salvar
-   alterações**. Se tentar sair com marcações não salvas, o app avisa.
+1. Abra a aula e toque em **Fazer chamada**. A lista vem em blocos:
+   - **Professores:** confirme se cada professor da aula deu a aula (✓ ou ✗).
+     Quem deu a aula sem estar previsto entra por **Acrescentar professor**;
+   - **Da turma:** os alunos de horário fixo da turma **na data da aula** (quem
+     mudou de turma depois continua na chamada da turma antiga);
+   - **Marcaram:** alunos de horário livre ou à vontade que marcaram "Vou";
+   - **Trocas:** quem veio por troca de aula. Na **Troca pendente**, marcar
+     presença aprova a troca; sem presença, ela expira e vale a aula original;
+   - **Extras:** alunos de horário fixo que vieram numa aula a mais;
+   - **Incluídos:** quem apareceu sem estar na lista, por **Incluir aluno que
+     apareceu**;
+   - **Trocaram esta aula:** quem trocou esta aula por outra, só para constar.
+2. Toque no **✓** (presente) ou no **✗** (falta). O símbolo escolhido fica
+   colorido e o outro fica cinza; tocar de novo desmarca.
+3. Nada é gravado enquanto você marca. Toque em **Concluir chamada** no rodapé
+   para gravar tudo de uma vez. Antes, o app mostra quantas presenças e faltas
+   serão registradas: **aluno da turma sem marcação vira falta**; quem marcou
+   "Vou" e não veio, sem marcação, **fica sem registro**.
+4. **Corrigir depois é retificação.** Toda mudança depois de concluída a
+   chamada pede um **motivo** (obrigatório). O aluno afetado é avisado, e a
+   chamada ganha a marca **Editada**. Só você (admin) vê o motivo, quem editou
+   e o valor anterior. A presença de professor, depois da conclusão, só o admin
+   corrige.
+5. A chamada feita depois do dia da aula fica marcada para sempre como
+   **Feita X dias depois**. Aula cancelada não tem chamada.
+6. Se tentar sair com marcações não salvas, o app avisa. Uma chamada pela
+   metade fica guardada no aparelho (inclusive os incluídos) e volta ao reabrir.
 
 ---
 
