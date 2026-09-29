@@ -1,5 +1,9 @@
 # Plano de Tarefas — checklist de 2026-09-16
 
+> **⚠️ Este checklist não é mais a fila viva.** Desde 2026-09-24, a fila do app e do banco é o
+> [`ROADMAP-thai.md`](../ROADMAP-thai.md). Tudo daqui está feito do lado do código, e o que
+> ainda valia foi levado para lá. Este arquivo fica como histórico.
+
 > **Para que serve:** registrar tudo que foi pedido em 2026-09-16, na ordem certa de
 > execução, para nada se perder entre sessões. Cada tarefa tem um plano detalhado em
 > [`docs/planos/`](planos/), com a situação verificada no código, os passos, os riscos

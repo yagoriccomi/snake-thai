@@ -29,10 +29,10 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Configura Node 20 com cache de dependências
+      - name: Configura Node 22 com cache de dependências
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       # npm ci é determinístico (respeita o lockfile) e mais rápido que install
@@ -114,10 +114,10 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-      - name: Configura Node 20
+      - name: Configura Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Instala dependências (lockfile)
