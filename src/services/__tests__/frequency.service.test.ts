@@ -14,7 +14,6 @@ import {
   fetchFrequenciaDoMes,
   fetchFrequenciaSemanal,
   fetchSemanasDoMes,
-  fetchMissedRollCalls,
   fetchMonthlyHistory,
 } from '@/services/frequency.service';
 
@@ -36,32 +35,6 @@ describe('fetchMonthlyHistory', () => {
     expect(mockFrom).toHaveBeenCalledWith('attendance_monthly');
     expect(chain.eq).toHaveBeenCalledWith('user_id', ALUNO);
     expect(chain.order).toHaveBeenCalledWith('reference_month', { ascending: false });
-  });
-});
-
-describe('fetchMissedRollCalls', () => {
-  it('deveTraduzirOsAvisosDeAulaSemChamada', async () => {
-    mockRpc.mockResolvedValue({
-      data: [
-        {
-          class_id: AULA,
-          title: 'Muay Thai — Turma Noite',
-          date_time: '2026-11-12T22:00:00+00:00',
-          group_id: 'turma-noite',
-        },
-      ],
-      error: null,
-    });
-
-    await expect(fetchMissedRollCalls()).resolves.toEqual([
-      {
-        classId: AULA,
-        title: 'Muay Thai — Turma Noite',
-        dateTimeIso: '2026-11-12T22:00:00+00:00',
-        groupId: 'turma-noite',
-      },
-    ]);
-    expect(mockRpc).toHaveBeenCalledWith('aulas_sem_chamada');
   });
 });
 

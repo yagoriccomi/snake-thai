@@ -34,7 +34,8 @@ presença (check-in), planos e pagamentos (comprovantes PIX). Construído com fo
   (professores, da turma, marcaram, trocas, extras e incluídos): quem faz a
   chamada confirma os professores, inclui quem apareceu e resolve as trocas de
   aula; depois de concluída, toda mudança é **retificação com motivo**, e o
-  aluno afetado é avisado. Aulas que passam sem chamada geram aviso na agenda.
+  aluno afetado é avisado. Aulas que passam sem chamada, de qualquer mês, ficam em
+  **Chamadas pendentes**, na agenda da equipe.
   Uma chamada não concluída fica guardada no aparelho e volta ao reabrir o app.
   Regras em [`docs/FREQUENCIA.md`](docs/FREQUENCIA.md).
 - Gestão de pagamentos com envio e aprovação de comprovantes. Na tela de envio,

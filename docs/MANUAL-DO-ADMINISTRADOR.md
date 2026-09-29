@@ -255,7 +255,11 @@ app.
    corrige.
 5. A chamada feita depois do dia da aula fica marcada para sempre como
    **Feita X dias depois**. Aula cancelada não tem chamada.
-6. Se tentar sair com marcações não salvas, o app avisa. Uma chamada pela
+6. **Chamadas pendentes:** na agenda, o botão **Chamadas pendentes** (com a
+   contagem) lista as aulas que já passaram sem chamada, de qualquer mês. Em
+   **Minhas**, as aulas em que você é professor; em **Todas**, as da academia
+   inteira. Toque em **Fazer** para abrir a chamada.
+7. Se tentar sair com marcações não salvas, o app avisa. Uma chamada pela
    metade fica guardada no aparelho (inclusive os incluídos) e volta ao reabrir.
 
 ---
