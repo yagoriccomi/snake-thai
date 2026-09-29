@@ -24,14 +24,15 @@ values
   ('e0000000-0000-4000-8000-000000000005','00000000-0000-0000-0000-000000000000','authenticated','authenticated','l-p2@t.invalid','x',now(),now(),now()),
   ('e0000000-0000-4000-8000-000000000006','00000000-0000-0000-0000-000000000000','authenticated','authenticated','l-adm@t.invalid','x',now(),now(),now());
 
-insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color)
+-- Cadastro antes das aulas: a chamada conta a turma da DATA da aula (D58).
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color, created_at)
 values
-  ('e0000000-0000-4000-8000-000000000001','user','Aluno A1','72000000001',false,'active','turma-lote',null),
-  ('e0000000-0000-4000-8000-000000000002','user','Aluno A2','72000000002',false,'active','turma-lote',null),
-  ('e0000000-0000-4000-8000-000000000003','user','Aluno A3','72000000003',false,'active','turma-lote',null),
-  ('e0000000-0000-4000-8000-000000000004','professor','Prof L','72000000004',false,'active',null,'#555555'),
-  ('e0000000-0000-4000-8000-000000000005','professor','Prof L2','72000000005',false,'active',null,'#666666'),
-  ('e0000000-0000-4000-8000-000000000006','admin','Admin L','72000000006',false,'active',null,null);
+  ('e0000000-0000-4000-8000-000000000001','user','Aluno A1','72000000001',false,'active','turma-lote',null, now() - interval '30 days'),
+  ('e0000000-0000-4000-8000-000000000002','user','Aluno A2','72000000002',false,'active','turma-lote',null, now() - interval '30 days'),
+  ('e0000000-0000-4000-8000-000000000003','user','Aluno A3','72000000003',false,'active','turma-lote',null, now() - interval '30 days'),
+  ('e0000000-0000-4000-8000-000000000004','professor','Prof L','72000000004',false,'active',null,'#555555', now()),
+  ('e0000000-0000-4000-8000-000000000005','professor','Prof L2','72000000005',false,'active',null,'#666666', now()),
+  ('e0000000-0000-4000-8000-000000000006','admin','Admin L','72000000006',false,'active',null,null, now());
 
 insert into public.classes (id, title, type, date_time, group_id) values
   ('e0000000-0000-4000-8000-00000000b001','lote-k1','routine', now() - interval '1 hour','turma-lote'),
@@ -195,18 +196,12 @@ begin
   end;
 end $$;
 
--- T10 — aluno repetido no array não derruba o comando
+-- T10 — aluno repetido no array não derruba o comando (reenvio igual, sem diferença)
 do $$
-declare v_a2 public.attendance_status;
 begin
   perform public.salvar_chamada('e0000000-0000-4000-8000-00000000b001',
     array['e0000000-0000-4000-8000-000000000001','e0000000-0000-4000-8000-000000000001']::uuid[],
-    '{}'::uuid[]);
-  select status into v_a2 from public.attendance
-   where class_id = 'e0000000-0000-4000-8000-00000000b001' and user_id = 'e0000000-0000-4000-8000-000000000002';
-  if v_a2 is not null then
-    raise exception 'FALHOU T10: A2 ficou com chamada % depois de sair das listas', v_a2;
-  end if;
+    array['e0000000-0000-4000-8000-000000000002']::uuid[]);
   raise notice 'OK T10: repetição no array é tolerada';
 end $$;
 
@@ -222,16 +217,23 @@ update public.classes set attendance_taken_at = timestamptz '2026-01-01 10:00-03
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"e0000000-0000-4000-8000-000000000004","role":"authenticated"}';
 
--- T5 — salvar de novo corrige, mas não reescreve a conclusão
+-- T5 — contrato v4, § 15: o APK antigo não corrige chamada já feita; o
+-- reenvio igual devolve a conclusão original, sem reescrevê-la
 do $$
 declare v_concluida timestamptz;
 begin
+  begin
+    perform public.salvar_chamada('e0000000-0000-4000-8000-00000000b001',
+      '{}'::uuid[], array['e0000000-0000-4000-8000-000000000001']::uuid[]);
+    raise exception 'FALHOU T5: o APK antigo corrigiu uma chamada já feita';
+  exception when invalid_parameter_value then null;
+  end;
   v_concluida := public.salvar_chamada('e0000000-0000-4000-8000-00000000b001',
-    '{}'::uuid[], array['e0000000-0000-4000-8000-000000000001']::uuid[]);
+    array['e0000000-0000-4000-8000-000000000001']::uuid[], array['e0000000-0000-4000-8000-000000000002']::uuid[]);
   if v_concluida <> timestamptz '2026-01-01 10:00-03' then
     raise exception 'FALHOU T5: conclusão reescrita para %', v_concluida;
   end if;
-  raise notice 'OK T5: correção preserva o momento da conclusão';
+  raise notice 'OK T5: correção pede o app novo; o reenvio igual preserva a conclusão';
 end $$;
 
 -- =====================================================================
@@ -254,11 +256,11 @@ begin
   raise notice 'OK T11: admin marca como paga sem exigir anexo';
 end $$;
 
--- T12 — admin faz a chamada de qualquer aula
+-- T12 — admin passa pela chamada de qualquer aula (reenvio igual)
 do $$
 begin
   perform public.salvar_chamada('e0000000-0000-4000-8000-00000000b001',
-    array['e0000000-0000-4000-8000-000000000003']::uuid[], '{}'::uuid[]);
+    array['e0000000-0000-4000-8000-000000000001']::uuid[], array['e0000000-0000-4000-8000-000000000002']::uuid[]);
   raise notice 'OK T12: admin faz a chamada';
 end $$;
 
