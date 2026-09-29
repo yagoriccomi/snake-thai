@@ -121,6 +121,16 @@ export function ItensDaSolicitacaoScreen({
               </Pressable>
             </>
           ) : null}
+          {item.tipo === 'troca' ? (
+            <Pressable
+              onPress={() => navigation.navigate('RevisarTroca', { swapId: item.id })}
+              style={[styles.botao, styles.botaoPrincipal]}
+              accessibilityRole="button"
+              accessibilityLabel={`Revisar a troca de ${item.nome ?? 'aluno'}`}
+            >
+              <Text style={styles.botaoTexto}>Revisar troca</Text>
+            </Pressable>
+          ) : null}
           {item.tipo === 'comprovante' ? (
             <Pressable
               onPress={() => navigation.navigate('Financeiro', { screen: 'FinanceiroHome' })}

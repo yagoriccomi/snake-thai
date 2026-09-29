@@ -7,6 +7,8 @@ const mockFetchMenu = jest.fn();
 const mockDeclarar = jest.fn();
 const mockSubmitJustification = jest.fn();
 const mockAbrirSolicitacao = jest.fn();
+const mockPedirTroca = jest.fn();
+const mockDesistir = jest.fn();
 
 jest.mock('@/services/aulas.service', () => ({
   fetchAulasDoAluno: (...args: unknown[]): unknown => mockFetchAulas(...args),
@@ -19,6 +21,10 @@ jest.mock('@/services/justifications.service', () => ({
 }));
 jest.mock('@/services/solicitacoes.service', () => ({
   abrirSolicitacao: (...args: unknown[]): unknown => mockAbrirSolicitacao(...args),
+}));
+jest.mock('@/services/trocas.service', () => ({
+  pedirTroca: (...args: unknown[]): unknown => mockPedirTroca(...args),
+  desistirDaTroca: (...args: unknown[]): unknown => mockDesistir(...args),
 }));
 jest.mock('@/context/AuthProvider', () => ({
   useAuth: () => ({ session: { user: { id: 'aluno-1' } }, profile: { id: 'aluno-1', name: 'Aluno' } }),
@@ -74,6 +80,8 @@ beforeEach(() => {
   mockDeclarar.mockReset().mockResolvedValue({ marcadasNaSemana: 1, cota: 3, acimaDaCota: false });
   mockSubmitJustification.mockReset().mockResolvedValue(undefined);
   mockAbrirSolicitacao.mockReset().mockResolvedValue('s-1');
+  mockPedirTroca.mockReset().mockResolvedValue('t-1');
+  mockDesistir.mockReset().mockResolvedValue(undefined);
 });
 
 describe('StudentAulasList (4.4, contrato § 12)', () => {
@@ -129,6 +137,18 @@ describe('StudentAulasList (4.4, contrato § 12)', () => {
     expect(await tela.findByText('Pedido enviado. Acompanhe a resposta em Meus pedidos.')).toBeTruthy();
   });
 
+  it('deveDesistirDaTrocaComConfirmacao', async () => {
+    mockFetchAulas.mockResolvedValue([
+      aulaDoAluno({ class_id: 'a-1', title: 'Muay Thai', date_time: amanha(), swap_id: 't-9', can_cancel_swap: true }),
+    ]);
+    const tela = comTema(<StudentAulasList navigation={navegacao() as never} />);
+
+    fireEvent.press(await tela.findByRole('button', { name: 'Desistir da troca: Muay Thai' }));
+    const botoes = tela.getAllByRole('button', { name: 'Desistir da troca' });
+    fireEvent.press(botoes[botoes.length - 1]!);
+    await waitFor(() => expect(mockDesistir).toHaveBeenCalledWith('t-9'));
+  });
+
   it('deveMostrarARecusaDoBancoNaTela', async () => {
     mockFetchAulas.mockResolvedValue([aulaDoAluno({ class_id: 'a-1', title: 'Treino funcional', date_time: amanha() })]);
     mockDeclarar.mockRejectedValue(Object.assign(new Error('Esta aula já começou.'), { name: 'ErroDeFuncao' }));
@@ -168,6 +188,19 @@ describe('AulasDaSemanaScreen (4.4, contrato § 12.2)', () => {
       />,
     );
   }
+
+  it('deveTrocarParaEstaEscolhendoAAulaDaSemana', async () => {
+    mockFetchMenu.mockResolvedValue([
+      aulaDoAluno({ class_id: 'minha', title: 'Treino A', date_time: amanha(10), schedule_mode: 'fixed', origem: 'turma', can_swap_from: true }),
+      aulaDoAluno({ class_id: 'nova', title: 'Treino B', date_time: amanha(19), schedule_mode: 'fixed', can_swap_to: true }),
+    ]);
+    const tela = menu();
+
+    fireEvent.press(await tela.findByRole('button', { name: 'Trocar para esta: Treino B' }));
+    fireEvent.press(tela.getByRole('radio'));
+    fireEvent.press(tela.getByRole('button', { name: 'Pedir troca' }));
+    await waitFor(() => expect(mockPedirTroca).toHaveBeenCalledWith('minha', 'nova', 'once', null));
+  });
 
   it('deveOferecerVouExtraAoFixoEMarcarPelaRpc', async () => {
     mockFetchMenu.mockResolvedValue([

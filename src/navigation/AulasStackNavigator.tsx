@@ -16,6 +16,8 @@ import { ItensDaSolicitacaoScreen } from '@/screens/aulas/ItensDaSolicitacaoScre
 import { JustificativasParaRevisarScreen } from '@/screens/aulas/JustificativasParaRevisarScreen';
 import { MinhasJustificativasScreen } from '@/screens/aulas/MinhasJustificativasScreen';
 import { MinhasSolicitacoesScreen } from '@/screens/aulas/MinhasSolicitacoesScreen';
+import { MinhasTrocasScreen } from '@/screens/aulas/MinhasTrocasScreen';
+import { RevisarTrocaScreen } from '@/screens/aulas/RevisarTrocaScreen';
 import { SolicitacoesScreen } from '@/screens/aulas/SolicitacoesScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -69,6 +71,8 @@ export function AulasStackNavigator(): React.JSX.Element {
       <Stack.Screen name="Solicitacoes" component={SolicitacoesScreen} options={SOLICITACOES_OPTIONS} />
       <Stack.Screen name="ItensDaSolicitacao" component={ItensDaSolicitacaoScreen} options={SOLICITACOES_OPTIONS} />
       <Stack.Screen name="MinhasSolicitacoes" component={MinhasSolicitacoesScreen} options={MEUS_PEDIDOS_OPTIONS} />
+      <Stack.Screen name="MinhasTrocas" component={MinhasTrocasScreen} options={MINHAS_TROCAS_OPTIONS} />
+      <Stack.Screen name="RevisarTroca" component={RevisarTrocaScreen} options={REVISAR_TROCA_OPTIONS} />
     </Stack.Navigator>
   );
 }
@@ -83,3 +87,5 @@ const MINHAS_JUSTIFICATIVAS_OPTIONS: NativeStackNavigationOptions = { title: 'Mi
 const PARA_REVISAR_OPTIONS: NativeStackNavigationOptions = { title: 'Justificativas para revisar' };
 const SOLICITACOES_OPTIONS: NativeStackNavigationOptions = { title: 'Solicitações' };
 const MEUS_PEDIDOS_OPTIONS: NativeStackNavigationOptions = { title: 'Meus pedidos' };
+const MINHAS_TROCAS_OPTIONS: NativeStackNavigationOptions = { title: 'Minhas trocas' };
+const REVISAR_TROCA_OPTIONS: NativeStackNavigationOptions = { title: 'Revisar troca' };

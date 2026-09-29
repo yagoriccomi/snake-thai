@@ -29,6 +29,10 @@
 | P2 | "Outra aula da grade dele no mesmo horário" não conta aula **cancelada** | Aula cancelada não acontece; recusar por ela prenderia o aluno a uma aula que não existe |
 | P3 | Na aprovação da permanente, a conferência "ainda é fixo" usa a semana de agora e o plano aberto | § 9.4, passo 1: "o aluno ainda é fixo e o plano aberto é 'fixed' ou nulo" |
 | P4 | O histórico traz as aulas de `aulas_do_aluno` no período (uma regra só do que é do aluno) e, sem `p_de`/`p_ate`, vai do começo até hoje | § 12: "o histórico de aulas"; a mesma visibilidade da lista |
+| P5 | As originais possíveis da folha Trocar aula saem das linhas da **mesma semana** do menu (`can_swap_from` / `can_swap_from_permanent`) | A avulsa exige a mesma semana; a permanente só precisa de uma aula dele que não começou, e a semana da aula nova sempre tem uma |
+| P6 | **Desistir da troca** pede confirmação numa folha | Não tem volta (T36) |
+| P7 | **Minhas trocas** fica em Frequência (só do fixo); **Revisar troca** é uma tela aberta pela caixa | § 3: "tela Revisar troca"; o acompanhamento segue o das justificativas |
+| P8 | Os anexos da permanente aparecem só como contagem até o G2 | O `/v1/motivos/view-url` é do servidor novo |
 
 ## Passos (4.9b-banco)
 
@@ -57,4 +61,4 @@
 
 - [x] 4.9b-banco: `db-dev test` e `reset` verdes, tipos, consulta do G3 = 23, PR com CI verde,
   Registro;
-- [ ] 4.9b-app: Jest verde, PR, entrega com o roteiro do aparelho, **G3 anotado no Registro**.
+- [x] 4.9b-app: Jest verde, PR, entrega com o roteiro do aparelho, **G3 anotado no Registro**.

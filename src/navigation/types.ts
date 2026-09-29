@@ -102,6 +102,10 @@ export type AulasStackParamList = {
   ItensDaSolicitacao: { categoria: Categoria };
   /** Os pedidos da própria pessoa (§ 9.3). */
   MinhasSolicitacoes: undefined;
+  /** Os pedidos de troca do fixo (§ 9.4). */
+  MinhasTrocas: undefined;
+  /** Revisar troca, aberta pela caixa (§ 9.4). */
+  RevisarTroca: { swapId: string };
 };
 
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */

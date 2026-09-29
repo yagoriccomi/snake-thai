@@ -218,7 +218,11 @@ export function PushNotificationsProvider({ children }: { children: React.ReactN
       if (destinoPendente.aba === 'Financeiro') {
         navigationRef.navigate('Main', { screen: 'Financeiro', params: { screen: destinoPendente.tela } });
       } else {
-        navigationRef.navigate('Main', { screen: 'Aulas', params: { screen: destinoPendente.tela } });
+        const aulas =
+          destinoPendente.tela === 'ItensDaSolicitacao'
+            ? { screen: destinoPendente.tela, params: destinoPendente.params }
+            : { screen: destinoPendente.tela };
+        navigationRef.navigate('Main', { screen: 'Aulas', params: aulas });
       }
       setDestinoPendente(null);
       return true;

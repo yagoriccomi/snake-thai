@@ -97,6 +97,12 @@ regressão `supabase/tests/regressao_frequencia_regras.sql` com 18 casos verdes.
   A equipe da aula ou um admin decide em Solicitações; aprovado, a presença
   entra como retificação da chamada. O pedido e a resposta ficam em **Meus
   pedidos**.
+- **Troca de aula** (§ 9.4, fixo): no menu **Escolher aulas**, **Trocar para esta** abre a
+  folha **Trocar aula**, com a aula dele que sai (a que já passou vem como **Reposição**) e o tipo:
+  **Só nesta semana** ou **Permanente** (esta com justificativa obrigatória). A linha mostra
+  **Troca pendente** até a decisão e oferece **Desistir da troca**; o acompanhamento fica em
+  **Frequência › Minhas trocas**. A troca aprovada tira a aula original do esperado e põe a nova
+  (T33); faltar à nova é falta.
 - **Professor / admin:** na chamada, frequência do mês por aluno e toque no
   nome para abrir o histórico. Na agenda, os atalhos **Chamadas pendentes** e
   **Justificativas para revisar** (com contador); a revisão pede **nota

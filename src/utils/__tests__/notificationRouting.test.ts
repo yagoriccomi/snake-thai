@@ -37,6 +37,14 @@ describe('destinoDaNotificacao', () => {
     expect(destinoDaNotificacao({ tipo, justificationId: UUID })?.tela).toBe(tela);
   });
 
+  it('deveAbrirAsTrocasDeAulaDaCaixaNoPedidoDeTroca', () => {
+    expect(destinoDaNotificacao({ tipo: 'troca_pendente', classId: UUID })).toEqual({
+      aba: 'Aulas',
+      tela: 'ItensDaSolicitacao',
+      params: { categoria: 'trocas_de_aula' },
+    });
+  });
+
   it('naoDeveNavegarComPayloadDesconhecidoOuMalformado', () => {
     expect(destinoDaNotificacao(null)).toBeNull();
     expect(destinoDaNotificacao('comprovante_enviado')).toBeNull();

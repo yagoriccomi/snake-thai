@@ -21,6 +21,10 @@ interface AulaDoAlunoRowProps {
   onDesmarcar: (aula: AulaDoAluno) => void;
   /** "Eu estava na aula" (§ 9.3). */
   onEuEstava: (aula: AulaDoAluno) => void;
+  /** "Trocar para esta" (§ 9.4): só o menu oferece. */
+  onTrocar?: (aula: AulaDoAluno) => void;
+  /** "Desistir da troca" (§ 9.4, T36). */
+  onDesistir?: (aula: AulaDoAluno) => void;
 }
 
 function comoProfessores(aula: AulaDoAluno): ClassTeacherRef[] {
@@ -40,6 +44,8 @@ export const AulaDoAlunoRow = React.memo(function AulaDoAlunoRow({
   onNaoVou,
   onDesmarcar,
   onEuEstava,
+  onTrocar,
+  onDesistir,
 }: AulaDoAlunoRowProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
@@ -63,6 +69,28 @@ export const AulaDoAlunoRow = React.memo(function AulaDoAlunoRow({
         </View>
         {detalhe !== null ? <Text style={styles.detalhe}>{detalhe}</Text> : null}
         <TeacherDot teachers={professores} />
+        {onTrocar !== undefined && aula.can_swap_to && !ocupada ? (
+          <Pressable
+            onPress={() => onTrocar(aula)}
+            hitSlop={8}
+            style={styles.linkDaTroca}
+            accessibilityRole="button"
+            accessibilityLabel={`Trocar para esta: ${aula.title}`}
+          >
+            <Text style={styles.linkTexto}>Trocar para esta</Text>
+          </Pressable>
+        ) : null}
+        {onDesistir !== undefined && aula.can_cancel_swap && !ocupada ? (
+          <Pressable
+            onPress={() => onDesistir(aula)}
+            hitSlop={8}
+            style={styles.linkDaTroca}
+            accessibilityRole="button"
+            accessibilityLabel={`Desistir da troca: ${aula.title}`}
+          >
+            <Text style={styles.linkTexto}>Desistir da troca</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       {ocupada ? (
@@ -174,6 +202,7 @@ function makeStyles(colors: ReturnType<typeof useTheme>['colors'], fonts: Return
     chipTexto: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.textPrimary },
     marcada: { alignItems: 'flex-end' },
     link: { minHeight: 44, justifyContent: 'center' },
+    linkDaTroca: { alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' },
     linkTexto: { fontFamily: fonts.bodySemiBold, fontSize: 14, color: colors.primaryText },
     presenca: { flexDirection: 'row', gap: 8 },
     marca: {

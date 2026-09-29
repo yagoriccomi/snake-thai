@@ -303,7 +303,12 @@ de chamadas · Trocas de aula · Pagamentos de mensalidade**.
   sem estar escalado. Aqui também aparece **cada retificação feita**, só para você conferir: abra
   **Ver chamada** e toque em **Conferido**.
 - **Pagamentos de mensalidade:** os comprovantes, que você aprova no **Financeiro**.
-- **Trocas de aula:** chega com a troca de aula.
+- **Trocas de aula:** os pedidos de troca que você pode decidir. **Revisar troca** mostra a aula
+  que sai, a que entra (com **Reposição** quando a original já passou) e, na permanente, a
+  justificativa do aluno. O **motivo da decisão** é obrigatório para negar e na troca permanente;
+  para aprovar a troca só desta semana, é opcional. A troca só desta semana também se resolve pela
+  chamada da aula nova: marcar presença aprova; sem presença, ela expira. A permanente muda a
+  grade do aluno a partir da próxima aula e não se desfaz: para voltar, ele pede outra permanente.
 
 Toda decisão pede uma **nota**, que fica só para a administração. Quem pediu vê se foi aprovado e,
 na aprovação, quem aprovou; na negativa, vê o contato da academia. Cada pedido vai **uma vez só**,
