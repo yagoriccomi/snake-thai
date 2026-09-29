@@ -121,16 +121,15 @@ Deno.serve(async (req: Request): Promise<Response> => {
     return json({ error: 'CPF precisa ter 11 dígitos' }, 400);
   }
 
-  // A cor é OBRIGATÓRIA para professor e PROIBIDA para admin — mesma regra
-  // que a constraint `profiles_color_only_for_professor` no banco. Validar
-  // aqui devolve uma mensagem legível; sem isto, o erro apareceria como um
-  // 500 genérico de violação de constraint. [#51]
-  if (role === 'professor') {
-    if (color === null || !COR_HEX_REGEX.test(color)) {
-      return json({ error: 'Professor precisa de uma cor no formato #RRGGBB' }, 400);
-    }
-  } else if (color !== null) {
-    return json({ error: 'Administrador não tem cor — remova o campo' }, 400);
+  // A cor é OBRIGATÓRIA para professor e OPCIONAL para admin (contrato § 4:
+  // o admin com cor dá aula) — mesma regra que a constraint
+  // `profiles_color_by_role` no banco. Validar aqui devolve uma mensagem
+  // legível; sem isto, o erro apareceria como um 500 genérico. [#51]
+  if (role === 'professor' && color === null) {
+    return json({ error: 'Professor precisa de uma cor no formato #RRGGBB' }, 400);
+  }
+  if (color !== null && !COR_HEX_REGEX.test(color)) {
+    return json({ error: 'A cor precisa estar no formato #RRGGBB' }, 400);
   }
 
   // Mesma senha de primeiro acesso dos alunos, configurada pelo admin.
