@@ -84,6 +84,15 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
    * reaplicava o bloqueio a cada renovação.
    */
   const aberturaPendente = useRef(true);
+  /**
+   * Número da carga de perfil mais recente. Uma resposta antiga que chega
+   * depois de uma mais nova é descartada: a recarga do `USER_UPDATED`, pedida
+   * antes de o Onboarding baixar a flag, não pode desfazer o `refreshProfile`
+   * que veio depois (ROADMAP-thai 2.4).
+   */
+  const ultimaCarga = useRef(0);
+  /** De quem é o perfil em tela: recarregar o mesmo usuário não mostra "Carregando". */
+  const perfilCarregadoDe = useRef<string | null>(null);
 
   const isAdmin = profile?.role === 'admin';
   const isProfessor = profile?.role === 'professor';
@@ -123,12 +132,19 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
 
   // Carrega o perfil sempre que a sessão muda e aplica o lock de admin.
   const loadProfile = useCallback(async (userId: string): Promise<void> => {
-    setLoadingProfile(true);
+    const carga = ++ultimaCarga.current;
+    // Mesmo usuário (token renovado, senha trocada): recarrega sem tirar a tela
+    // atual do lugar. Com "Carregando", o Onboarding era desmontado no meio do
+    // envio e remontava no passo 1.
+    const silenciosa = perfilCarregadoDe.current === userId;
+    if (!silenciosa) setLoadingProfile(true);
     try {
       const loaded = await fetchProfile(userId);
+      if (carga !== ultimaCarga.current) return;
       if (loaded === null) {
         // Sessão sem perfil correspondente é um estado inconsistente → desloga.
         await authService.signOut();
+        perfilCarregadoDe.current = null;
         setProfile(null);
         return;
       }
@@ -136,10 +152,12 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
         // Conta excluída (LGPD): se a etapa do Auth falhou e a sessão sobreviveu,
         // o app não pode seguir com um perfil anonimizado.
         await authService.signOut();
+        perfilCarregadoDe.current = null;
         setProfile(null);
         return;
       }
       setProfile(loaded);
+      perfilCarregadoDe.current = userId;
       // Monitoramento: só o papel e um id aleatório da instalação, nunca e-mail ou nome.
       void setMonitoringUser(loaded.role);
 
@@ -162,13 +180,16 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       // Falha transitória (rede/servidor) NÃO pode derrubar a sessão: manter o
       // usuário logado e deixar que a próxima tentativa recarregue o perfil.
     } finally {
-      setLoadingProfile(false);
+      // Quem ligou o "Carregando" desliga, mesmo superada: senão a tela ficaria presa nele.
+      if (!silenciosa) setLoadingProfile(false);
     }
   }, []);
 
   useEffect(() => {
     const userId = session?.user.id;
     if (userId === undefined) {
+      ultimaCarga.current += 1;
+      perfilCarregadoDe.current = null;
       setProfile(null);
       setAdminLocked(false);
       clearMonitoringUser();
@@ -211,6 +232,8 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
       await removerAparelhoAoSair(userId);
     }
     await authService.signOut();
+    ultimaCarga.current += 1;
+    perfilCarregadoDe.current = null;
     setProfile(null);
     setAdminLocked(false);
   }, [session]);
@@ -220,7 +243,9 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
     if (userId === undefined) {
       return;
     }
+    const carga = ++ultimaCarga.current;
     const loaded = await fetchProfile(userId);
+    if (carga !== ultimaCarga.current) return;
     setProfile(loaded);
   }, [session]);
 

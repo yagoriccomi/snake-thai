@@ -31,9 +31,13 @@ export interface OnboardingProfileData {
 }
 
 /**
- * Conclui o onboarding: grava os dados pessoais e marca `is_first_login = false`.
+ * Grava os dados pessoais do primeiro acesso, **sem** concluí-lo: a flag
+ * `is_first_login` continua `true` até a senha nova valer (`finishOnboarding`).
+ *
+ * Repetir com os mesmos dados não falha: o CPF só pode ser definido uma vez
+ * (null → valor), mas regravar o mesmo valor não é mudança.
  */
-export async function completeProfileOnboarding(
+export async function saveOnboardingProfile(
   userId: string,
   data: OnboardingProfileData,
 ): Promise<void> {
@@ -44,7 +48,6 @@ export async function completeProfileOnboarding(
       cpf: data.cpf,
       phone: data.phone,
       dob: data.dob,
-      is_first_login: false,
     })
     .eq('id', userId);
   if (error !== null) {
@@ -53,15 +56,15 @@ export async function completeProfileOnboarding(
 }
 
 /**
- * Conclui o onboarding de quem JÁ nasce com cadastro completo (professor e
- * admin, criados pela Edge Function `create-staff`): só levanta a flag, sem
- * regravar nome/CPF que o admin já informou.
+ * Conclui o primeiro acesso: só baixa a flag. **Chame só depois de a senha nova
+ * valer** — com a flag baixada antes, uma troca de senha que falha deixaria a
+ * senha padrão (que a academia conhece) valendo para sempre (ROADMAP-thai 2.4).
  *
- * A constraint `profiles_complete_when_onboarded` exige apenas nome e CPF
- * para sair do primeiro login — telefone e nascimento seguem opcionais, e é
- * o que permite este atalho existir sem furar a integridade.
+ * A constraint `profiles_complete_when_onboarded` exige nome e CPF para sair do
+ * primeiro acesso: o aluno os grava antes por `saveOnboardingProfile`; professor
+ * e admin já nascem com eles (`create-staff`).
  */
-export async function finishStaffOnboarding(userId: string): Promise<void> {
+export async function finishOnboarding(userId: string): Promise<void> {
   const { error } = await supabase
     .from('profiles')
     .update({ is_first_login: false })

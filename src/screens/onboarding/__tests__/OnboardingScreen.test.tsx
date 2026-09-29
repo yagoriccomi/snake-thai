@@ -4,7 +4,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 const mockFetchCurrent = jest.fn();
 const mockAccept = jest.fn();
-const mockFinishStaff = jest.fn();
+const mockFinish = jest.fn();
+const mockSaveProfile = jest.fn();
 const mockUpdatePassword = jest.fn();
 const mockRefreshProfile = jest.fn();
 const mockOrdem: string[] = [];
@@ -14,17 +15,27 @@ jest.mock('@/services/legalDocuments.service', () => ({
   acceptLegalDocuments: (...args: unknown[]): unknown => mockAccept(...args),
 }));
 jest.mock('@/services/profile.service', () => ({
-  completeProfileOnboarding: jest.fn(),
-  finishStaffOnboarding: (...args: unknown[]): unknown => mockFinishStaff(...args),
+  saveOnboardingProfile: (...args: unknown[]): unknown => mockSaveProfile(...args),
+  finishOnboarding: (...args: unknown[]): unknown => mockFinish(...args),
 }));
 jest.mock('@/services/auth.service', () => ({
   updatePassword: (...args: unknown[]): unknown => mockUpdatePassword(...args),
 }));
+interface PerfilDoTeste {
+  id: string;
+  name: string | null;
+  cpf: string | null;
+  is_first_login: boolean;
+}
+/** Professor criado pelo admin: cadastro pronto, só senha e termos. */
+const PROFESSOR: PerfilDoTeste = { id: 'professor-1', name: 'Professor Teste', cpf: '52998224725', is_first_login: true };
+/** Aluno criado pela academia: nome e CPF vêm no primeiro acesso. */
+const ALUNO: PerfilDoTeste = { id: 'aluno-1', name: null, cpf: null, is_first_login: true };
+let mockPerfil: PerfilDoTeste = PROFESSOR;
 jest.mock('@/context/AuthProvider', () => ({
   useAuth: () => ({
-    session: { user: { id: 'professor-1' } },
-    // Professor criado pelo admin: cadastro pronto, só senha e termos.
-    profile: { id: 'professor-1', name: 'Professor Teste', cpf: '52998224725', is_first_login: true },
+    session: { user: { id: mockPerfil.id } },
+    profile: mockPerfil,
     refreshProfile: mockRefreshProfile,
   }),
 }));
@@ -74,8 +85,12 @@ beforeEach(() => {
   mockAccept.mockImplementation(async () => {
     mockOrdem.push('aceite');
   });
-  mockFinishStaff.mockImplementation(async () => {
-    mockOrdem.push('perfil');
+  mockPerfil = PROFESSOR;
+  mockSaveProfile.mockImplementation(async () => {
+    mockOrdem.push('dados');
+  });
+  mockFinish.mockImplementation(async () => {
+    mockOrdem.push('flag');
   });
   mockUpdatePassword.mockImplementation(async () => {
     mockOrdem.push('senha');
@@ -96,7 +111,8 @@ describe('OnboardingScreen — termos', () => {
 
     await waitFor(() => expect(mockRefreshProfile).toHaveBeenCalled());
     expect(mockAccept).toHaveBeenCalledWith(['termos-1', 'politica-1']);
-    expect(mockOrdem).toEqual(['aceite', 'perfil', 'senha']);
+    // A flag por último: antes da senha, uma troca que falhasse deixaria a senha padrão valendo.
+    expect(mockOrdem).toEqual(['aceite', 'senha', 'flag']);
   });
 
   it('naoDeveConcluirQuandoOAceiteFalha', async () => {
@@ -109,7 +125,7 @@ describe('OnboardingScreen — termos', () => {
     fireEvent.press(tela.getByRole('button', { name: 'Concluir cadastro' }));
 
     await waitFor(() => expect(mockFetchCurrent).toHaveBeenCalledTimes(2));
-    expect(mockFinishStaff).not.toHaveBeenCalled();
+    expect(mockFinish).not.toHaveBeenCalled();
     expect(mockUpdatePassword).not.toHaveBeenCalled();
   });
 
@@ -139,5 +155,120 @@ describe('OnboardingScreen — termos', () => {
 
     await waitFor(() => expect(mockRefreshProfile).toHaveBeenCalled());
     expect(mockAccept).not.toHaveBeenCalled();
+  });
+});
+
+function renderizarAluno() {
+  mockPerfil = ALUNO;
+  return render(
+    <SafeAreaProvider initialMetrics={METRICAS}>
+      <ThemeProvider>
+        <OnboardingScreen />
+      </ThemeProvider>
+    </SafeAreaProvider>,
+  );
+}
+
+async function alunoChegarAosTermos() {
+  const tela = renderizarAluno();
+  fireEvent.changeText(tela.getByLabelText('Nome completo'), 'Aluna Teste');
+  fireEvent.changeText(tela.getByLabelText('Celular'), '11987654321');
+  fireEvent.changeText(tela.getByLabelText('CPF'), '52998224725');
+  fireEvent.changeText(tela.getByLabelText('Data de nascimento'), '31012000');
+  fireEvent.press(tela.getByRole('button', { name: 'Próximo' }));
+  await waitFor(() => expect(tela.getByLabelText('Nova senha')).toBeTruthy());
+  fireEvent.changeText(tela.getByLabelText('Nova senha'), SENHA);
+  fireEvent.changeText(tela.getByLabelText('Confirmar nova senha'), SENHA);
+  fireEvent.press(tela.getByRole('button', { name: 'Próximo' }));
+  await waitFor(() => expect(tela.getByRole('button', { name: 'Concluir cadastro' })).toBeTruthy());
+  return tela;
+}
+
+type Tela = ReturnType<typeof render>;
+
+async function concluir(tela: Tela): Promise<void> {
+  await waitFor(() => expect(mockFetchCurrent).toHaveBeenCalled());
+  fireEvent.press(tela.getByLabelText('Concordo com os Termos de Uso e a Política de Privacidade (LGPD).'));
+  fireEvent.press(tela.getByRole('button', { name: 'Concluir cadastro' }));
+}
+
+describe('OnboardingScreen — a flag só cai depois da senha (ROADMAP-thai 2.4)', () => {
+  beforeEach(() => {
+    mockFetchCurrent.mockResolvedValue([]);
+  });
+
+  it('naoDeveConcluirOPrimeiroAcessoQuandoATrocaDeSenhaFalha', async () => {
+    mockUpdatePassword.mockRejectedValue(new TypeError('Network request failed'));
+    const tela = await chegarAosTermos();
+
+    await concluir(tela);
+
+    await waitFor(() => expect(mockUpdatePassword).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tela.getByRole('button', { name: 'Concluir cadastro' })).toBeEnabled());
+    // A flag continua true: no próximo login, a pessoa volta a ter de trocar a senha padrão.
+    expect(mockFinish).not.toHaveBeenCalled();
+    expect(mockRefreshProfile).not.toHaveBeenCalled();
+  });
+
+  it('deveMostrarOErroQuandoATrocaDeSenhaFalha', async () => {
+    mockUpdatePassword.mockRejectedValue(new TypeError('Network request failed'));
+    const tela = await chegarAosTermos();
+
+    await concluir(tela);
+
+    await waitFor(() => expect(tela.getByText(/conex/i)).toBeTruthy());
+  });
+
+  it('naoDeveTrocarASenhaDeNovoQuandoSoAConclusaoFalhou', async () => {
+    mockFinish.mockRejectedValueOnce(new TypeError('Network request failed'));
+    const tela = await chegarAosTermos();
+
+    await concluir(tela);
+    await waitFor(() => expect(mockFinish).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(tela.getByRole('button', { name: 'Concluir cadastro' })).toBeEnabled());
+    fireEvent.press(tela.getByRole('button', { name: 'Concluir cadastro' }));
+
+    await waitFor(() => expect(mockRefreshProfile).toHaveBeenCalledTimes(1));
+    // A senha já valia: repetir daria "senha igual" no Supabase e travaria a pessoa.
+    expect(mockUpdatePassword).toHaveBeenCalledTimes(1);
+    expect(mockFinish).toHaveBeenCalledTimes(2);
+  });
+
+  it('naoDeveGravarDadosDeQuemJaNasceuComCadastroCompleto', async () => {
+    const tela = await chegarAosTermos();
+
+    await concluir(tela);
+
+    await waitFor(() => expect(mockRefreshProfile).toHaveBeenCalled());
+    expect(mockSaveProfile).not.toHaveBeenCalled();
+    expect(mockFinish).toHaveBeenCalledWith('professor-1');
+  });
+
+  it('deveGravarOsDadosDoAlunoAntesDaSenhaEAFlagPorUltimo', async () => {
+    const tela = await alunoChegarAosTermos();
+
+    await concluir(tela);
+
+    await waitFor(() => expect(mockRefreshProfile).toHaveBeenCalled());
+    expect(mockOrdem).toEqual(['dados', 'senha', 'flag']);
+    expect(mockSaveProfile).toHaveBeenCalledWith('aluno-1', {
+      name: 'Aluna Teste',
+      cpf: '52998224725',
+      phone: '11987654321',
+      dob: '2000-01-31',
+    });
+  });
+
+  it('naoDeveConcluirOAlunoQuandoASenhaFalhaDepoisDosDados', async () => {
+    mockUpdatePassword.mockRejectedValue({ message: 'Password should be at least 8 characters', code: 'weak_password' });
+    const tela = await alunoChegarAosTermos();
+
+    await concluir(tela);
+
+    await waitFor(() => expect(mockUpdatePassword).toHaveBeenCalled());
+    await waitFor(() => expect(tela.getByRole('button', { name: 'Concluir cadastro' })).toBeEnabled());
+    // Os dados ficam gravados, mas a flag continua true: a senha padrão não conta como concluída.
+    expect(mockSaveProfile).toHaveBeenCalledTimes(1);
+    expect(mockFinish).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AppText } from '@/components/AppText';
@@ -14,8 +14,8 @@ import { useLegalDocuments } from '@/hooks/useLegalDocuments';
 import { updatePassword } from '@/services/auth.service';
 import { acceptLegalDocuments, type DocumentoLegalVigente } from '@/services/legalDocuments.service';
 import {
-  completeProfileOnboarding,
-  finishStaffOnboarding,
+  finishOnboarding,
+  saveOnboardingProfile,
 } from '@/services/profile.service';
 import { useTheme } from '@/theme/ThemeProvider';
 import { describeError } from '@/utils/errors';
@@ -108,6 +108,8 @@ export function OnboardingScreen(): React.JSX.Element {
   const fecharDocumento = useCallback(() => setDocumentoAberto(null), []);
   const [errors, setErrors] = useState<OnboardingErrors>({});
   const [submitting, setSubmitting] = useState(false);
+  /** Senha que já passou no Supabase nesta tela (ver o envio). */
+  const senhaJaTrocada = useRef<string | null>(null);
 
   const handleCpfChange = useCallback((value: string) => setCpf(maskCpf(value)), []);
   const handlePhoneChange = useCallback((value: string) => setPhone(maskPhone(value)), []);
@@ -185,21 +187,26 @@ export function OnboardingScreen(): React.JSX.Element {
       if (documentosLegais.documentos.length > 0) {
         await acceptLegalDocuments(documentosLegais.documentos.map((documento) => documento.id));
       }
-      // Conclui o PERFIL antes de trocar a senha. `updatePassword` emite o evento
-      // USER_UPDATED, que dispara um reload do perfil no AuthProvider; se a senha
-      // viesse primeiro, esse reload poderia reler is_first_login=true (cadastro
-      // ainda não concluído) e remontar o Onboarding no passo 1 — o loop.
-      if (cadastroJaCompleto || isoDob === null) {
-        await finishStaffOnboarding(userId);
-      } else {
-        await completeProfileOnboarding(userId, {
+      if (!cadastroJaCompleto && isoDob !== null) {
+        // Dados SEM concluir: a flag só cai depois de a senha nova valer.
+        await saveOnboardingProfile(userId, {
           name,
           cpf: onlyDigits(cpf),
           phone: onlyDigits(phone),
           dob: isoDob,
         });
       }
-      await updatePassword(password);
+      // Se a senha já passou e só a conclusão falhou, repetir o envio não troca
+      // de novo: o Supabase recusaria a "senha igual" e a pessoa ficaria presa.
+      if (senhaJaTrocada.current !== password) {
+        await updatePassword(password);
+        senhaJaTrocada.current = password;
+      }
+      // Só agora: com a flag baixada antes, uma troca de senha que falhasse
+      // deixaria a senha padrão (que a academia conhece) valendo para sempre.
+      // O USER_UPDATED da troca recarrega o perfil sem desmontar esta tela
+      // (AuthProvider), então a flag ainda `true` não volta ao passo 1.
+      await finishOnboarding(userId);
       await refreshProfile();
     } catch (submitError) {
       setErrors({ form: describeError(submitError) });
