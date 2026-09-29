@@ -4,6 +4,7 @@ const path = require('node:path');
 const {
   bumpVersion,
   buildChangelogSection,
+  buildSupabaseWarning,
   buildVersionName,
   extractChangelogSection,
   insertChangelogSection,
@@ -11,6 +12,7 @@ const {
   parseDescribe,
   parseVersion,
   suggestBump,
+  supabaseChangesFrom,
   versionCodeFrom,
 } = require('../version-lib');
 
@@ -183,6 +185,73 @@ describe('buildVersionName', () => {
       dirty: true,
     });
     expect(parseDescribe('fatal: No names found')).toBeNull();
+  });
+});
+
+describe('supabaseChangesFrom', () => {
+  it('deveVoltarVazioQuandoNadaMudouEmSupabase', () => {
+    expect(supabaseChangesFrom(['', 'src/App.tsx', 'README.md'])).toEqual({ migrations: [], functions: [] });
+  });
+
+  it('deveListarAsMigrationsPeloNomeDoArquivo', () => {
+    expect(
+      supabaseChangesFrom([
+        'supabase/migrations/20260923100000_aluno_sem_app.sql',
+        'supabase/migrations/20260922100000_promocao_so_de_professor.sql',
+      ]).migrations,
+    ).toEqual(['20260922100000_promocao_so_de_professor.sql', '20260923100000_aluno_sem_app.sql']);
+  });
+
+  it('deveListarCadaFuncaoUmaVezSoPeloNomeDaPasta', () => {
+    expect(
+      supabaseChangesFrom([
+        'supabase/functions/create-student/index.ts',
+        'supabase/functions/create-student/validacao.ts',
+        'supabase/functions/_shared/cors.ts',
+      ]).functions,
+    ).toEqual(['_shared', 'create-student']);
+  });
+
+  it('deveIgnorarSeedTestesEArquivoSoltoNaRaizDeFunctions', () => {
+    expect(
+      supabaseChangesFrom([
+        'supabase/seed/historico_demonstracao.sql',
+        'supabase/tests/regressao_rls.sql',
+        'supabase/functions/deno.json',
+        'supabase/migrations/LEIAME.md',
+      ]),
+    ).toEqual({ migrations: [], functions: [] });
+  });
+
+  it('deveAceitarCaminhoComBarraInvertida', () => {
+    expect(supabaseChangesFrom(['supabase\\functions\\send-push\\index.ts']).functions).toEqual(['send-push']);
+  });
+});
+
+describe('buildSupabaseWarning', () => {
+  it('deveNaoAvisarQuandoNaoHaNadaParaPublicar', () => {
+    expect(buildSupabaseWarning({ baseTag: 'v1.8.0', changes: { migrations: [], functions: [] } })).toBeNull();
+  });
+
+  it('deveLembrarDePublicarEmProducaoAntesDaApkComCadaItem', () => {
+    const aviso = buildSupabaseWarning({
+      baseTag: 'v1.7.0',
+      changes: { migrations: ['20260923100000_aluno_sem_app.sql'], functions: ['_shared', 'create-student'] },
+    });
+
+    expect(aviso).toContain('desde v1.7.0');
+    expect(aviso).toContain('Publique em produção antes da APK');
+    expect(aviso).toContain('- 20260923100000_aluno_sem_app.sql');
+    expect(aviso).toContain('- create-student');
+    expect(aviso).toContain('- _shared (todas as funções que o usam)');
+    expect(aviso).toContain('migration → Edge Function → só então a APK');
+  });
+
+  it('deveOmitirOBlocoDeMigrationsQuandoSoAFuncaoMudou', () => {
+    const aviso = buildSupabaseWarning({ baseTag: 'v1.8.0', changes: { migrations: [], functions: ['send-push'] } });
+
+    expect(aviso).not.toContain('Migrations');
+    expect(aviso).toContain('- send-push');
   });
 });
 

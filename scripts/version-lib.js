@@ -33,6 +33,13 @@ const PADRAO_DO_DESCRIBE = /^(.+)-(\d+)-g([0-9a-f]+)(-dirty)?$/;
 /** @typedef {{ major: number, minor: number, patch: number }} ParsedVersion */
 /** @typedef {{ subject: string, body?: string }} Commit */
 /** @typedef {{ tag: string, commitsSinceTag: number, sha: string, dirty: boolean }} GitDescribe */
+/** @typedef {{ migrations: string[], functions: string[] }} SupabaseChanges */
+
+/** Pastas de `supabase/` que só chegam à produção por um passo manual, antes da APK. */
+const PASTA_DAS_MIGRATIONS = 'supabase/migrations/';
+const PASTA_DAS_FUNCOES = 'supabase/functions/';
+/** Código compartilhado: mudar aqui muda todas as funções que o importam. */
+const PASTA_COMPARTILHADA_DAS_FUNCOES = '_shared';
 
 /** Ordem das partes, da menor para a maior. */
 const ORDEM_DAS_PARTES = Object.freeze({ patch: 0, minor: 1, major: 2 });
@@ -270,10 +277,65 @@ function buildVersionName({ version, describe, variant }) {
   return `${base}+${prefixo}${describe.commitsSinceTag}.${describe.sha}${sujo}`;
 }
 
+/**
+ * Separa, entre os caminhos alterados, as migrations e as Edge Functions. Cada
+ * uma só chega à produção por um passo manual (`db-push-prod.bat` e
+ * `functions deploy`), e a APK que depende dela não pode sair antes. Foi o que
+ * escapou na 1.8.0 (ROADMAP-thai, Fase 1).
+ *
+ * @param {string[]} caminhos Saída de `git diff --name-only`, com `/`.
+ * @returns {SupabaseChanges} Migrations pelo nome do arquivo; funções pelo nome
+ *   da pasta, sem repetir, em ordem alfabética.
+ */
+function supabaseChangesFrom(caminhos) {
+  const migrations = new Set();
+  const functions = new Set();
+  for (const bruto of caminhos) {
+    const caminho = String(bruto).trim().replace(/\\/g, '/');
+    if (caminho.startsWith(PASTA_DAS_MIGRATIONS) && caminho.endsWith('.sql')) {
+      migrations.add(caminho.slice(PASTA_DAS_MIGRATIONS.length));
+      continue;
+    }
+    if (!caminho.startsWith(PASTA_DAS_FUNCOES)) continue;
+    const [pasta = '', ...resto] = caminho.slice(PASTA_DAS_FUNCOES.length).split('/');
+    // Arquivo solto na raiz de functions/ (ex.: deno.json) não é uma função.
+    if (pasta !== '' && resto.length > 0) functions.add(pasta);
+  }
+  return { migrations: [...migrations].sort(), functions: [...functions].sort() };
+}
+
+/**
+ * Texto do aviso do `versao:verificar`. `null` quando não há nada a publicar.
+ *
+ * @param {{ baseTag: string, changes: SupabaseChanges }} entrada
+ * @returns {string | null}
+ */
+function buildSupabaseWarning({ baseTag, changes }) {
+  const { migrations, functions } = changes;
+  if (migrations.length === 0 && functions.length === 0) return null;
+
+  const linhas = [`Aviso: há banco ou Edge Function mudados desde ${baseTag}. Publique em produção antes da APK.`];
+  if (migrations.length > 0) {
+    linhas.push('  Migrations (scripts\\db-push-prod.bat):');
+    linhas.push(...migrations.map((nome) => `    - ${nome}`));
+  }
+  if (functions.length > 0) {
+    linhas.push('  Edge Functions (npx supabase functions deploy <nome>):');
+    linhas.push(
+      ...functions.map((nome) =>
+        nome === PASTA_COMPARTILHADA_DAS_FUNCOES ? `    - ${nome} (todas as funções que o usam)` : `    - ${nome}`,
+      ),
+    );
+  }
+  linhas.push('  Ordem: migration → Edge Function → só então a APK (docs/VERSIONAMENTO.md).');
+  return linhas.join('\n');
+}
+
 module.exports = {
   LIMITE_DA_PARTE,
   bumpVersion,
   buildChangelogSection,
+  buildSupabaseWarning,
   buildVersionName,
   describeGit,
   extractChangelogSection,
@@ -284,5 +346,6 @@ module.exports = {
   parseDescribe,
   parseVersion,
   suggestBump,
+  supabaseChangesFrom,
   versionCodeFrom,
 };

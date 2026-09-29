@@ -75,6 +75,15 @@ cai na versão pura (ou `+dev`).
 
 1. PRs na `main` **com merge commit** (nunca squash: a tag precisa ficar no histórico
    da `main`). Depois: `git switch main` e `git pull --ff-only`.
+   - **Banco e Edge Functions primeiro.** Se `npm run versao:verificar` mostrar
+     *"Aviso: há banco ou Edge Function mudados desde vX.Y.Z"*, a ordem é
+     **migration** (`scripts\db-push-prod.bat`) → **Edge Function**
+     (`npx supabase functions deploy <nome>`) → **só então a APK**. A APK que sai antes
+     chama o que a produção ainda não tem: foi o que aconteceu na 1.7.1 e na 1.8.0.
+   - O aviso compara com a última versão publicada (no commit da própria tag, com a
+     anterior a ela), só pelo `git diff`, sem rede. Ele **não trava**: some quando não há
+     nada em `supabase/migrations` nem em `supabase/functions`, e continua aparecendo
+     depois de publicar em produção, porque o script não enxerga a produção.
 2. Simular e conferir a sugestão e o rascunho das notas:
    ```bash
    npm run versao:minor -- --dry-run
@@ -142,7 +151,7 @@ corrige com uma **nova PATCH**.
 | --- | --- |
 | `npm run versao:patch` / `minor` / `major` | Calcula e grava a versão nova (aceita `-- --dry-run` e `-- --forcar`) |
 | `npm run versao:tag` | Commit `chore(release): vX.Y.Z` e tag anotada, sem push |
-| `npm run versao:verificar` | Confere versionCode e `package.json` (`-- --android` confere a pasta `android/`; `-- --tag vX.Y.Z` confere a tag) |
+| `npm run versao:verificar` | Confere versionCode e `package.json` (`-- --android` confere a pasta `android/`; `-- --tag vX.Y.Z` confere a tag) e avisa das migrations e Edge Functions a publicar antes da APK |
 | `npm run versao:notas -- vX.Y.Z` | Imprime as notas da versão |
 | `node scripts/version.js build-name --variant dev` | Imprime o nome do build |
 

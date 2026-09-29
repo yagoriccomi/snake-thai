@@ -286,6 +286,39 @@ function conferir(args) {
     throw new ErroDeUso(problemas.join('\n'));
   }
   console.log(`Versão ${versao} (versionCode ${esperado}) consistente.`);
+  avisarSupabaseParaPublicar(versao);
+}
+
+/**
+ * A última versão publicada antes desta. No commit da própria tag vX.Y.Z (build
+ * da publicação), é a anterior a ela; senão, a última tag do histórico.
+ *
+ * @param {string} versao
+ * @returns {string} `''` sem tag de versão no histórico (ex.: clone raso).
+ */
+function tagBaseDaPublicacao(versao) {
+  const tagDestaVersao = `v${versao}`;
+  const tagsNoCommit = git(['tag', '--points-at', 'HEAD'], { permitirFalha: true }).split('\n');
+  const args = ['describe', '--tags', '--abbrev=0', '--match', 'v[0-9]*'];
+  if (tagsNoCommit.includes(tagDestaVersao)) args.push('--exclude', tagDestaVersao);
+  return git(args, { permitirFalha: true });
+}
+
+/**
+ * Aviso (não trava): migration e Edge Function vão para a produção à mão, antes
+ * da APK que depende delas. Sem rede e sem token: só o `git diff`.
+ *
+ * @param {string} versao
+ */
+function avisarSupabaseParaPublicar(versao) {
+  const baseTag = tagBaseDaPublicacao(versao);
+  if (baseTag === '') return;
+  const alterados = git(
+    ['diff', '--name-only', '--diff-filter=d', `${baseTag}..HEAD`, '--', 'supabase/migrations', 'supabase/functions'],
+    { permitirFalha: true },
+  );
+  const aviso = lib.buildSupabaseWarning({ baseTag, changes: lib.supabaseChangesFrom(alterados.split('\n')) });
+  if (aviso !== null) console.log(`\n${aviso}`);
 }
 
 /**
