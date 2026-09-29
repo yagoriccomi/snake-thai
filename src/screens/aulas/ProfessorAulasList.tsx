@@ -14,7 +14,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorState } from '@/components/ErrorState';
 import { Fab } from '@/components/Fab';
-import { ChamadasPendentesBotao, JustificativasParaRevisarBotao } from '@/components/ChamadasPendentesBotao';
+import { ChamadasPendentesBotao } from '@/components/ChamadasPendentesBotao';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { TeacherDot } from '@/components/TeacherDot';
 import { TeacherRail } from '@/components/TeacherRail';
@@ -23,7 +23,6 @@ import { WeekStrip } from '@/components/WeekStrip';
 import { useAdminClassesForDay } from '@/hooks/useAdminClassesForDay';
 import { useGroups } from '@/hooks/useGroups';
 import { useChamadasPendentes } from '@/hooks/useChamadasPendentes';
-import { useJustificativasParaRevisar } from '@/hooks/useJustificativas';
 import { createLogger } from '@/lib/logger';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import {
@@ -65,8 +64,6 @@ export function ProfessorAulasList({
   // O banco devolve ao professor só as aulas dele sem chamada.
   // As chamadas pendentes das aulas dele (T13).
   const { items: chamadasPendentes, reload: recarregarSemChamada } = useChamadasPendentes(true);
-  // A lista é do banco: cada um vê só o que pode decidir (T18, D14).
-  const { items: paraRevisar, reload: recarregarParaRevisar } = useJustificativasParaRevisar();
   const [teachersByClass, setTeachersByClass] = useState<Record<string, ClassTeacherRef[]>>({});
 
   const groupNameById = useMemo(() => {
@@ -81,8 +78,7 @@ export function ProfessorAulasList({
     useCallback(() => {
       void reload();
       void recarregarSemChamada();
-      void recarregarParaRevisar();
-    }, [reload, recarregarSemChamada, recarregarParaRevisar]),
+    }, [reload, recarregarSemChamada]),
   );
 
   useEffect(() => {
@@ -127,7 +123,6 @@ export function ProfessorAulasList({
   }, [navigation]);
 
   const abrirChamadasPendentes = useCallback(() => navigation.navigate('ChamadasPendentes'), [navigation]);
-  const abrirParaRevisar = useCallback(() => navigation.navigate('JustificativasParaRevisar'), [navigation]);
 
   const renderItem = useCallback<ListRenderItem<ClassRow>>(
     ({ item }) => {
@@ -173,7 +168,6 @@ export function ProfessorAulasList({
         <WeekStrip days={days} selectedKey={selectedKey} onSelect={handleSelectDay} />
       </View>
       <ChamadasPendentesBotao quantidade={chamadasPendentes.length} onPress={abrirChamadasPendentes} />
-      <JustificativasParaRevisarBotao quantidade={paraRevisar.length} onPress={abrirParaRevisar} />
 
       {error !== null && items.length === 0 ? (
         <ErrorState message={error} onRetry={() => void reload()} />

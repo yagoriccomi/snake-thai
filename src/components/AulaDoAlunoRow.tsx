@@ -19,6 +19,8 @@ interface AulaDoAlunoRowProps {
   onVou: (aula: AulaDoAluno) => void;
   onNaoVou: (aula: AulaDoAluno) => void;
   onDesmarcar: (aula: AulaDoAluno) => void;
+  /** "Eu estava na aula" (§ 9.3). */
+  onEuEstava: (aula: AulaDoAluno) => void;
 }
 
 function comoProfessores(aula: AulaDoAluno): ClassTeacherRef[] {
@@ -37,6 +39,7 @@ export const AulaDoAlunoRow = React.memo(function AulaDoAlunoRow({
   onVou,
   onNaoVou,
   onDesmarcar,
+  onEuEstava,
 }: AulaDoAlunoRowProps): React.JSX.Element {
   const { colors, fonts } = useTheme();
   const styles = useMemo(() => makeStyles(colors, fonts), [colors, fonts]);
@@ -64,6 +67,16 @@ export const AulaDoAlunoRow = React.memo(function AulaDoAlunoRow({
 
       {ocupada ? (
         <ActivityIndicator color={colors.primary} accessibilityLabel="Salvando" />
+      ) : acao === 'eu-estava' ? (
+        <Pressable
+          onPress={() => onEuEstava(aula)}
+          style={styles.chip}
+          accessibilityRole="button"
+          accessibilityLabel={`Eu estava na aula: ${aula.title}`}
+          accessibilityHint="Pede ao professor a presença nesta aula"
+        >
+          <Text style={styles.chipTexto}>Eu estava na aula</Text>
+        </Pressable>
       ) : acao === 'vou' || acao === 'vou-extra' ? (
         <Pressable
           onPress={() => onVou(aula)}

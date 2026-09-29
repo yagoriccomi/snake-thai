@@ -31,6 +31,10 @@
 | P4 | Frases que o contrato não escreve: *"Para pedir, escreva o motivo."*, *"Aula cancelada não aceita pedido."*, *"O prazo para este pedido terminou."*, *"Você já fez este pedido para esta aula."*, *"A chamada desta aula ainda não foi feita."*, *"Você já está com presença nesta aula."*, *"Esta aula não aceita o pedido."*, *"Você não está marcado como ausente nesta aula."*, *"Você não está escalado nesta aula."*, *"Você está nesta aula: corrija pela chamada."*, *"Você já está nesta aula."*, *"A aula ainda não começou."*, *"Esta solicitação já foi decidida."* | Frase para a pessoa |
 | P5 | O aviso `solicitacao_pendente` do aluno vai à equipe da aula; os de professor (ou aula sem equipe) vão aos admins, menos quem pediu | § 10: "quem pode decidir" |
 | P6 | A aprovação do "Eu estava na aula" avisa o aluno por `chamada_retificada` (D21), como toda retificação | Não há tipo de aviso próprio para a decisão da solicitação na § 10 |
+| P7 | O atalho **Solicitações** fica no cabeçalho de **Aulas** (equipe) e do **Painel** (admin); o atalho provisório "Justificativas para revisar" da agenda (4.8) sai, porque a categoria Faltas de alunos o substitui | "Cabeçalho da primeira aba": a do professor é Aulas; a do admin, Painel |
+| P8 | Só o **professor** vê "Pedir ao admin" no detalhe da aula, e só os pedidos que o banco aceitaria agora (`utils/solicitacoes.ts`) | O admin corrige pela chamada e não decide o próprio pedido (P2) |
+| P9 | O comprovante da caixa leva ao **Financeiro**, onde o admin já aprova | Sem tela nova de comprovante [#7] |
+| P10 | Os estados em Meus pedidos: "Pedido em análise", "Pedido aprovado por {nome}" e "Pedido negado" + bloco de contato | A § 3 não escreve os rótulos da solicitação; seguem os da justificativa |
 
 ## Passos (4.9a-banco)
 
@@ -56,4 +60,4 @@
 ## Definição de pronto
 
 - [x] 4.9a-banco: `db-dev test` e `reset` verdes, tipos, PR com CI verde, Registro;
-- [ ] 4.9a-app: Jest verde, PR, entrega com o roteiro do aparelho.
+- [x] 4.9a-app: Jest verde, PR, entrega com o roteiro do aparelho.

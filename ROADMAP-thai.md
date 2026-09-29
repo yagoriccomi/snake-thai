@@ -719,7 +719,7 @@ Dois PRs, nesta ordem. O G3 abre no fim do 4.9b.
 
 **4.9a — Solicitações**
 
-- [x] Plano · [x] Banco · [ ] Interface · [ ] Testes · [ ] Aparelho
+- [x] Plano · [x] Banco · [x] Interface · [x] Testes · [ ] Aparelho
 
 **Banco:**
 

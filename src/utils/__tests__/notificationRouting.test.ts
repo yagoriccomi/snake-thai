@@ -31,6 +31,7 @@ describe('destinoDaNotificacao', () => {
     ['justificativa_pendente', 'JustificativasParaRevisar'],
     ['justificativa_aprovada', 'MinhasJustificativas'],
     ['justificativa_negada', 'MinhasJustificativas'],
+    ['solicitacao_pendente', 'Solicitacoes'],
     ['aula_cancelada', 'AulasHome'],
   ])('%s abre a tela %s', (tipo, tela) => {
     expect(destinoDaNotificacao({ tipo, justificationId: UUID })?.tela).toBe(tela);

@@ -12,8 +12,11 @@ import { CriarAulaScreen } from '@/screens/aulas/CriarAulaScreen';
 import { DetalheAulaScreen } from '@/screens/aulas/DetalheAulaScreen';
 import { FrequenciaScreen } from '@/screens/aulas/FrequenciaScreen';
 import { HistoricoFrequenciaScreen } from '@/screens/aulas/HistoricoFrequenciaScreen';
+import { ItensDaSolicitacaoScreen } from '@/screens/aulas/ItensDaSolicitacaoScreen';
 import { JustificativasParaRevisarScreen } from '@/screens/aulas/JustificativasParaRevisarScreen';
 import { MinhasJustificativasScreen } from '@/screens/aulas/MinhasJustificativasScreen';
+import { MinhasSolicitacoesScreen } from '@/screens/aulas/MinhasSolicitacoesScreen';
+import { SolicitacoesScreen } from '@/screens/aulas/SolicitacoesScreen';
 import { useTheme } from '@/theme/ThemeProvider';
 
 const Stack = createNativeStackNavigator<AulasStackParamList>();
@@ -63,6 +66,9 @@ export function AulasStackNavigator(): React.JSX.Element {
         component={JustificativasParaRevisarScreen}
         options={PARA_REVISAR_OPTIONS}
       />
+      <Stack.Screen name="Solicitacoes" component={SolicitacoesScreen} options={SOLICITACOES_OPTIONS} />
+      <Stack.Screen name="ItensDaSolicitacao" component={ItensDaSolicitacaoScreen} options={SOLICITACOES_OPTIONS} />
+      <Stack.Screen name="MinhasSolicitacoes" component={MinhasSolicitacoesScreen} options={MEUS_PEDIDOS_OPTIONS} />
     </Stack.Navigator>
   );
 }
@@ -75,3 +81,5 @@ const HISTORICO_OPTIONS: NativeStackNavigationOptions = { title: 'Frequência' }
 const AULAS_DA_SEMANA_OPTIONS: NativeStackNavigationOptions = { title: 'Aulas da semana' };
 const MINHAS_JUSTIFICATIVAS_OPTIONS: NativeStackNavigationOptions = { title: 'Minhas justificativas' };
 const PARA_REVISAR_OPTIONS: NativeStackNavigationOptions = { title: 'Justificativas para revisar' };
+const SOLICITACOES_OPTIONS: NativeStackNavigationOptions = { title: 'Solicitações' };
+const MEUS_PEDIDOS_OPTIONS: NativeStackNavigationOptions = { title: 'Meus pedidos' };

@@ -9,6 +9,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import type { ClassType } from '@/services/classes.service';
 import type { ClassAudience } from '@/services/schedules.service';
+import type { Categoria } from '@/constants/solicitacoes';
 
 /** Dados de uma aula trafegados entre a lista, o detalhe e a edição. */
 export interface ClassNavParams {
@@ -95,6 +96,12 @@ export type AulasStackParamList = {
   MinhasJustificativas: undefined;
   /** As pendentes que a equipe pode decidir (§ 9.1, D14). */
   JustificativasParaRevisar: undefined;
+  /** A caixa da equipe (§ 9.3), na ordem da § 3. */
+  Solicitacoes: undefined;
+  /** Os itens de uma categoria da caixa. */
+  ItensDaSolicitacao: { categoria: Categoria };
+  /** Os pedidos da própria pessoa (§ 9.3). */
+  MinhasSolicitacoes: undefined;
 };
 
 /** Stack interna da aba "Financeiro" (lista + pagamento + validação). */

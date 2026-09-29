@@ -6,6 +6,7 @@ import { AulaDoAlunoRow } from '@/components/AulaDoAlunoRow';
 import { AvisoAcimaDaCota } from '@/components/AvisoAcimaDaCota';
 import { ErrorState } from '@/components/ErrorState';
 import { JustificationSheet } from '@/components/JustificationSheet';
+import { PedidoSheet } from '@/components/PedidoSheet';
 import { ResumoDaSemanaCard } from '@/components/ResumoDaSemanaCard';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { SegmentedControl, type SegmentOption } from '@/components/SegmentedControl';
@@ -16,7 +17,7 @@ import { useMenuDeAulas } from '@/hooks/useAulasDoAluno';
 import type { AulasStackScreenProps } from '@/navigation/types';
 import type { AulaDoAluno } from '@/services/aulas.service';
 import { useTheme } from '@/theme/ThemeProvider';
-import { resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
+import { contextoDoEuEstava, resumoDaSemana, segundaDaSemana } from '@/utils/aulasDoAluno';
 import { formatDayMonth, formatWeekday } from '@/utils/datetime';
 import { DIAS_DE_AULA_PADRAO } from '@/utils/diasDeAula';
 
@@ -97,7 +98,7 @@ export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana
   const blocos = useMemo(() => blocosDaSemana(segunda, aulas, diasDeAula), [segunda, aulas, diasDeAula]);
   const resumo = useMemo(() => resumoDaSemana(aulas), [aulas]);
 
-  const { onVou, onNaoVou, onDesmarcar } = acoes;
+  const { onVou, onNaoVou, onDesmarcar, onEuEstava } = acoes;
   const renderItem = useCallback(
     ({ item }: { item: AulaDoAluno }) => (
       <AulaDoAlunoRow
@@ -107,9 +108,10 @@ export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana
         onVou={(aula) => void onVou(aula)}
         onNaoVou={(aula) => void onNaoVou(aula)}
         onDesmarcar={(aula) => void onDesmarcar(aula)}
+        onEuEstava={onEuEstava}
       />
     ),
-    [declarando, onVou, onNaoVou, onDesmarcar],
+    [declarando, onVou, onNaoVou, onDesmarcar, onEuEstava],
   );
 
   return (
@@ -178,6 +180,16 @@ export function AulasDaSemanaScreen(_props: AulasStackScreenProps<'AulasDaSemana
           classTitle={acoes.aulaDaFalta.title}
           onClose={acoes.fecharFalta}
           onSubmit={acoes.enviarJustificativa}
+        />
+      ) : null}
+      {acoes.aulaDoPedido !== null ? (
+        <PedidoSheet
+          key={acoes.aulaDoPedido.class_id}
+          visible
+          titulo="Eu estava na aula"
+          contexto={contextoDoEuEstava(acoes.aulaDoPedido)}
+          onClose={acoes.fecharPedido}
+          onEnviar={acoes.enviarPedido}
         />
       ) : null}
     </ScreenWrapper>
