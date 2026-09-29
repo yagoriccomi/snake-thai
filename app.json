@@ -23,7 +23,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "allowBackup": false
+      "allowBackup": false,
+      "blockedPermissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -55,7 +60,9 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "O Snake Thai acessa suas fotos para você anexar o comprovante de pagamento."
+          "photosPermission": "O Snake Thai acessa suas fotos para você anexar o comprovante de pagamento.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ],
       [

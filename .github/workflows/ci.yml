@@ -21,6 +21,10 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# O token da esteira só lê o repositório [#55]: nenhum job escreve nada.
+permissions:
+  contents: read
+
 jobs:
   qualidade:
     name: Tipos, testes e licenças
@@ -136,3 +140,20 @@ jobs:
       # Visibilidade dos 'high' sem bloquear — o log mostra, o gate não trava.
       - name: npm audit (high, informativo)
         run: npm run audit:report
+
+  segredos:
+    # Varre o código E o histórico do Git atrás de chave, token ou senha
+    # comitados por engano [#37][#64]. Achou, o build falha: apagar do código
+    # não basta, a chave vazada precisa ser trocada.
+    name: Varredura de segredos (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código (histórico completo)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
