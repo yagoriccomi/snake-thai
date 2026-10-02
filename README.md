@@ -147,6 +147,11 @@ sem https. O `.env` simples não é mais lido.
 > quando o mesmo celular está conectado por cabo e por Wi-Fi ao mesmo tempo.
 > A opção `[V]` alterna entre DEV e produção, e a seção "Banco local" sobe,
 > recria e testa o banco de desenvolvimento.
+> Para parear o celular pela primeira vez, a opção `[7]` mostra um QR code: no
+> aparelho, abra **Depuração por Wi-Fi › Parear dispositivo com QR code** e aponte
+> a câmera. O menu pareia e já deixa o celular conectado, sem digitar IP, porta ou
+> código (precisa do Android 11 ou mais novo e da mesma rede Wi-Fi). Se o QR não
+> for lido, o menu oferece o pareamento pelo código de 6 dígitos.
 
 ### Debug x Release — por que o app "não abre sozinho"
 

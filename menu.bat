@@ -63,7 +63,7 @@ echo    [4] Checar Tipagem (TypeScript)
 echo.
 echo   -- DISPOSITIVO (ADB Wi-Fi) --
 echo    [2] Conectar (mDNS automatico)
-echo    [7] Emparelhar 1a vez (Pair)
+echo    [7] Emparelhar 1a vez (QR code)
 echo    [D] Desconectar conexoes de rede duplicadas
 echo.
 echo   -- BUILD / INSTALACAO --
@@ -372,7 +372,7 @@ goto MENU
 rem ---------------------------------------------------------------------------
 :PAIR
 cls
-echo [7] Emparelhar ADB - Wi-Fi Pairing (necessario na 1a vez)...
+echo [7] Emparelhar ADB - Wi-Fi Pairing por QR code (necessario na 1a vez)...
 echo.
 if not defined ADB (
     echo  [!] 'adb' nao encontrado. Verifique ANDROID_HOME ou o Platform-Tools.
@@ -380,6 +380,19 @@ if not defined ADB (
     pause
     goto MENU
 )
+rem O QR dispensa digitar IP, porta e codigo. O script le o adb da variavel
+rem ADB e, se pareou, ja deixa o celular conectado.
+node "scripts\parear-adb-qr.js"
+if not errorlevel 1 goto PAIR_FIM
+echo.
+set "PAIR_MANUAL="
+set /p "PAIR_MANUAL=Digite C para parear pelo codigo de 6 digitos, ou Enter para voltar: "
+if /i not "%PAIR_MANUAL%"=="C" goto MENU
+
+:PAIR_CODIGO
+cls
+echo [7] Emparelhar ADB - Wi-Fi Pairing por codigo...
+echo.
 echo  No aparelho: Depuracao por Wi-Fi ^> Parear com codigo.
 echo  Ali aparecem o IP:PORTA de PAREAMENTO e um codigo de 6 digitos.
 echo  ATENCAO: a porta de pareamento e DIFERENTE da porta de conexao.
@@ -398,7 +411,10 @@ if "%PAIR_ADDR%"=="" (
 echo  [^>] Executando: adb pair %PAIR_ADDR% %PAIR_CODE%
 echo.
 "%ADB%" pair %PAIR_ADDR% %PAIR_CODE%
+
+:PAIR_FIM
 echo.
+call :PICK_DEVICE
 echo === adb devices ===
 "%ADB%" devices
 echo.
