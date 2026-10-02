@@ -50,14 +50,15 @@ const MARGEM_QR = 4;
 const ALFABETO = 'abcdefghijklmnopqrstuvwxyz0123456789';
 
 /**
+ * O randomInt sorteia sem viés; `byte % 36` favoreceria as primeiras letras,
+ * porque 256 não é múltiplo de 36.
+ *
  * @param {number} tamanho
- * @param {(n: number) => Buffer} [aleatorio]
  */
-function textoAleatorio(tamanho, aleatorio = crypto.randomBytes) {
-  const bytes = aleatorio(tamanho);
+function textoAleatorio(tamanho) {
   let texto = '';
   for (let i = 0; i < tamanho; i += 1) {
-    texto += ALFABETO[bytes[i] % ALFABETO.length];
+    texto += ALFABETO[crypto.randomInt(ALFABETO.length)];
   }
   return texto;
 }
@@ -65,13 +66,12 @@ function textoAleatorio(tamanho, aleatorio = crypto.randomBytes) {
 /**
  * Nome e senha novos a cada pareamento: o QR de ontem não serve hoje.
  *
- * @param {(n: number) => Buffer} [aleatorio]
  * @returns {{ nome: string, senha: string }}
  */
-function gerarCredenciais(aleatorio = crypto.randomBytes) {
+function gerarCredenciais() {
   return {
-    nome: `snake-${textoAleatorio(10, aleatorio)}`,
-    senha: textoAleatorio(12, aleatorio),
+    nome: `snake-${textoAleatorio(10)}`,
+    senha: textoAleatorio(12),
   };
 }
 
