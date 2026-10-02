@@ -219,7 +219,7 @@ por chat, e-mail ou Git.
 | 3.3 | Trocar a **senha de primeiro acesso** em Configurações e **redefinir** as contas que nunca entraram | 👤 | A atual é pública no repositório. Consulta no [`RUNBOOK`](docs/RUNBOOK.md) |
 | 3.4 | **Chave FCM de produção** | 👤 | `npx eas-cli@latest credentials -p android` num terminal interativo, **perfil `prod`**, pacote `com.snakethai.app`. Depois: ativar, receber e tocar com o app fechado e aberto |
 | 3.5 | ⚠️ **Dados de demonstração fora de produção** — 🤖 **script no PR #47 (25/09)**; falta a sua escolha (abaixo) e rodar em produção (👤) | 🤖 `executar-projeto` + `banco-de-dados-projeto`, depois 👤 | **O `demo_seed_limpar.sql` não basta.** Ele apaga só as contas `@demo.snakethai.com` e deixa, de propósito, as aulas e as contas de teste. Só que o ano de histórico gravado em produção em 23/09 (785 aulas, 463 mensalidades, presenças e justificativas) criou aulas **sem marca própria** (título "<turma> — treino") e lançamentos para todos os alunos ativos. É preciso um script de limpeza desse pacote, ou uma decisão de "zerar o operacional e manter a configuração" (planos, turmas, grade, textos legais). Backup primeiro. Diga qual e-mail é a conta real de admin |
-| 3.6 | **Configuração real**: chave PIX, grade semanal de cada turma e prazo de guarda do comprovante | 👤 | Prazo recomendado: 90 dias (`update public.academy_settings set proof_retention_days = 90;`), só com aprovação |
+| 3.6 | **Configuração real**: chave PIX, grade semanal de cada turma e prazo de guarda do comprovante | 👤 | **Prazo decidido: 90 dias (D14, 01/10).** Entra pelo `{{prazo_comprovantes}}` dos Dados dos termos, no G5, sem mudar o texto da Política; no banco, `update public.academy_settings set proof_retention_days = 90;`. O registro do pagamento continua por 5 anos mais o exercício |
 | 3.7 | **Dados dos termos** preenchidos em produção → `npm run legal:publicar` → migration de publicação | 👤 + 🤖 | Push e Sentry só depois de publicado. O item 5.2 facilita este; se o aluno real estiver perto, puxe o 5.2 para antes |
 | 3.8 | **Aluno menor de idade**: como colher o consentimento do responsável (LGPD, art. 14) | 👤 | Decisão com o jurídico. Hoje o app não cadastra responsável |
 | 3.9 | **Release Android**: reativar pelo GitHub Actions ou manter a publicação local | 👤 | Recomendação: **manter local** por ora, porque é o caminho que funciona e tem o `versao:verificar`. O workflow fica desabilitado e anotado; reativar se outra pessoa passar a publicar. **Nos dois caminhos, vale a convenção de release da § 12.3 do contrato (3A.3)**: o aviso de atualização depende dela |
@@ -713,6 +713,11 @@ o roteamento do toque (`notificationRouting`).
 
 **Anexos:** usam `POST /v1/justifications/sign-upload {justificationId}` (**G2**).
 
+- [ ] **C11 (01/10), antes da 2.0.0, só depois do "G2 aberto" no Registro do servidor:** o anexo
+  da justificativa troca de rota para `sign-upload {justificationId}` + `anexar_a_justificativa`;
+  o app tira `proof_*` das colunas que o dono grava direto e amarra o sufixo `-2` ao `attempt`
+  (`REVIEW-FASE4.md`, risco médio). PR próprio.
+
 ### 4.9 Solicitações e troca de aula (abre G3)
 
 Dois PRs, nesta ordem. O G3 abre no fim do 4.9b.
@@ -881,7 +886,7 @@ acharam classes de defeito que podem voltar na implementação:
 **Na ordem do § 14 do contrato:**
 
 1. **G2** já aberto (servidor, na v3 com `allowed_formats` na assinatura e a exclusão nos três
-   tipos de recurso);
+   tipos de recurso), e depois dele a **C11** do app mesclada (4.8); a **C5** da web no ar;
 2. `send-push` nova, com os **dez** tipos novos e o `default`;
 3. `scripts\db-push-prod.bat`;
 4. `create-staff`;
@@ -908,6 +913,14 @@ servidor.
 > do 5.1a. E a central (5.1c) passa a guardar os tipos novos da Fase 4: aula cancelada, aula
 > reativada, justificativa aprovada e negada, chamada corrigida, solicitação pendente e os quatro
 > de troca.
+
+> **D13 (01/10): nada da Fase 5 é adiantado enquanto a 2.0.0 espera o dono** — nem o 5.2, nem o
+> desenho da central (D9), nem o 5.1a/5.1b.
+>
+> **D9 (29/09): a central de avisos também aparece na web, só de leitura.** No 5.1, desenhe a
+> central para o app e a web lerem do mesmo lugar (tabela ou RPC que o aluno lê, com RLS de aluno)
+> e ponha esse formato **no contrato antes do 5.1c**. A web implementa (7.1 do `ROADMAP-web.md`)
+> depois do 5.1 do app na `main`.
 
 O maior item da fila: mexe no banco, nas Edge Functions (`send-push`) e no app. **Não é uma
 entrega só.** São quatro PRs, nesta ordem, cada um publicável sozinho.
@@ -947,9 +960,10 @@ entrega só.** São quatro PRs, nesta ordem, cada um publicável sozinho.
   ("você desligou este aviso").
 - **Marcação de lido por pessoa**, que hoje não existe.
 - ⚠️ **Impacto legal:** a fila apaga tudo com **30 dias**. Guardar para consulta exige prazo
-  maior ou tabela própria, e **prazo de guarda é conteúdo da Política de Privacidade**. Isso
-  gera **uma versão nova da Política e um novo aceite**, no app **e na web**. O prazo é decisão
-  sua com o jurídico, e precisa vir antes do código.
+  maior ou tabela própria, e **prazo de guarda é conteúdo da Política de Privacidade**.
+  **Prazo decidido: 90 dias (D17, 01/10).** A versão da Política que vier com o 5.1c troca a linha
+  "histórico de notificações: 30 dias" (`docs/legal/POLITICA-DE-PRIVACIDADE.md`) e gera **um novo
+  aceite**, no app **e na web** (7.2 do `ROADMAP-web.md`). A 1.0 do G5 não muda.
 
 **5.1d — Recado em massa**
 
@@ -967,8 +981,9 @@ entrega só.** São quatro PRs, nesta ordem, cada um publicável sozinho.
 
 > **Aluno de iPhone não recebe o recado.** A web não tem push nem central, e o aluno de iPhone
 > é exatamente quem perderia "sem aula na quinta". Decisão sua, registrada em
-> [`snake-web/ROADMAP-web.md`](../snake-web/ROADMAP-web.md), item 7.1. **Decida antes do 5.1c**, para a
-> central nascer com o formato que as duas interfaces vão ler.
+> [`snake-web/ROADMAP-web.md`](../snake-web/ROADMAP-web.md), item 7.1. **Decidido (D9):** a central
+> também na web, só de leitura; a central nasce com o formato que as duas interfaces vão ler. O
+> recado em massa para quem usa iPhone continua em aberto (5.1d).
 
 ### 5.2 Dados dos termos com valores recomendados prontos
 
@@ -984,7 +999,9 @@ preenchidos, e o admin só confere, ajusta e completa a identificação.
 - O banco continua recusando publicar com campo em branco. Um valor recomendado é só um
   ponto de partida, não um campo preenchido pela academia.
 
-**Pode ser antecipado** para antes do item 3.7, se o primeiro aluno real estiver perto: não depende da Fase 4.
+**Não é adiantado até a 2.0.0 (D13, 01/10).** Depois dela, pode vir antes do item 3.7, se o
+primeiro aluno real estiver perto: não depende da Fase 4. O prazo do comprovante já é decisão do
+dono (90 dias, D14).
 
 ---
 
@@ -1008,10 +1025,22 @@ preenchidos, e o admin só confere, ajusta e completa a identificação.
 | Fixar a versão da CLI do Supabase no CI | Sim, se o job falhar de novo ao rerodar | 0.6 |
 | Publicar pelo Actions ou localmente | Localmente, por ora, com a convenção da § 12.3 nos dois caminhos | 3.9, 3A.3 |
 | Consentimento do responsável por aluno menor | Definir com o jurídico | 3.8 |
-| Prazo de guarda da imagem do comprovante | 90 dias | 3.6 |
-| Prazo de guarda da central de avisos | Definir com o jurídico **antes** do 5.1c; entra na Política | 5.1c |
-| Central de avisos também na web | Sim, só leitura | 5.1 e web 7.1 |
 | Limite de recados por dia | Definido no plano do 5.1d | 5.1d |
+| Recado em massa para quem usa iPhone (a web não tem push) | Decidir antes do 5.1d | 5.1d e web 7.1 |
+
+**Decididas em 29/09 e 01/10** (coordenação; saíram desta tabela):
+
+- **D8:** "Baixe" fica na 2ª dica do aviso de atualização, como na `release/1.9.0` e no contrato.
+- **D9:** central de avisos também na web, só de leitura. O 5.1 desenha para os dois lerem do mesmo
+  lugar, e o formato entra no contrato antes do 5.1c.
+- **D13:** nada adiantado enquanto a 2.0.0 espera o dono (nem 5.2, nem a central, nem 5.1a/5.1b).
+- **D14:** imagem do comprovante por **90 dias**, pelo `{{prazo_comprovantes}}` dos Dados dos termos
+  no G5, sem mudar o texto da Política (3.6).
+- **D17:** central de avisos com guarda de **90 dias**; a versão da Política do 5.1c troca a linha de
+  30 dias do histórico de notificações e gera aceite novo no app e na web.
+- **C11:** depois do G2, o anexo da justificativa vai por `sign-upload {justificationId}` +
+  `anexar_a_justificativa`, sem `proof_*` nas colunas do dono e com o `-2` amarrado ao `attempt` (4.8).
+- **C5:** a web mostra a frase do banco no `23514`; quem corrige é a web, e o app não muda nada.
 
 **Decididas em 24–25/09** (saíram desta tabela): guarda do atestado e dos anexos de motivo em
 **180 dias depois da decisão** (D54); T21 e T30 confirmadas; T10 vetada na média do Painel (D55);
@@ -1100,7 +1129,7 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-09-29 | **1.9.0 preparada, sem publicar:** a `main` já tem o esquema v3, que só vai para a produção na 2.0.0 (§ 14). Por isso a release sai de `release/1.9.0`, cortada do `3577c4b` (merge do #45, o último ponto compatível com a produção 1.8.0; o `versao:verificar` não aponta migration nem Edge Function a publicar). Ela traz o aviso de atualização, o 1.5, o 2.4 e a 2ª dica (v4), com o CHANGELOG em linguagem de usuário. A tag `v1.9.0` existe **só no computador do dono**, e o **PR #54 (rascunho)** leva a release de volta à `main` depois de publicada. |
 | 2026-09-29 | **4.3a no PR #55 (banco):** migration `20260929110000_planos_grade_contato` com os históricos de plano e de trancamento mantidos por gatilho (T39: deixar de ser fixo e trancamento), `inicio_da_semana_de_aula`, grade com público (`p_audience` no fim da assinatura, DROP + CREATE) e horário "só livres" sem turma, fim de horário que encerra as trocas permanentes nunca no passado, a aula cancelada que a grade não apaga nem altera, `trocas_permanentes_do_horario` (só admin) e **`contato_da_academia`**. Banco local recriado às 12:21. **4.3b no PR #56 (app):** modalidade e cota nos planos, Dias de aula e WhatsApp (+55) em Configurações, **Dados › Falar com a academia**, o componente `BlocoDeContato` pronto para os negados (4.8, 4.9a e 4.9b) e o texto da D58 em Excluir turma. **Para a web:** `contato_da_academia` já existe no banco local e na `main`, com o retorno do § 5.4. |
 | 2026-09-29 | **4.3c no PR #57 (grade):** "Quem pode participar" (Fixos · Livres · Fixos e livres, padrão Fixos e livres) no horário, entrada **Aulas só para livres** em Turmas (horários sem turma), selo do público na grade e o aviso **"{n} aluno(s) têm troca permanente com este horário."** antes de editar e de encerrar. **4.3 fechado**, só falta o teste no aparelho. Próximo: 4.4. |
-| 2026-09-29 | **4.4a no PR #58 (banco):** `aulas_do_aluno` e `menu_de_aulas` (mesma função-base, mesmas colunas e ordem), `declarar_aula`, `definir_meta_semanal` e `meta_da_semana`. **As travas da declaração (§ 9.2) valem também para o upsert direto:** aula cancelada ou que já começou, aula só de fixos para o livre, extra do fixo em qualquer público (sem aula dele no horário), duas aulas no mesmo horário e trocas; o "Não vou" de fixo fora da grade só limpa. **Correção de segurança do 4.1, na mesma migration:** `enforce_class_state_rules` e `enforce_attendance_rules` usavam `not (v_sistema or v_pela_rpc)` com a variável de sessão sem `coalesce`. Numa sessão nova da API, `current_setting` dá nulo e a trava não disparava: um `update` direto de `cancelled_at`, `attendance_taken_at` ou de `status` passava fora das RPCs. Nenhum cliente usava esse caminho (conferido no app e na web), e está em teste agora (S0). **Para a web:** o "Vou"/"Não vou" dela (upsert direto) passa a ser recusado nos casos do contrato, com a frase do banco (`23514`); `aulas_do_aluno` e `menu_de_aulas` já estão na `main` (parte do G3). Banco local recriado às 13:01. |
+| 2026-09-29 | **4.4a no PR #58 (banco):** `aulas_do_aluno` e `menu_de_aulas` (mesma função-base, mesmas colunas e ordem), `declarar_aula`, `definir_meta_semanal` e `meta_da_semana`. **As travas da declaração (§ 9.2) valem também para o upsert direto:** aula cancelada ou que já começou, aula só de fixos para o livre, extra do fixo em qualquer público (sem aula dele no horário), duas aulas no mesmo horário e trocas; o "Não vou" de fixo fora da grade só limpa. **Correção de segurança do 4.1, na mesma migration:** `enforce_class_state_rules` e `enforce_attendance_rules` usavam `not (v_sistema or v_pela_rpc)` com a variável de sessão sem `coalesce`. Numa sessão nova da API, `current_setting` dá nulo e a trava não disparava: um `update` direto de `cancelled_at`, `attendance_taken_at` ou de `status` passava fora das RPCs. Nenhum cliente usava esse caminho (conferido no app e na web), e está em teste agora (S0). **Para a web:** o "Vou"/"Não vou" dela (upsert direto) passa a ser recusado nos casos do contrato, com a frase do banco (`23514`) — *corrigido em 02/10 pela C5: a web recebe a frase, mas hoje a joga fora e mostra a de conexão; quem corrige é a web*; `aulas_do_aluno` e `menu_de_aulas` já estão na `main` (parte do G3). Banco local recriado às 13:01. |
 | 2026-09-29 | **4.4 no PR #59 (app):** a tela Aulas do aluno lê `aulas_do_aluno` e declara por `declarar_aula` nas três modalidades (livre com cota e o aviso de acima da cota com Desfazer; à vontade com a meta e a folha "Meta da próxima semana"; fixo com Vou/Não vou, extras e os selos de troca). O menu **Escolher aulas → Aulas da semana** tem esta semana e a próxima, um bloco por dia de aula. Os botões de troca ficam no 4.9b. **4.4 fechado**, só falta o aparelho. Próximo: 4.5. |
 | 2026-09-29 | **4.5a no PR #60 (banco): a frequência nova.** `frequencia_semanal`, `frequencia_do_mes` e `semanas_do_mes` como na § 11.6, sobre **uma conta só** (`frequencia_por_semana`: fixo pela `grade_efetiva_do_fixo`, livre com cota, oferta, abonos T29/T17 e Semana Extra D10, à vontade com a meta). `frequencia_mensal` (legado) com o ritmo da § 15: **para a web e o APK 1.8, `counted_classes` passa a ser o esperado até agora, e a justificada sai do total**; o percentual continua nunca nulo (100 com esperado 0). `attendance_monthly` com `schedule_mode`, `expected`, `excused` e `cancelled` (antigas preenchidas; `group_id` = turma em que terminou o mês). `fechar_frequencia_do_mes` **diário** (cron `20 3 * * *`), com a fila `attendance_recalc_queue` para o recálculo do T31. Painel pelo ritmo, sem teto e sem o à vontade (D55, T10, D35). Regressão `regressao_frequencia_nova.sql` com a § 11.5 inteira (80 conferências); F2, F4 e F6 de turma e trancamento reescritos, e os testes que gravavam o formato antigo ajustados. Plano em `docs/planos/PLANO-4.5-frequencia.md`. **Nada em produção:** entra no próximo `db-push-prod.bat`, pelo dono. |
 | 2026-09-29 | **4.5b no PR #61 (app):** cartão da tela Aulas com **Semana** e **Mês** (no à vontade, **Meta da semana** e **Meta do mês**), percentual sem teto com acento a partir de 100%, "{a} de {e}" e "—" com esperado 0, lendo `frequencia_semanal` e `frequencia_do_mes`. A tela **Frequência** passa a mostrar o mês escolhido (seletor com o mês corrente e os fechados), os cartões Mês e Semana extra, a tabela das semanas com o acumulado do mês, a explicação da Semana extra, o aviso **"Fecha em {dd/mm}, quando a semana extra terminar"** e a dica da conta por modalidade (`semanas_do_mes`). O Painel já aceitava média acima de 100% e "—". A chamada continua no legado `frequencia_mensal` até o 4.6. **Achado fora do escopo:** o token `info` do tema é #1E3A8A nos dois modos e fica ilegível no escuro (ex.: `PagamentoScreen`); a tela nova não o usa. Roteiro do aparelho em `docs/planos/ENTREGA-4.5-frequencia.md`. |
@@ -1126,3 +1155,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-10-01 | **Pareamento do ADB por QR code no `menu.bat`** (pedido do dono, fora das fases; só ferramenta de desenvolvimento, nada no app nem na produção). A opção `[7]` roda `scripts/parear-adb-qr.js`: mostra o QR `WIFI:T:ADB;S:…;P:…;;` (o mesmo fluxo do Android Studio), espera o celular anunciar o `_adb-tls-pairing` pelo mDNS, roda o `adb pair` e conecta, esperando a conexão automática do adb antes de abrir outra (evita a duplicata). O QR vem do `toqr` que já acompanha o Expo CLI; sem ele, ou se o QR não for lido, o menu volta ao pareamento por código. |
 | 2026-10-02 | **C13: o teste SQL do perfil não depende mais do dia do mês** (PR #85, só dado de teste). O bloco do financeiro de `regressao_perfis.sql` derivava a competência de `current_date - 30` e `- 5`, que caem no mesmo mês nos dias 1 a 5; a `payments_unico_por_competencia` derrubava o job "Regressão de segurança no banco" e deixava a `main` vermelha desde o #82. Agora as quatro mensalidades ficam em M-3, M-2, M-1 e M+1 a partir do mês corrente, e o P3 prova o mesmo financeiro. Prova: o arquivo antigo falha com a data num dia 3 e passa num dia 15; o novo passa nos dias 1, 5, 15 e 31, em 31/12, 01/01 e 05/03. Os outros testes SQL que gravam `payments` usam competências fixas e não colidem. **Banco local recriado às 12:41** (`scripts\db-dev test`, todos verdes; C6). Plano: `docs/planos/PLANO-C13-competencia-no-teste-sql.md`. |
 | 2026-10-02 | **Contrato v5 na `main`** (aprovado pelo dono em 01/10, D12): os quatro itens da auditoria da Fase 4, que já estavam no banco desde o #79. § 9.1 (A1): decide e lê o atestado de aula só quem já estava na aula quando a justificativa chegou ou está escalado no horário (a § 13.5 acompanha); § 9.4 e § 6 (B2): `class_swap_periods` com FKs `on delete restrict`, `encerrar_horario_da_grade` recusa com a data mínima e `excluir_turma` só encerra o horário com período; `quem_sera_avisado` (§ 6.1) e `solicitacao_para_decidir` (§ 9.3) entram na lista. **Nenhum nome mudou. Para o `snake-server` e o `snake-web`: nada a mudar.** O 5.5 do servidor chama `pode_decidir_justificativa` com a mesma assinatura (C10). |
+| 2026-10-02 | **Decisões do dono de 29/09 e 01/10 registradas** (coordenação; a entrada de 29/09 não tinha chegado a este chat, C7). **D8:** "Baixe" fica na 2ª dica do aviso de atualização. **D9:** central de avisos também na web, só de leitura; o 5.1 desenha para os dois lerem do mesmo lugar, e o formato entra no contrato antes do 5.1c. **D13:** nada da Fase 5 é adiantado até a 2.0.0. **D14:** imagem do comprovante por 90 dias, pelo `{{prazo_comprovantes}}` dos Dados dos termos (3.6, G5), sem mudar o texto. **D17:** central com guarda de 90 dias, que troca a linha "histórico de notificações: 30 dias" na versão da Política do 5.1c (aceite novo no app e na web; a 1.0 do G5 não muda). **C11:** item novo no 4.8, antes da 2.0.0 e só com o "G2 aberto" do servidor. **Correção da linha do 4.4a (29/09) pela C5:** a web **recebe** a frase do banco no `23514`, mas hoje a joga fora e mostra "Não foi possível avisar. Verifique a conexão e tente de novo."; quem corrige é a web, e **o app não muda nada**. Tabela "Decisões em aberto" atualizada. |
