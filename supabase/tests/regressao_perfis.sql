@@ -21,11 +21,18 @@ insert into public.profiles (id, role, name, cpf, is_first_login, status, group_
   ('db000000-0000-4000-8000-000000000003', 'user', 'P1 Aluno F', '62000000003', false, 'active', 'p1-g', null, now() - interval '90 days');
 
 -- Financeiro de F: uma paga em dia, uma paga com atraso, uma vencida e uma aberta.
-insert into public.payments (user_id, status, due_date, reference_month, paid_at, amount_cents) values
-  ('db000000-0000-4000-8000-000000000003', 'paid', current_date - 60, date_trunc('month', current_date - 60)::date, (current_date - 61)::timestamp at time zone 'America/Sao_Paulo', 10000),
-  ('db000000-0000-4000-8000-000000000003', 'paid', current_date - 30, date_trunc('month', current_date - 30)::date, (current_date - 20)::timestamp at time zone 'America/Sao_Paulo', 10000),
-  ('db000000-0000-4000-8000-000000000003', 'overdue', current_date - 5, date_trunc('month', current_date - 5)::date, null, 10000),
-  ('db000000-0000-4000-8000-000000000003', 'open', current_date + 25, date_trunc('month', current_date + 25)::date, null, 10000);
+-- Cada uma num mês contado a partir do mês corrente (C13): com `current_date - N dias`,
+-- duas caíam na mesma competência nos dias 1 a 5 e a payments_unico_por_competencia
+-- derrubava o teste. Vencimento no dia 10; as pagas e a vencida ficam sempre no passado.
+insert into public.payments (user_id, status, due_date, reference_month, paid_at, amount_cents)
+select 'db000000-0000-4000-8000-000000000003', v.status::public.payment_status,
+       c.competencia + 9, c.competencia,
+       (c.competencia + v.dia_pago - 1)::timestamp at time zone 'America/Sao_Paulo', 10000
+  from (values ('paid', -3, 9), ('paid', -2, 20), ('overdue', -1, null), ('open', 1, null))
+         as v(status, meses, dia_pago)
+ cross join lateral (
+   select (date_trunc('month', current_date) + make_interval(months => v.meses))::date as competencia
+ ) as c;
 
 create temp table base on commit drop as
 select (date_trunc('month', (now() - interval '3 days') at time zone 'America/Sao_Paulo') + interval '1 day 10 hours')
