@@ -1,6 +1,6 @@
 # Contrato entre os projetos — Snake Thai
 
-> **Versão:** v4 · 2026-09-29 (v3 de 2026-09-24, revisada em 2026-09-25) · **Estado:** regras de negócio aprovadas
+> **Versão:** v5 · 2026-10-02 (v4 de 2026-09-29; v3 de 2026-09-24, revisada em 2026-09-25) · **Estado:** regras de negócio aprovadas
 > pelo dono (§ 1), **com as perguntas P1–P22 respondidas em 25/09** (§ 16); decisões técnicas
 > vetáveis (§ 2); telas aguardando a aprovação dos mockups ("Mockups Snake Thai — Horário
 > livre", **versão 8**, de 25/09: menu de aulas e troca na linha G; histórico de turma, contato e aviso de atualização na linha H).
@@ -18,6 +18,12 @@
 > (§ 0.1, § 9.1); a 2ª dica do aviso de atualização (§ 3, § 12.3); e a **segunda barreira do
 > servidor** (§ 13.5), que diz o que o `snake-server` pode chamar para conferir se quem pede é
 > admin ou pode decidir a justificativa.
+>
+> **Novo na v5** (aprovada pelo dono em 01/10, D12 da coordenação): os quatro itens da auditoria
+> da Fase 4 (`REVIEW-FASE4.md`). Quem decide e lê o atestado de aula (§ 9.1, A1); o período de troca
+> que segura o horário da grade (§ 9.4 e § 6, B2); e duas funções que já existiam fora da lista,
+> `quem_sera_avisado` (§ 6.1) e `solicitacao_para_decidir` (§ 9.3). **Nenhum nome muda**, e o
+> servidor e a web não precisam mudar nada.
 >
 > **Caminho absoluto** (para os chats de outros repositórios):
 > `C:\Users\USER\Desktop\GIT\academy\snake-thai\docs\CONTRATO.md`
@@ -446,6 +452,7 @@ public.contato_da_academia() returns jsonb
 | `public.ocorrencias_da_grade` | `left join public.groups g on g.id = s.group_id`, com `where s.group_id is null or g.archived_at is null` (o horário sem turma gera aula). Mudou o retorno: DROP + CREATE (§ 0.1). |
 | `gerar_aulas_da_grade`, `encerrar_horario_da_grade`, `excluir_turma` | Copiam `audience`. **Nunca apagam nem alteram aula cancelada.** |
 | Fim de horário e trocas permanentes (v3, T37, T39) | `encerrar_horario_da_grade`, `excluir_turma` e `salvar_horario_da_grade` com `valid_until` novo ou mudado **encerram** os `class_swap_periods` **vigentes** (T37, inclusive os que já têm `ended_at` no futuro) com `to_schedule_id` = esse horário, com `ended_at = greatest(now(), 00:00 SP do dia seguinte ao último dia)` e `end_reason = 'schedule_ended'`, e **cancelam** as trocas permanentes pendentes que envolvem esse horário. **Um período nunca é encerrado com data passada:** hoje essas funções aceitam último dia no passado (`salvar_horario_da_grade` aceita qualquer `valid_until >= valid_from`; `encerrar_horario_da_grade`, ontem), e a grade efetiva de antes de `now()` não muda por fim de horário (D49). **Se o `valid_until` for adiado ou retirado**, os períodos com `end_reason = 'schedule_ended'` e `ended_at` ainda no futuro ganham o novo fim (ou voltam a nulo, com `end_reason` nulo). O período aprovado **depois** de o horário ganhar fim já nasce com ele (§ 9.4). Os períodos com `from_schedule_id` = esse horário continuam (não têm mais aula para tirar). Nenhuma assinatura muda por causa disso. |
+| Horário com período de troca (v5, B2) | Como as FKs de `class_swap_periods` são `on delete restrict` (§ 9.4), as funções da grade nunca apagam um horário que algum período usa, de origem ou de destino. **`encerrar_horario_da_grade`** com último dia antes do `valid_from` (o caso que apagaria o horário nunca usado) recusa com `23514`, *"Este horário tem troca permanente de aluno: encerre com uma data a partir de {dd/mm/aaaa}."*, com o `valid_from` do horário. **`excluir_turma`** deixa esse horário de fora do "apagar os nunca usados": ele fica só encerrado, como os outros, e a turma é arquivada. Nenhuma assinatura muda. |
 | `public.trocas_permanentes_do_horario(p_schedule_id uuid)` | **NOVA (v3).** `returns table (user_id uuid, student_name text, papel text /* 'origem' \| 'destino' */, started_at timestamptz)`: os períodos **vigentes agora** (T37) que usam o horário. **Só `is_admin()`**. A tela da grade mostra, antes de encerrar ou editar: **"{n} aluno(s) têm troca permanente com este horário."** |
 | `class_teachers` | `revoke select on public.class_teachers from authenticated; grant select (class_id, teacher_id, created_at) on public.class_teachers to authenticated`. **Aula cancelada:** inclusão e exclusão de `class_teachers` por `authenticated` são recusadas (`23514`); só o admin mexe. **Aula já iniciada:** só pelas RPCs de chamada (a trava deixa passar a cascata quando a aula já não existe). |
 
@@ -454,6 +461,14 @@ public.contato_da_academia() returns jsonb
 ```sql
 public.cancelar_aula(p_class_id uuid, p_motivo_id uuid) returns void
 public.reativar_aula(p_class_id uuid, p_motivo_id uuid) returns void
+public.quem_sera_avisado(p_class_id uuid) returns table (   -- v5: existia desde o 4.7, fora da lista
+  antes_da_aula boolean,   -- a aula ainda não começou
+  fixos int, livres int,   -- alunos avisados antes da aula (T42)
+  alunos_evento int,       -- no evento, todos os alunos
+  professores text[],      -- nomes da equipe da aula, em ordem alfabética
+  admins int
+)  -- a prévia da folha Cancelar aula: os mesmos destinatários do aviso, sem quem chama.
+   -- Quem pode cancelar (professor da aula ou admin); senão, 42501. Nunca devolve id de aluno.
 ```
 
 - **Quem:** `is_admin()` ou membro de `class_teachers` da aula; senão, `42501`. Um não-admin faz
@@ -794,10 +809,14 @@ Se um anexo falhar, o app avisa e deixa tentar de novo ou seguir sem ele (D18).
 - o dono;
 - `is_admin()`;
 - **enquanto pendente**, quem `public.pode_decidir_justificativa(id)`:
-  - `scope = 'class'`: membro de `class_teachers` da aula;
+  - `scope = 'class'` (**v5, A1**): membro de `class_teachers` da aula **que já estava nela quando a
+    justificativa chegou** (`class_teachers.created_at <= absence_justifications.created_at`), ou
+    professor escalado no horário da aula (`class_schedule_teachers` do `schedule_id` dela). O
+    professor pode se incluir em qualquer aula futura, e isso não dá acesso ao atestado (D22);
   - `scope = 'week'`: T18.
 
-A função é `security definer` e `stable`, e é a mesma usada pelo gatilho e pelas RPCs. **Depois
+A função é `security definer` e `stable`, e é a mesma usada pelo gatilho e pelas RPCs. A
+assinatura não mudou na v5: a regra só ficou mais restrita. **Depois
 da decisão, só o dono e o admin.** É isso que atende D22, e o `/v1/justifications/view-url`
 segue essa política.
 
@@ -916,6 +935,11 @@ Prazo de todos: 7 dias depois da aula (T19).
 ```sql
 public.abrir_solicitacao(p_kind public.roll_call_request_kind, p_class_id uuid, p_motivo_id uuid) returns uuid
 public.decidir_solicitacao(p_id uuid, p_decisao public.justification_status, p_nota text) returns void
+public.solicitacao_para_decidir(p_id uuid) returns table (   -- v5: existia desde o 4.9a, fora da lista
+  id uuid, kind public.roll_call_request_kind, class_id uuid, class_title text,
+  class_date_time timestamptz, subject_id uuid, subject_name text,
+  motivo_id uuid, texto text, anexos int, created_at timestamptz
+)  -- a folha de decisão: só quem pode decidir o pedido, enquanto pendente; senão, 42501
 public.minhas_solicitacoes() returns table (
   id uuid, kind public.roll_call_request_kind, class_id uuid, class_title text,
   class_date_time timestamptz, status public.justification_status,
@@ -963,7 +987,7 @@ pelas RPCs, como em `roll_call_requests`. O APK 1.8 não conhece nenhuma delas.
 | índices de `class_swaps` | Únicos parciais: `class_swaps_uma_ativa_por_origem` em `(user_id, from_class_id) where kind = 'once' and status in ('pending', 'approved')`; `class_swaps_uma_ativa_por_destino` em `(user_id, to_class_id) where kind = 'once' and status in ('pending', 'approved')`; `class_swaps_uma_permanente_pendente` em `(user_id, from_schedule_id) where kind = 'permanent' and status = 'pending'`. Comum: `class_swaps_pendentes_por_destino` em `(to_class_id) where status = 'pending'`. |
 | gatilho `cancelar_troca_de_aula_apagada` | `before update of from_class_id, to_class_id on class_swaps`. Quando a FK anula uma das aulas (a aula foi apagada), a troca `pending` vira `cancelled` (`decided_via = 'system'`, `decided_at = now()`), **exceto a avulsa cuja aula nova foi apagada com a original já começada, que vira `approved` pelo sistema** (`decided_via = 'system'`, `decided_at = now()`, T50); a `approved` continua (T39). É a **única** escrita em `class_swaps` fora das RPCs, dos gatilhos da T39 e da T53 (`registrar_periodo_de_turma`, § 5.2) e do cron diário da § 8 (P21). |
 | `public.class_swap_reviews` | `swap_id uuid pk → class_swaps on delete cascade`, `reviewer_id uuid null → profiles on delete set null`, `review_note text null` (`class_swap_reviews_nota_valida`: `review_note is null or char_length(btrim(review_note)) between 1 and 500`), `decided_via text not null` (`'review'` ou `'roll_call'`), `decided_at timestamptz not null`. Guarda a **última** aprovação ou negativa (a volta de expirada para aprovada, T35, substitui a linha). **Sem grant nem política para `authenticated`**, como as outras duas: o admin lê pela `trocas_decididas`. A nota nunca fica na tabela principal (D16). |
-| `public.class_swap_periods` | **O histórico da grade permanente** (T37). `id uuid pk default gen_random_uuid()`, `user_id uuid not null → profiles on delete cascade`, `swap_id uuid null → class_swaps on delete set null`, `from_schedule_id uuid not null → class_schedules on delete cascade`, `to_schedule_id uuid not null → class_schedules on delete cascade` (um horário só é apagado se nunca começou, § 6), `started_at timestamptz not null`, `ended_at timestamptz null`, `end_reason text null`. Constraints: `class_swap_periods_fim_coerente`: `(ended_at is null) = (end_reason is null) and (ended_at is null or ended_at >= started_at)`; `class_swap_periods_motivo_valido`: `end_reason in ('replaced', 'reverted', 'group_changed', 'plan_changed', 'schedule_ended')`; `class_swap_periods_horarios_diferentes`: `from_schedule_id <> to_schedule_id`. Únicos parciais: `class_swap_periods_uma_aberta_por_origem` em `(user_id, from_schedule_id) where ended_at is null` e `class_swap_periods_uma_aberta_por_destino` em `(user_id, to_schedule_id) where ended_at is null`. **Os índices só enxergam `ended_at` nulo**, e um período com `ended_at` no futuro ainda é **vigente** (T37): a regra "no máximo **um período vigente** por origem e por destino" é conferida por quem escreve, com `for update` nos períodos do aluno. **Nunca é apagado** (exceto a conta excluída, § 12.1). O `ended_at` **nunca vai para o passado**: só é gravado ou **antecipado** (nunca para antes de `now()`) enquanto ainda está no futuro; as únicas outras mudanças são o fim `'schedule_ended'` ainda no futuro, que acompanha o `valid_until` do horário (§ 6), e o fim `'plan_changed'` ainda no futuro, que volta a nulo se a semana voltar a ser fixa (tabela abaixo). Escrita: só `decidir_troca_de_aula`, as funções da grade da § 6 e os gatilhos da T39 (inclusive o `registrar_periodo_de_turma`, T53). |
+| `public.class_swap_periods` | **O histórico da grade permanente** (T37). `id uuid pk default gen_random_uuid()`, `user_id uuid not null → profiles on delete cascade`, `swap_id uuid null → class_swaps on delete set null`, `from_schedule_id uuid not null → class_schedules on delete restrict`, `to_schedule_id uuid not null → class_schedules on delete restrict` (**v5, B2:** o período é histórico e segura o horário; um horário com período nunca é apagado, só encerrado, § 6), `started_at timestamptz not null`, `ended_at timestamptz null`, `end_reason text null`. Constraints: `class_swap_periods_fim_coerente`: `(ended_at is null) = (end_reason is null) and (ended_at is null or ended_at >= started_at)`; `class_swap_periods_motivo_valido`: `end_reason in ('replaced', 'reverted', 'group_changed', 'plan_changed', 'schedule_ended')`; `class_swap_periods_horarios_diferentes`: `from_schedule_id <> to_schedule_id`. Únicos parciais: `class_swap_periods_uma_aberta_por_origem` em `(user_id, from_schedule_id) where ended_at is null` e `class_swap_periods_uma_aberta_por_destino` em `(user_id, to_schedule_id) where ended_at is null`. **Os índices só enxergam `ended_at` nulo**, e um período com `ended_at` no futuro ainda é **vigente** (T37): a regra "no máximo **um período vigente** por origem e por destino" é conferida por quem escreve, com `for update` nos períodos do aluno. **Nunca é apagado** (exceto a conta excluída, § 12.1). O `ended_at` **nunca vai para o passado**: só é gravado ou **antecipado** (nunca para antes de `now()`) enquanto ainda está no futuro; as únicas outras mudanças são o fim `'schedule_ended'` ainda no futuro, que acompanha o `valid_until` do horário (§ 6), e o fim `'plan_changed'` ainda no futuro, que volta a nulo se a semana voltar a ser fixa (tabela abaixo). Escrita: só `decidir_troca_de_aula`, as funções da grade da § 6 e os gatilhos da T39 (inclusive o `registrar_periodo_de_turma`, T53). |
 
 **Grade efetiva do fixo (T33).** A única resposta para "esta aula é dele?":
 
@@ -1868,7 +1892,7 @@ que não devia: o servidor responde **403** e registra o alarme (nível `error`,
 | Rota | Leitor legítimo além do dono | O que o servidor chama (com o token de quem pede) |
 | --- | --- | --- |
 | `POST /v1/proofs/view-url` | admin | `POST /rest/v1/rpc/is_admin` · corpo `{}` |
-| `POST /v1/justifications/view-url` | admin e, **com a justificativa pendente**, quem pode decidi-la (professor da aula no `scope = 'class'`; T18 no `scope = 'week'`) | `rpc/is_admin` · corpo `{}`; se der `false`: `POST /rest/v1/rpc/pode_decidir_justificativa` · corpo `{"p_id": "<justificationId>"}` |
+| `POST /v1/justifications/view-url` | admin e, **com a justificativa pendente**, quem pode decidi-la (professor da aula que já estava nela quando a justificativa chegou, ou escalado no horário, no `scope = 'class'`, v5; T18 no `scope = 'week'`) | `rpc/is_admin` · corpo `{}`; se der `false`: `POST /rest/v1/rpc/pode_decidir_justificativa` · corpo `{"p_id": "<justificationId>"}` |
 
 ```sql
 public.is_admin() returns boolean                                 -- já existe; execute para authenticated
@@ -2016,3 +2040,4 @@ escolher; o caminho vale se o dono não vetar até o G0:
 | v3 | 2026-09-24 | Decisões novas do dono (D43–D55): menu de escolher aulas para as três modalidades; troca de aula do fixo, só nesta semana ou permanente, decidida pela equipe da aula nova ou por um admin, com "Troca pendente" resolvida pela chamada; aula extra do fixo sem aprovação; contato da academia; aviso de atualização do app; guarda de 180 dias; média do Painel sem teto. T21 e T30 confirmadas, T10 com a média vetada; D6, D22, D29, D34 e D42 ampliadas. **Estrutura nova:** § 9.4 (`class_swaps`, `class_swap_reviews`, `class_swap_periods` e a função única `grade_efetiva_do_fixo`), § 9.5, § 5.4, § 12.2 e § 12.3; T33–T48; § 16 com as perguntas abertas P1–P17. **Revisão adversarial da v3 no mesmo dia, antes de chegar aos ROADMAPs**, por 3 lentes (conta, segurança/LGPD, nomes), com 35 achados; a versão continua v3 porque nenhum chat implementou nada dela. **Mudanças da revisão:** período permanente "vigente" definido (T37), nunca encerrado no passado e já nascido com o fim do horário de destino; permanente recusada com mudança de plano marcada e com a original já começada; conferência na volta de expirada para aprovada (T35); aula nova de troca expirada visível e contestável; T49 (quem decide a permanente); `pode_ler_motivo` para a RLS dos motivos; `minhas_trocas_permanentes` e exportação completa; gatilho que protege `attachment_retention_days`; link do aviso de atualização montado pela tag; `can_swap_from_permanent`, `swap_decided_via`, `pela_chamada`; evento sem `'extra'`; destinatários de `aula_reativada`; § 11.5 corrigida e ampliada; perguntas P18–P22. **No servidor, a v3 acrescenta só** `allowed_formats` na assinatura e a exclusão nos três tipos de recurso (§ 13); os anexos da troca usam `/v1/motivos`. |
 | v3 (revisão) | 2026-09-25 | **Respostas do dono às P1–P22** (§ 16), ainda antes de qualquer chat implementar a v3 (por isso continua v3). **D56:** o fixo marca extra em qualquer aula, inclusive "só livres" (veta o público da T40). **D57:** troca avulsa aprovada, inclusive a reposição, com a aula nova cancelada pela academia vira abono (veta a exceção da T39); **T50** estende à troca pendente com a original já começada (aprovada pelo sistema; a reativação a devolve a pendente). **D58: histórico de turma nesta rodada** — tabela `student_group_periods` gravada pelo gatilho `registrar_periodo_de_turma` em qualquer caminho (inclusive o APK 1.8), backfill a partir de `group_since` (T52), `grade_efetiva_do_fixo` pela turma da data da aula (T33, T51), trocas na mudança de turma pela T53, `excluir_turma` arquiva a turma com histórico e marca `'group_closed'`, `turmas_no_mes` no perfil do aluno, `periodos_de_turma` na exportação, `anonimizar_titular` apaga o histórico, T47 recusa no APK 1.8 a chamada com aluno que mudou de turma depois da aula, G1 com 15 tabelas. **T41 confirmada** (P2). P17: mockups publicados em 24/09 (versão 6, linhas G e H). § 3 com os rótulos da troca abonada, da turma por período e do aviso ao mudar a turma; § 11.5 com os casos novos; perguntas P23–P25. |
 | v4 | 2026-09-29 | Aprovada pelo dono em 28/09 (D4 da coordenação), com quatro itens. **(1)** Errata de `plans_cota_coerente` (§ 5.2): o texto da v3 deixava passar o plano livre sem cota, porque o `check` com a cota nula dá nulo e passa. A migration do 4.1 já fazia o certo. Entra a regra 9 na § 0.1. **(2)** `snake.justificativa_rpc` na § 0.1 e na § 9.1, para as RPCs de justificativa do 4.8 (achado 12 do 4.1). **(3)** A 2ª dica do aviso de atualização na § 3 e na § 12.3, que estava no mockup aprovado. O "Baixa" do mockup virou "Baixe", para concordar com "abra" e "toque". **(4)** § 13.5, a segunda barreira do servidor (P-9, item 5.5 do `ROADMAP-server.md`), com `is_admin()` e `pode_decidir_justificativa(p_id)`, as mesmas funções da RLS, sem RPC nova. A parte da justificativa espera o 4.8 na `main`. Nenhum nome existente mudou. |
+| v5 | 2026-10-02 | Aprovada pelo dono em 01/10 (D12 da coordenação), com os quatro itens da auditoria da Fase 4 (`REVIEW-FASE4.md`), que já estão no banco desde o 4.12 (#79). **(1) § 9.1 (A1):** decide e lê o atestado de aula só quem já estava na aula quando a justificativa chegou (`class_teachers.created_at <= j.created_at`) ou quem está escalado no horário; a § 13.5 acompanha. **(2) § 9.4 e § 6 (B2):** as FKs de `class_swap_periods` passam a `on delete restrict`; `encerrar_horario_da_grade` recusa, com a data mínima, apagar o horário que tem período; `excluir_turma` só encerra esse horário. **(3)** `quem_sera_avisado(p_class_id)` entra na § 6.1. **(4)** `solicitacao_para_decidir(p_id)` entra na § 9.3. **Nenhum nome mudou, e o servidor e a web não precisam mudar nada:** o 5.5 do servidor chama `pode_decidir_justificativa` com a mesma assinatura da v4 (só a regra ficou mais restrita, C10), e a web não usa nenhuma das quatro partes (conferido na `main` dos dois em 02/10). |
