@@ -5,6 +5,17 @@ quando um APK é publicado — regras em [`docs/VERSIONAMENTO.md`](docs/VERSIONA
 As entradas novas são geradas por `npm run versao:<parte>` a partir dos commits e
 revisadas antes da publicação.
 
+## [1.9.0] - 2026-09-29
+
+### Novidades
+
+- **O app avisa quando sai uma versão nova.** Uma vez por dia, ao abrir o app, ele confere se há versão mais nova e, se houver, mostra o cartão **"Nova versão disponível"**, com o botão **Baixar atualização** e a explicação de como instalar: *"Baixe o APK oficial do GitHub. Depois, abra o arquivo e toque em Instalar: seus dados continuam."* **Agora não** fecha o aviso até o dia seguinte. O aviso nunca impede de usar o app e não aparece sem internet. A partir desta versão, você fica sabendo das próximas sem depender de recado.
+
+### Correções
+
+- **Primeiro acesso:** o app só dá o primeiro acesso por concluído depois que a senha nova realmente foi trocada. Antes, se a troca falhasse (sem internet, por exemplo), a conta podia continuar entrando com a senha provisória da academia.
+- A tela não pisca mais em "Carregando" quando o perfil é atualizado.
+
 ## [1.8.0] - 2026-09-23
 
 ### Novidades
