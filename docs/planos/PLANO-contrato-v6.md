@@ -68,7 +68,7 @@ servidor ainda precisa mudar, para nenhum chat ler alvo como estado. Rollback: r
 
 ## Definição de pronto
 
-- [ ] Contrato v6 com §§ 13.5, 13.6, 15 e 17.
-- [ ] Roadmap com o Registro e as decisões.
+- [x] Contrato v6 com §§ 13.5, 13.6, 15 e 17.
+- [x] Roadmap com o Registro e as decisões.
 - [ ] CI verde, merge (D2), branch apagada.
-- [ ] `ENTREGA-contrato-v6.md`.
+- [x] `ENTREGA-contrato-v6.md`.

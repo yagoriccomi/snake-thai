@@ -31,7 +31,7 @@
 | **Branches** | Desde 29/09 este chat mescla os próprios PRs com o CI verde (D2 da coordenação). As branches mescladas são apagadas no GitHub e no disco |
 | **Banco local** | Recriado da `main` em 29/09 às 11:26 (`db-dev test`, 0 falhas) e às 11:27 (`db-dev reset`, com o histórico de demonstração). **G1 conferido nele** |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
-| **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v5** (02/10): a v4 com os quatro itens da auditoria da Fase 4 (§ 9.1 A1, § 9.4 B2, `quem_sera_avisado` e `solicitacao_para_decidir`). A v4 (29/09) trouxe a errata de `plans_cota_coerente`, `snake.justificativa_rpc`, a 2ª dica do aviso de atualização e a segunda barreira do servidor (§ 13.5). O 4.1 (esquema) está na `main` |
+| **Contrato** | [`docs/CONTRATO.md`](docs/CONTRATO.md) **v6** (05/10): a política de erros do servidor e a tabela de códigos de cada rota (§ 13.6, D20), a errata da § 13.5 (falha do Supabase é 502/503/504, nunca 403) e a § 15 dos clientes. A v5 (02/10) trouxe a v4 com os quatro itens da auditoria da Fase 4 (§ 9.1 A1, § 9.4 B2, `quem_sera_avisado` e `solicitacao_para_decidir`). A v4 (29/09) trouxe a errata de `plans_cota_coerente`, `snake.justificativa_rpc`, a 2ª dica do aviso de atualização e a segunda barreira do servidor (§ 13.5). O 4.1 (esquema) está na `main` |
 | **Mockups** | Versão 7 (25/09). Linhas A–F aprovadas em 24/09; G e H aguardando aprovação |
 | **Fundação** | Git, GitHub, Husky, Conventional Commits e versionamento por tag funcionando. Jira adiado por escolha sua (2026-07-27) e fora deste roadmap |
 
@@ -313,7 +313,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 
 ## Fase 4 — Nova direção: horário livre, troca de aula, chamada auditável, solicitações e perfis
 
-> **Contrato:** [`docs/CONTRATO.md`](docs/CONTRATO.md), **v5** (2026-10-02, com os quatro itens da D12;
+> **Contrato:** [`docs/CONTRATO.md`](docs/CONTRATO.md), **v6** (2026-10-05, com a política de erros da D20; a v5 de 2026-10-02, com os quatro itens da D12;
 > a v4 de 2026-09-29, com os da D4; a v3 de 2026-09-24, revisada em 2026-09-25). O 4.1 foi mesclado em 29/09 (G1). **Este chat é o dono do contrato**
 > e do banco, e os chats do `snake-server` e do `snake-web` leem dele.
 >
@@ -915,7 +915,8 @@ servidor.
 > de troca.
 
 > **D13 (01/10): nada da Fase 5 é adiantado enquanto a 2.0.0 espera o dono** — nem o 5.2, nem o
-> desenho da central (D9), nem o 5.1a/5.1b.
+> desenho da central (D9), nem o 5.1a/5.1b. **Revisto em 02/10 pelas D20 e D21:** continua sem
+> adiantar itens, mas o contrato v6 (D20) e o registro do 5.3 (D21) entram já.
 >
 > **D9 (29/09): a central de avisos também aparece na web, só de leitura.** No 5.1, desenhe a
 > central para o app e a web lerem do mesmo lugar (tabela ou RPC que o aluno lê, com RLS de aluno)
@@ -1003,6 +1004,21 @@ preenchidos, e o admin só confere, ajusta e completa a identificação.
 primeiro aluno real estiver perto: não depende da Fase 4. O prazo do comprovante já é decisão do
 dono (90 dias, D14).
 
+### 5.3 Alerta de frequência baixa para o aluno (D21)
+
+- [ ] Plano · [ ] Contrato · [ ] Banco · [ ] Testes · [ ] Aparelho · [ ] Publicado
+
+**O que é:** o aluno vê um aviso quando a frequência dele está baixa, antes de virar problema. **Só
+depois da 2.0.0** (D13 revisto).
+
+- **O banco calcula, a web e o app só mostram.** A conta é a mesma do resto da frequência: o
+  ritmo do mês, sem teto na média (T10), e a semana sem aula livre suficiente não vira falta (T30).
+- **Uma coluna de risco exposta ao aluno**, com a mudança de contrato **no próprio item**: nome,
+  tipo, valores e onde ela aparece entram numa versão nova do contrato antes do banco, e a web
+  ganha a tela pelo roadmap dela.
+- **O à vontade fica de fora** (D35): sem meta de frequência, não tem risco a calcular.
+- A partir de quando a frequência é "baixa" fica para o plano do item (pergunta ao dono).
+
 ---
 
 ## Fase 6 — Contínuo
@@ -1027,6 +1043,17 @@ dono (90 dias, D14).
 | Consentimento do responsável por aluno menor | Definir com o jurídico | 3.8 |
 | Limite de recados por dia | Definido no plano do 5.1d | 5.1d |
 | Recado em massa para quem usa iPhone (a web não tem push) | Decidir antes do 5.1d | 5.1d e web 7.1 |
+
+**Decididas em 02/10** (coordenação, segunda rodada):
+
+- **D20:** todo erro identificado tem mensagem própria; um genérico por categoria (no servidor, 400
+  e 500), pela lista de códigos HTTP. Falha do Supabase é 502, 503 ou 504, nunca 403, e nada é
+  liberado; o alarme de acesso indevido só no 403. Política e tabela no contrato **v6** (§ 13.6 e
+  errata da § 13.5). No app, vale no código que o chat tocar (2.0.0 em diante), sem auditoria geral.
+- **D21:** alerta de frequência baixa para o aluno, **depois da 2.0.0** (item 5.3): o banco calcula
+  (T10, T30) e expõe uma coluna de risco, com a mudança de contrato no próprio item; o à vontade
+  fica de fora (D35).
+- **D13 revisto:** continua sem adiantar itens, mas faz a v6 e registra a D20 e a D21.
 
 **Decididas em 29/09 e 01/10** (coordenação; saíram desta tabela):
 
@@ -1058,7 +1085,7 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 
 ## Dependências com os repositórios irmãos
 
-- **O contrato ([`docs/CONTRATO.md`](docs/CONTRATO.md), v5) é a fronteira.** Os três chats seguem
+- **O contrato ([`docs/CONTRATO.md`](docs/CONTRATO.md), v6) é a fronteira.** Os três chats seguem
   os nomes dele; só este chat o edita, com aprovação do usuário e versão nova. Os portões do § 14
   são anotados no Registro de cada ROADMAP dono.
 - **O esquema do banco mora aqui e a web lê dele.** Toda migration que mexa em `profiles`
@@ -1156,3 +1183,5 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-10-02 | **C13: o teste SQL do perfil não depende mais do dia do mês** (PR #85, só dado de teste). O bloco do financeiro de `regressao_perfis.sql` derivava a competência de `current_date - 30` e `- 5`, que caem no mesmo mês nos dias 1 a 5; a `payments_unico_por_competencia` derrubava o job "Regressão de segurança no banco" e deixava a `main` vermelha desde o #82. Agora as quatro mensalidades ficam em M-3, M-2, M-1 e M+1 a partir do mês corrente, e o P3 prova o mesmo financeiro. Prova: o arquivo antigo falha com a data num dia 3 e passa num dia 15; o novo passa nos dias 1, 5, 15 e 31, em 31/12, 01/01 e 05/03. Os outros testes SQL que gravam `payments` usam competências fixas e não colidem. **Banco local recriado às 12:41** (`scripts\db-dev test`, todos verdes; C6). Plano: `docs/planos/PLANO-C13-competencia-no-teste-sql.md`. |
 | 2026-10-02 | **Contrato v5 na `main`** (aprovado pelo dono em 01/10, D12): os quatro itens da auditoria da Fase 4, que já estavam no banco desde o #79. § 9.1 (A1): decide e lê o atestado de aula só quem já estava na aula quando a justificativa chegou ou está escalado no horário (a § 13.5 acompanha); § 9.4 e § 6 (B2): `class_swap_periods` com FKs `on delete restrict`, `encerrar_horario_da_grade` recusa com a data mínima e `excluir_turma` só encerra o horário com período; `quem_sera_avisado` (§ 6.1) e `solicitacao_para_decidir` (§ 9.3) entram na lista. **Nenhum nome mudou. Para o `snake-server` e o `snake-web`: nada a mudar.** O 5.5 do servidor chama `pode_decidir_justificativa` com a mesma assinatura (C10). |
 | 2026-10-02 | **Decisões do dono de 29/09 e 01/10 registradas** (coordenação; a entrada de 29/09 não tinha chegado a este chat, C7). **D8:** "Baixe" fica na 2ª dica do aviso de atualização. **D9:** central de avisos também na web, só de leitura; o 5.1 desenha para os dois lerem do mesmo lugar, e o formato entra no contrato antes do 5.1c. **D13:** nada da Fase 5 é adiantado até a 2.0.0. **D14:** imagem do comprovante por 90 dias, pelo `{{prazo_comprovantes}}` dos Dados dos termos (3.6, G5), sem mudar o texto. **D17:** central com guarda de 90 dias, que troca a linha "histórico de notificações: 30 dias" na versão da Política do 5.1c (aceite novo no app e na web; a 1.0 do G5 não muda). **C11:** item novo no 4.8, antes da 2.0.0 e só com o "G2 aberto" do servidor. **Correção da linha do 4.4a (29/09) pela C5:** a web **recebe** a frase do banco no `23514`, mas hoje a joga fora e mostra "Não foi possível avisar. Verifique a conexão e tente de novo."; quem corrige é a web, e **o app não muda nada**. Tabela "Decisões em aberto" atualizada. |
+| 2026-10-05 | **Contrato v6 na `main`** (pedido pelo dono em 02/10, D20 e C15). **§ 13.6:** política de erros do servidor (um `code` e uma mensagem por erro identificado; genéricos **400 `bad_request`** e **500 `internal_error`**; 403 só para falta de permissão; `code` sempre com `_` e mensagem sem as palavras que o APK lê como falha de rede) e a tabela de cada rota, lida no servidor pela `origin/main` (`6c2e17e`), pelo #37 (`46bc9e2`) e pelo #36 (`e59769b`, que não muda nenhum erro). **Errata da § 13.5:** falha do Supabase dá 502, 503 ou 504, nunca 403, e nada é liberado; o alarme de acesso indevido só no 403. **§ 15:** o APK 1.8/1.9 (`v1.8.0`, `release/1.9.0`) e a web `main` não decidem pelo status nem pelo `code` do servidor, então **nada quebra e nenhum código antigo é mantido até a 2.0.0**. **Para o `snake-server`:** (1) **#37 já**, antes do merge: a falha das RPCs da segunda barreira dá 502/503/504 (não 403) e o alarme só soa no 403 com a conferência em `false` (nem na falha, nem na política `'somente-dono'`); (2) **PR próprio depois da v6, com confirmação do dono (C15):** as linhas "muda" da § 13.6 — `supabase.ts` separando 504 `supabase_timeout`, 503 `supabase_unavailable` (no lugar de `supabase_error`) e 502 `supabase_bad_response` (5xx que não é 502/503/504, JSON inválido, formato inesperado e 4xx do PostgREST que não seja 401, hoje lido como "nada encontrado" → 403); o Auth com 5xx deixa de dar 401; o 401 do PostgREST vira `bad_token`; o 4xx não identificado vira 400 `bad_request` (hoje 500); o `bad_input` com a frase do primeiro problema do `zod` (a de `pagina` é nova); para o dono ou o leitor legítimo, 404 e 409 próprios em proofs, justifications e motivos; o view-url em banco sem `attempt` passa a 502 (revê a decisão de 25/09). **Para o `snake-web`:** só a C16 — o `lib/erros.ts` da `fase-6` cobre os códigos da § 13.6 (o identificado com a sua mensagem, o não identificado com a genérica); a `main` não precisa mudar. Plano: `docs/planos/PLANO-contrato-v6.md`. |
+| 2026-10-05 | **D20, D21 e D13 revisto registrados** (coordenação de 02/10, segunda rodada). **D20:** regra de erros nos três repositórios (acima); no app, vale no código que o chat tocar, a partir da 2.0.0, sem auditoria geral. **D21:** alerta de frequência baixa para o aluno vira o **item 5.3, depois da 2.0.0**: o banco calcula (T10, T30) e expõe uma coluna de risco, com a mudança de contrato no próprio item; a web e o app só mostram; o à vontade fica de fora (D35). **D13 revisto:** continua sem adiantar itens, mas faz a v6 e registra a D20 e a D21. "Decisões em aberto" atualizada. Nenhum `db-dev reset` ou `test` nesta rodada (só documento; C6). |
