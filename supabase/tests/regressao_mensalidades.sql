@@ -49,6 +49,10 @@ end $$;
 insert into public.profiles (id, role, name, cpf, is_first_login, plan_id, status)
 values ('b0000000-0000-4000-8000-000000000001','user','Aluno Cedo','11111111111', false,
         'b0000000-0000-4000-8000-0000000000aa'::uuid, 'active');
+-- Do dia 1 ao 10, o trigger já fatura o mês corrente com current_date, e essa
+-- competência colidiria com as datas fixas abaixo quando o calendário chegar
+-- nelas (D22). O trigger tem o seu teste no T12.
+delete from public.payments where user_id = 'b0000000-0000-4000-8000-000000000001';
 
 do $$
 declare v_gerou boolean; v_venc date; v_valor integer; v_comp date;
@@ -80,6 +84,7 @@ end $$;
 insert into public.profiles (id, role, name, cpf, is_first_login, plan_id, status)
 values ('b0000000-0000-4000-8000-000000000002','user','Aluno Tarde','22222222222', false,
         'b0000000-0000-4000-8000-0000000000aa'::uuid, 'active');
+delete from public.payments where user_id = 'b0000000-0000-4000-8000-000000000002';
 
 do $$
 declare v_gerou boolean; v_tem integer;

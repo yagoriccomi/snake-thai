@@ -87,8 +87,18 @@ end $$;
 -- =====================================================================
 -- F3 — depois da entrada, as aulas da turma nova contam normalmente
 -- =====================================================================
-insert into public.classes (id, title, type, group_id, date_time, attendance_taken_at) values
-  ('f0c00000-0000-4000-8000-000000000010','B3','routine','f0-turma-b', now() + interval '1 second', now() + interval '2 seconds');
+-- A entrada na turma é o now() real (F1). A aula e a consulta ficam no dia 15
+-- do mês seguinte: sempre depois da entrada, no mesmo mês e numa semana que é
+-- toda dele. Com "agora + 1 segundo" e "agora + 1 minuto", o teste caía no
+-- último minuto do mês; no dia 1º, a semana pode ser do mês anterior (D22).
+create temp table f3_base on commit drop as
+  select (date_trunc('month', now() at time zone 'America/Sao_Paulo') + interval '1 month 14 days')
+           at time zone 'America/Sao_Paulo' as inicio;
+
+insert into public.classes (id, title, type, group_id, date_time, attendance_taken_at)
+select 'f0c00000-0000-4000-8000-000000000010','B3','routine','f0-turma-b',
+       inicio + interval '10 hours', inicio + interval '11 hours'
+  from f3_base;
 insert into public.attendance (class_id, user_id, status) values
   ('f0c00000-0000-4000-8000-000000000010','f0000000-0000-4000-8000-000000000002','present');
 
@@ -96,7 +106,7 @@ do $$
 declare v record;
 begin
   select * into v from public.frequencia_mensal(
-    array['f0000000-0000-4000-8000-000000000002']::uuid[], now() + interval '1 minute');
+    array['f0000000-0000-4000-8000-000000000002']::uuid[], (select inicio + interval '12 hours' from f3_base));
   if v.counted_classes <> 1 or v.attended <> 1 or v.frequency_percent <> 100.00 then
     raise exception 'FALHOU F3: esperava 1/1 e 100%%, veio %/% e %', v.attended, v.counted_classes, v.frequency_percent;
   end if;

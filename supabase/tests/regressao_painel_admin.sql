@@ -54,16 +54,18 @@ insert into public.groups (id, name) values
 insert into public.plans (id, name, price_cents, billing_period, due_day, is_active)
 values ('9d000000-0000-4000-8000-00000000f001', 'Plano Painel', 10000, 'monthly', 10, true);
 
-insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color, deactivated_at, anonymized_at)
+-- created_at fixo antes de abril/2031: com o default now(), o aluno nasceria
+-- depois da referência quando o relógio real passasse dela, e T10/T11 cairiam (D22).
+insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color, deactivated_at, anonymized_at, created_at)
 values
-  ('9d000000-0000-4000-8000-000000000002','professor','Prof Painel','91000000002',false,'active',null,'#0F0F0F',null,null),
-  ('9d000000-0000-4000-8000-000000000003','user','Aluno Um','91000000003',false,'active','painel-a',null,null,null),
-  ('9d000000-0000-4000-8000-000000000004','user','Aluno Dois','91000000004',false,'active','painel-a',null,null,null),
-  ('9d000000-0000-4000-8000-000000000005','user','Aluno Três','91000000005',false,'inactive','painel-a',null,timestamptz '2031-05-05 10:00-03',null),
-  ('9d000000-0000-4000-8000-000000000006','user','Usuário removido',null,false,'inactive',null,null,timestamptz '2031-04-10 10:00-03',timestamptz '2031-04-10 10:00-03'),
-  ('9d000000-0000-4000-8000-000000000007','user','Aluno Cinco','91000000007',false,'active','painel-b',null,null,null),
-  ('9d000000-0000-4000-8000-000000000008','user','Aluno Seis','91000000008',false,'active','painel-c',null,null,null),
-  ('9d000000-0000-4000-8000-000000000009','user','Aluno Sete','91000000009',false,'active','painel-d',null,null,null);
+  ('9d000000-0000-4000-8000-000000000002','professor','Prof Painel','91000000002',false,'active',null,'#0F0F0F',null,null,timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000003','user','Aluno Um','91000000003',false,'active','painel-a',null,null,null,timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000004','user','Aluno Dois','91000000004',false,'active','painel-a',null,null,null,timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000005','user','Aluno Três','91000000005',false,'inactive','painel-a',null,timestamptz '2031-05-05 10:00-03',null,timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000006','user','Usuário removido',null,false,'inactive',null,null,timestamptz '2031-04-10 10:00-03',timestamptz '2031-04-10 10:00-03',timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000007','user','Aluno Cinco','91000000007',false,'active','painel-b',null,null,null,timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000008','user','Aluno Seis','91000000008',false,'active','painel-c',null,null,null,timestamptz '2031-04-01 00:00-03'),
+  ('9d000000-0000-4000-8000-000000000009','user','Aluno Sete','91000000009',false,'active','painel-d',null,null,null,timestamptz '2031-04-01 00:00-03');
 
 update public.profiles set plan_id = '9d000000-0000-4000-8000-00000000f001' where id = '9d000000-0000-4000-8000-000000000004';
 
