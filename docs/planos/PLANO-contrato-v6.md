@@ -79,5 +79,5 @@ servidor ainda precisa mudar, para nenhum chat ler alvo como estado. Rollback: r
 
 - [x] Contrato v6 com §§ 13.5, 13.6, 15 e 17.
 - [x] Roadmap com o Registro e as decisões.
-- [ ] CI verde, merge (D2), branch apagada.
+- [x] CI verde, merge (D2), branch apagada (com a `main` da D23, 06/10).
 - [x] `ENTREGA-contrato-v6.md`.
