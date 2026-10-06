@@ -2,9 +2,11 @@
 -- Roda numa transação e termina em ROLLBACK; mesmo assim, rode só no banco
 -- local (scripts\db-dev test).
 --
--- Datas fixas em 2030 via p_agora = 2030-03-01 10:00 (sexta-feira) em São
--- Paulo: horizonte até 30/04/2030. Segundas no período: 4, 11, 18, 25/03 e
+-- Datas fixas em 2086 (mesmo calendário de 2030, onde o cenário nasceu) via
+-- p_agora = 2086-03-01 10:00 (sexta-feira) em São Paulo: horizonte até 30/04/2086. Segundas no período: 4, 11, 18, 25/03 e
 -- 1, 8, 15, 22, 29/04 (9). Sextas: 1, 8, 15, 22, 29/03 e 5, 12, 19, 26/04 (9).
+-- As RPCs de edição (G8, G10, G12, G14) comparam com o now() real: o cenário
+-- precisa ficar no futuro, e em 2030 ele venceria a partir de 01/03/2030 (D22).
 --
 --   grade-a  S1 segunda 19:00 (P1 e PR, que é rebaixado antes da geração)
 --            + aula avulsa já cadastrada em 11/03 19:00 · aluno ALU
@@ -42,11 +44,11 @@ values
   ('f6100000-0000-4000-8000-000000000007','user','Aluno Grade','66100000007',false,'active','grade-a',null);
 
 insert into public.class_schedules (id, group_id, title, weekday, start_time, valid_from, valid_until) values
-  ('f6100000-0000-4000-8000-00000000a001','grade-a','Segunda noite', 1, '19:00', date '2030-03-01', null),
-  ('f6100000-0000-4000-8000-00000000a002','grade-b','Sexta cedo',    5, '08:00', date '2030-03-01', null),
-  ('f6100000-0000-4000-8000-00000000a003','grade-b','Sexta noite',   5, '19:00', date '2030-03-01', null),
-  ('f6100000-0000-4000-8000-00000000a004','grade-b','Segunda cedo',  1, '07:00', date '2030-03-10', date '2030-03-31'),
-  ('f6100000-0000-4000-8000-00000000a005','grade-arq','Arquivada',   1, '19:00', date '2030-03-01', null);
+  ('f6100000-0000-4000-8000-00000000a001','grade-a','Segunda noite', 1, '19:00', date '2086-03-01', null),
+  ('f6100000-0000-4000-8000-00000000a002','grade-b','Sexta cedo',    5, '08:00', date '2086-03-01', null),
+  ('f6100000-0000-4000-8000-00000000a003','grade-b','Sexta noite',   5, '19:00', date '2086-03-01', null),
+  ('f6100000-0000-4000-8000-00000000a004','grade-b','Segunda cedo',  1, '07:00', date '2086-03-10', date '2086-03-31'),
+  ('f6100000-0000-4000-8000-00000000a005','grade-arq','Arquivada',   1, '19:00', date '2086-03-01', null);
 
 insert into public.class_schedule_teachers (schedule_id, teacher_id) values
   ('f6100000-0000-4000-8000-00000000a001','f6100000-0000-4000-8000-000000000002'),
@@ -55,7 +57,7 @@ insert into public.class_schedule_teachers (schedule_id, teacher_id) values
 
 -- Aula avulsa no mesmo instante de uma ocorrência de S1 (G7).
 insert into public.classes (id, title, type, date_time, group_id)
-values ('f6100000-0000-4000-8000-00000000c011','Avulsa de segunda','routine', timestamptz '2030-03-11 19:00-03','grade-a');
+values ('f6100000-0000-4000-8000-00000000c011','Avulsa de segunda','routine', timestamptz '2086-03-11 19:00-03','grade-a');
 
 -- G6 — professor rebaixado ANTES da geração
 update public.profiles set role = 'user', color = null where id = 'f6100000-0000-4000-8000-000000000005';
@@ -70,7 +72,7 @@ update public.groups set archived_at = now() where id = 'grade-arq';
 do $$
 declare n integer;
 begin
-  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2030-03-01 10:00-03');
+  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2086-03-01 10:00-03');
   if n <> 9 then
     raise exception 'FALHOU G2: gerou % aulas (esperado 9)', n;
   end if;
@@ -84,11 +86,11 @@ begin
   end if;
   raise notice 'OK G2: horário de segunda 19:00 gera só segundas às 19:00 de São Paulo';
 
-  if (select count(*) from public.classes where group_id = 'grade-a' and date_time = timestamptz '2030-03-11 19:00-03') <> 1
+  if (select count(*) from public.classes where group_id = 'grade-a' and date_time = timestamptz '2086-03-11 19:00-03') <> 1
      or not exists (select 1 from public.classes
                      where id = 'f6100000-0000-4000-8000-00000000c011'
                        and schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-                       and occurrence_date = date '2030-03-11') then
+                       and occurrence_date = date '2086-03-11') then
     raise exception 'FALHOU G7: aula avulsa não foi adotada (ou duplicou)';
   end if;
   raise notice 'OK G7: aula avulsa no mesmo horário é adotada, sem duplicar';
@@ -109,7 +111,7 @@ end $$;
 do $$
 declare n integer;
 begin
-  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2030-03-01 10:00-03');
+  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2086-03-01 10:00-03');
   if n <> 0 or (select count(*) from public.classes where schedule_id = 'f6100000-0000-4000-8000-00000000a001') <> 9 then
     raise exception 'FALHOU G3: segunda geração criou % aula(s)', n;
   end if;
@@ -120,14 +122,14 @@ end $$;
 do $$
 declare n_cedo integer; n_noite integer;
 begin
-  n_cedo := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a002', timestamptz '2030-03-01 10:00-03');
-  n_noite := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a003', timestamptz '2030-03-01 10:00-03');
+  n_cedo := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a002', timestamptz '2086-03-01 10:00-03');
+  n_noite := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a003', timestamptz '2086-03-01 10:00-03');
   if n_cedo <> 8 or n_noite <> 9 then
     raise exception 'FALHOU G4: sexta cedo % (esperado 8), sexta noite % (esperado 9)', n_cedo, n_noite;
   end if;
   if exists (select 1 from public.classes
               where schedule_id in ('f6100000-0000-4000-8000-00000000a002','f6100000-0000-4000-8000-00000000a003')
-                and (occurrence_date > date '2030-04-30' or date_time <= timestamptz '2030-03-01 10:00-03')) then
+                and (occurrence_date > date '2086-04-30' or date_time <= timestamptz '2086-03-01 10:00-03')) then
     raise exception 'FALHOU G4: ocorrência além do horizonte ou antes do instante de referência';
   end if;
   raise notice 'OK G4: gera até o fim do mês seguinte e nada antes do instante de referência';
@@ -137,10 +139,10 @@ end $$;
 do $$
 declare n integer;
 begin
-  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a004', timestamptz '2030-03-01 10:00-03');
+  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a004', timestamptz '2086-03-01 10:00-03');
   if n <> 3 or exists (select 1 from public.classes
                         where schedule_id = 'f6100000-0000-4000-8000-00000000a004'
-                          and occurrence_date not in (date '2030-03-11', date '2030-03-18', date '2030-03-25')) then
+                          and occurrence_date not in (date '2086-03-11', date '2086-03-18', date '2086-03-25')) then
     raise exception 'FALHOU G5: vigência de 10 a 31/03 gerou %', n;
   end if;
   raise notice 'OK G5: respeita início e fim da vigência';
@@ -150,7 +152,7 @@ end $$;
 do $$
 declare n integer;
 begin
-  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a005', timestamptz '2030-03-01 10:00-03');
+  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a005', timestamptz '2086-03-01 10:00-03');
   if n <> 0 or exists (select 1 from public.classes where group_id = 'grade-arq') then
     raise exception 'FALHOU G13: turma arquivada gerou % aula(s)', n;
   end if;
@@ -162,7 +164,7 @@ do $$
 declare r record;
 begin
   select * into r from public.frequencia_mensal(
-    array['f6100000-0000-4000-8000-000000000007'::uuid], timestamptz '2030-03-01 10:00-03');
+    array['f6100000-0000-4000-8000-000000000007'::uuid], timestamptz '2086-03-01 10:00-03');
   if r.total_classes <> 4 or r.frequency_percent <> 100 then
     raise exception 'FALHOU G14: total % e frequência % (esperado 4 e 100)', r.total_classes, r.frequency_percent;
   end if;
@@ -170,10 +172,10 @@ begin
 end $$;
 
 -- Preparação do G8: aula com chamada, ocorrência remarcada à mão e ocorrência passada
-update public.classes set attendance_taken_at = timestamptz '2030-03-18 20:00-03'
- where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2030-03-18';
-update public.classes set schedule_detached = true, date_time = timestamptz '2030-03-26 19:00-03'
- where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2030-03-25';
+update public.classes set attendance_taken_at = timestamptz '2086-03-18 20:00-03'
+ where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2086-03-18';
+update public.classes set schedule_detached = true, date_time = timestamptz '2086-03-26 19:00-03'
+ where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2086-03-25';
 insert into public.classes (id, title, type, date_time, group_id, schedule_id, occurrence_date, attendance_taken_at)
 values ('f6100000-0000-4000-8000-00000000c099','Segunda noite','routine', timestamptz '2026-01-05 19:00-03','grade-a',
         'f6100000-0000-4000-8000-00000000a001', date '2026-01-05', null);
@@ -188,7 +190,7 @@ declare n integer;
 begin
   begin
     perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-a', p_title => 'Invasor',
-      p_weekday => 2::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-01',
+      p_weekday => 2::smallint, p_start_time => '10:00', p_valid_from => date '2086-03-01',
       p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G1: aluno criou horário';
   exception when insufficient_privilege then null;
@@ -208,13 +210,13 @@ set local request.jwt.claims = '{"sub":"f6100000-0000-4000-8000-000000000002","r
 do $$
 begin
   begin
-    perform public.encerrar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', date '2030-03-10');
+    perform public.encerrar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', date '2086-03-10');
     raise exception 'FALHOU G1: professor encerrou horário';
   exception when insufficient_privilege then null;
   end;
   begin
     insert into public.class_schedules (group_id, title, weekday, start_time, valid_from)
-    values ('grade-a', 'Direto', 2, '10:00', date '2030-03-01');
+    values ('grade-a', 'Direto', 2, '10:00', date '2086-03-01');
     raise exception 'FALHOU G1: professor inseriu horário direto';
   exception when insufficient_privilege then null;
   end;
@@ -234,7 +236,7 @@ do $$
 declare v jsonb;
 begin
   v := public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
-    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2086-03-01',
     p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000002'::uuid]);
   if (v->>'ajustadas')::int <> 7 or (v->>'removidas')::int <> 0 then
     raise exception 'FALHOU G8: resultado %', v;
@@ -245,9 +247,9 @@ begin
     raise exception 'FALHOU G8: aulas ajustadas não foram para 20:00';
   end if;
   if not exists (select 1 from public.classes where schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-                  and occurrence_date = date '2030-03-18' and date_time = timestamptz '2030-03-18 19:00-03')
+                  and occurrence_date = date '2086-03-18' and date_time = timestamptz '2086-03-18 19:00-03')
      or not exists (select 1 from public.classes where schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-                  and occurrence_date = date '2030-03-25' and date_time = timestamptz '2030-03-26 19:00-03')
+                  and occurrence_date = date '2086-03-25' and date_time = timestamptz '2086-03-26 19:00-03')
      or not exists (select 1 from public.classes where id = 'f6100000-0000-4000-8000-00000000c099'
                   and date_time = timestamptz '2026-01-05 19:00-03') then
     raise exception 'FALHOU G8: aula com chamada, remarcada ou passada foi alterada';
@@ -263,7 +265,7 @@ set local role authenticated;
 do $$
 begin
   perform public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
-    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2086-03-01',
     p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000003'::uuid]);
   if exists (select 1 from public.class_teachers ct join public.classes c on c.id = ct.class_id
               where c.schedule_id = 'f6100000-0000-4000-8000-00000000a001'
@@ -283,7 +285,7 @@ begin
     raise exception 'FALHOU G9: professor incluído à mão foi removido';
   end if;
   if not exists (select 1 from public.class_teachers ct join public.classes c on c.id = ct.class_id
-                  where c.schedule_id = 'f6100000-0000-4000-8000-00000000a001' and c.occurrence_date = date '2030-03-18'
+                  where c.schedule_id = 'f6100000-0000-4000-8000-00000000a001' and c.occurrence_date = date '2086-03-18'
                     and ct.teacher_id = 'f6100000-0000-4000-8000-000000000002') then
     raise exception 'FALHOU G9: aula com chamada perdeu o professor';
   end if;
@@ -299,28 +301,28 @@ end $$;
 -- a gravaria pela RPC: § 6, trava corrigida no 4.4).
 reset role;
 set local request.jwt.claims = '{}';
-update public.classes set attendance_taken_at = timestamptz '2030-04-22 20:30-03'
- where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2030-04-22';
+update public.classes set attendance_taken_at = timestamptz '2086-04-22 20:30-03'
+ where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2086-04-22';
 set local request.jwt.claims = '{"sub":"f6100000-0000-4000-8000-000000000001","role":"authenticated"}';
 set local role authenticated;
 do $$
 declare v jsonb;
 begin
-  v := public.encerrar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', date '2030-04-10');
+  v := public.encerrar_horario_da_grade('f6100000-0000-4000-8000-00000000a001', date '2086-04-10');
   if v->>'acao' <> 'encerrado' or (v->>'removidas')::int <> 2 then
     raise exception 'FALHOU G10: resultado %', v;
   end if;
   if exists (select 1 from public.classes where schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-              and occurrence_date in (date '2030-04-15', date '2030-04-29'))
+              and occurrence_date in (date '2086-04-15', date '2086-04-29'))
      or not exists (select 1 from public.classes where schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-              and occurrence_date = date '2030-04-22') then
+              and occurrence_date = date '2086-04-22') then
     raise exception 'FALHOU G10: remoção errada ao encerrar';
   end if;
   if exists (select 1 from public.class_schedule_skips where schedule_id = 'f6100000-0000-4000-8000-00000000a001') then
     raise exception 'FALHOU G10: encerrar gerou exceção de ocorrência';
   end if;
   if not exists (select 1 from public.class_schedules
-                  where id = 'f6100000-0000-4000-8000-00000000a001' and valid_until = date '2030-04-10') then
+                  where id = 'f6100000-0000-4000-8000-00000000a001' and valid_until = date '2086-04-10') then
     raise exception 'FALHOU G10: vigência não gravada';
   end if;
   raise notice 'OK G10: encerrar tira as futuras sem chamada e preserva as com chamada, sem exceções';
@@ -329,13 +331,13 @@ end $$;
 -- G11 — aula da grade apagada à mão não volta
 reset role;
 delete from public.classes
- where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2030-04-01';
+ where schedule_id = 'f6100000-0000-4000-8000-00000000a001' and occurrence_date = date '2086-04-01';
 do $$
 declare n integer;
 begin
-  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2030-03-01 10:00-03');
+  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2086-03-01 10:00-03');
   if n <> 0 or exists (select 1 from public.classes where schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-                        and occurrence_date = date '2030-04-01') then
+                        and occurrence_date = date '2086-04-01') then
     raise exception 'FALHOU G11: aula apagada à mão voltou';
   end if;
   raise notice 'OK G11: aula da grade apagada à mão não é recriada';
@@ -346,18 +348,18 @@ set local role authenticated;
 do $$
 begin
   perform public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
-    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+    p_weekday => 1::smallint, p_start_time => '20:00', p_valid_from => date '2086-03-01',
     p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000003'::uuid]);
 end $$;
 reset role;
 do $$
 declare n integer;
 begin
-  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2030-03-01 10:00-03');
+  n := public.gerar_aulas_da_grade('f6100000-0000-4000-8000-00000000a001', timestamptz '2086-03-01 10:00-03');
   if n <> 2 or (select count(*) from public.classes c
                  join public.class_teachers ct on ct.class_id = c.id and ct.teacher_id = 'f6100000-0000-4000-8000-000000000003'
                 where c.schedule_id = 'f6100000-0000-4000-8000-00000000a001'
-                  and c.occurrence_date in (date '2030-04-15', date '2030-04-29')
+                  and c.occurrence_date in (date '2086-04-15', date '2086-04-29')
                   and (c.date_time at time zone 'America/Sao_Paulo')::time = time '20:00') <> 2 then
     raise exception 'FALHOU G12: reabrir a vigência gerou % aula(s)', n;
   end if;
@@ -370,35 +372,35 @@ do $$
 begin
   begin
     perform public.salvar_horario_da_grade(p_id => 'f6100000-0000-4000-8000-00000000a001', p_group_id => 'grade-a', p_title => 'Segunda noite',
-      p_weekday => 2::smallint, p_start_time => '20:00', p_valid_from => date '2030-03-01',
+      p_weekday => 2::smallint, p_start_time => '20:00', p_valid_from => date '2086-03-01',
       p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G15: trocou o dia da semana na edição';
   exception when invalid_parameter_value then null;
   end;
   begin
     perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Dia 7',
-      p_weekday => 7::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-01',
+      p_weekday => 7::smallint, p_start_time => '10:00', p_valid_from => date '2086-03-01',
       p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G15: aceitou weekday 7';
   exception when check_violation then null;
   end;
   begin
     perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Invertida',
-      p_weekday => 3::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-10',
-      p_valid_until => date '2030-03-01', p_teacher_ids => '{}');
+      p_weekday => 3::smallint, p_start_time => '10:00', p_valid_from => date '2086-03-10',
+      p_valid_until => date '2086-03-01', p_teacher_ids => '{}');
     raise exception 'FALHOU G15: aceitou fim antes do início';
   exception when check_violation then null;
   end;
   begin
     perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Repetido',
-      p_weekday => 5::smallint, p_start_time => '19:00', p_valid_from => date '2030-05-01',
+      p_weekday => 5::smallint, p_start_time => '19:00', p_valid_from => date '2086-05-01',
       p_valid_until => null, p_teacher_ids => '{}');
     raise exception 'FALHOU G15: aceitou horário repetido na mesma turma';
   exception when unique_violation then null;
   end;
   begin
     perform public.salvar_horario_da_grade(p_id => null, p_group_id => 'grade-b', p_title => 'Com aluno',
-      p_weekday => 3::smallint, p_start_time => '10:00', p_valid_from => date '2030-03-01',
+      p_weekday => 3::smallint, p_start_time => '10:00', p_valid_from => date '2086-03-01',
       p_valid_until => null, p_teacher_ids => array['f6100000-0000-4000-8000-000000000007'::uuid]);
     raise exception 'FALHOU G15: aceitou aluno como professor';
   exception when invalid_parameter_value then null;

@@ -784,11 +784,31 @@ begin
   end if;
 
   -- Mês que ainda não fechou não entra na fila (a conta viva já o mostra).
-  perform pg_temp.presenca('t25-qui', 't25', 'absent');
-  if exists (select 1 from public.attendance_recalc_queue where reference_month >= '2026-09-01') then
+  -- A aula é a da segunda-feira da semana em que o teste roda (D22, C17):
+  -- os meses dessa semana ainda estão abertos hoje, seja qual for o dia.
+  perform pg_temp.confere('FF8 premissa: os meses da semana de cada dia ainda estão abertos nesse dia',
+    (select count(*)::text
+       from generate_series((now() at time zone 'America/Sao_Paulo')::date,
+                            (now() at time zone 'America/Sao_Paulo')::date + 400, interval '1 day') as d
+       cross join lateral public.meses_da_semana(date_trunc('week', d)::date) s
+       cross join lateral (values (s.mes_inicial), (s.mes_final)) as m(x)
+      where d::date > public.fim_do_mes_de_frequencia(m.x)),
+    '0');
+  perform pg_temp.grupo('f5-ff8');
+  perform pg_temp.aluno('ff8');
+  perform pg_temp.na_turma('ff8', 'f5-ff8', '2026-01-01 10:00-03');
+  perform pg_temp.aula('ff8-seg', 'f5-ff8',
+    (date_trunc('week', (now() at time zone 'America/Sao_Paulo')::date)::date + time '10:00') at time zone 'America/Sao_Paulo');
+  perform pg_temp.presenca('ff8-seg', 'ff8');
+  perform pg_temp.presenca('ff8-seg', 'ff8', 'absent');
+  if exists (
+    select 1
+      from public.attendance_recalc_queue q
+      join public.meses_da_semana(date_trunc('week', (now() at time zone 'America/Sao_Paulo')::date)::date) s
+        on q.reference_month in (s.mes_inicial, s.mes_final)
+  ) then
     raise exception 'FALHOU FF8: mês aberto entrou na fila';
   end if;
-  perform pg_temp.presenca('t25-qui', 't25');
   raise notice 'OK FF8: só mês fechado entra na fila';
 
   perform pg_temp.confere('FF9 sem nada a fechar devolve 0', public.fechar_frequencia_do_mes()::text, '0');

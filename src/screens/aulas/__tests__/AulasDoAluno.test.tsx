@@ -74,6 +74,36 @@ function navegacao() {
   return { navigate: jest.fn(), goBack: jest.fn(), addListener: jest.fn(() => jest.fn()) };
 }
 
+// As telas montam a semana pelo relógio, e "amanhã" precisa cair nela. Com o
+// relógio real, a cota sumia aos domingos (amanhã já é a semana seguinte) e, no
+// menu, a SectionList do teste, que só desenha os primeiros itens, deixava as
+// aulas de amanhã de fora de quinta a domingo (C8, D22). Só o Date é fixo: os
+// timers continuam reais para o waitFor.
+beforeAll(() => {
+  jest.useFakeTimers({
+    now: new Date(2026, 8, 29, 12), // uma terça
+    doNotFake: [
+      'hrtime',
+      'nextTick',
+      'performance',
+      'queueMicrotask',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'requestIdleCallback',
+      'cancelIdleCallback',
+      'setImmediate',
+      'clearImmediate',
+      'setInterval',
+      'clearInterval',
+      'setTimeout',
+      'clearTimeout',
+    ],
+  });
+});
+afterAll(() => {
+  jest.useRealTimers();
+});
+
 beforeEach(() => {
   mockFetchAulas.mockReset();
   mockFetchMenu.mockReset().mockResolvedValue([]);
@@ -180,35 +210,6 @@ describe('StudentAulasList (4.4, contrato § 12)', () => {
 });
 
 describe('AulasDaSemanaScreen (4.4, contrato § 12.2)', () => {
-  // A SectionList do teste só desenha os primeiros itens, e cada dia da semana
-  // antes de "amanhã" ocupa dois (cabeçalho e rodapé). Com o relógio real, as
-  // aulas de amanhã ficavam de fora de quinta a domingo. Só o Date é fixo: os
-  // timers continuam reais para o waitFor.
-  beforeAll(() => {
-    jest.useFakeTimers({
-      now: new Date(2026, 8, 29, 12), // uma terça
-      doNotFake: [
-        'hrtime',
-        'nextTick',
-        'performance',
-        'queueMicrotask',
-        'requestAnimationFrame',
-        'cancelAnimationFrame',
-        'requestIdleCallback',
-        'cancelIdleCallback',
-        'setImmediate',
-        'clearImmediate',
-        'setInterval',
-        'clearInterval',
-        'setTimeout',
-        'clearTimeout',
-      ],
-    });
-  });
-  afterAll(() => {
-    jest.useRealTimers();
-  });
-
   function menu() {
     return comTema(
       <AulasDaSemanaScreen

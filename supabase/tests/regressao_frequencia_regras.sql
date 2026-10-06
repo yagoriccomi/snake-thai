@@ -31,7 +31,8 @@ begin;
 -- ---------------------------------------------------------------------
 insert into public.groups (id, name) values
   ('turma-freq2', 'Turma Freq Regras'),
-  ('turma-freq2-outra', 'Turma Freq Outra');
+  ('turma-freq2-outra', 'Turma Freq Outra'),
+  ('turma-freq2-chamada', 'Turma Freq Chamada');
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password,
                         email_confirmed_at, created_at, updated_at)
@@ -66,14 +67,16 @@ insert into public.classes (id, title, type, date_time, group_id, attendance_tak
   ('f0000000-0000-4000-8000-00000000c005','c5','routine', timestamptz '2026-11-25 19:00-03','turma-freq2', null),
   ('f0000000-0000-4000-8000-00000000c007','c7','routine', timestamptz '2026-11-30 23:30-03','turma-freq2', null),
   ('f0000000-0000-4000-8000-00000000c008','c8','routine', timestamptz '2026-12-01 00:30-03','turma-freq2', null),
-  -- aulas relativas a AGORA, para concluir_chamada (que usa now() de propósito)
-  ('f0000000-0000-4000-8000-00000000b001','k1','routine', now() - interval '1 hour','turma-freq2', null),
-  ('f0000000-0000-4000-8000-00000000b002','k2','routine', now() + interval '1 day','turma-freq2', null);
+  -- Aulas relativas a AGORA, para concluir_chamada (que usa now() de propósito).
+  -- Ficam fora da turma e do prefixo do cenário: quando o relógio real chega a
+  -- novembro/2026, elas entrariam nas contas de S e nos avisos do T10 (D22).
+  ('f0000000-0000-4000-9000-00000000b001','k1','routine', now() - interval '1 hour','turma-freq2-chamada', null),
+  ('f0000000-0000-4000-9000-00000000b002','k2','routine', now() + interval '1 day','turma-freq2-chamada', null);
 
 insert into public.class_teachers (class_id, teacher_id)
 select c.id, 'f0000000-0000-4000-8000-000000000004'::uuid
   from public.classes c
- where c.group_id = 'turma-freq2';
+ where c.group_id in ('turma-freq2', 'turma-freq2-chamada');
 
 insert into public.class_teachers (class_id, teacher_id)
 values ('f0000000-0000-4000-8000-00000000a001','f0000000-0000-4000-8000-000000000005');
@@ -134,7 +137,7 @@ end $$;
 do $$
 begin
   begin
-    perform public.concluir_chamada('f0000000-0000-4000-8000-00000000b001');
+    perform public.concluir_chamada('f0000000-0000-4000-9000-00000000b001');
     raise exception 'FALHOU T6: aluno concluiu chamada';
   exception when insufficient_privilege then
     raise notice 'OK T6: aluno não conclui chamada';
@@ -231,7 +234,7 @@ end $$;
 do $$
 begin
   begin
-    perform public.concluir_chamada('f0000000-0000-4000-8000-00000000b002');
+    perform public.concluir_chamada('f0000000-0000-4000-9000-00000000b002');
     raise exception 'FALHOU T8: concluiu chamada de aula futura';
   exception when check_violation then
     raise notice 'OK T8: aula futura não tem chamada concluída';
@@ -242,9 +245,9 @@ end $$;
 do $$
 declare v1 timestamptz; v2 timestamptz;
 begin
-  v1 := public.concluir_chamada('f0000000-0000-4000-8000-00000000b001');
+  v1 := public.concluir_chamada('f0000000-0000-4000-9000-00000000b001');
   perform pg_sleep(0.01);
-  v2 := public.concluir_chamada('f0000000-0000-4000-8000-00000000b001');
+  v2 := public.concluir_chamada('f0000000-0000-4000-9000-00000000b001');
   if v1 is null or v1 <> v2 then
     raise exception 'FALHOU T9: conclusão % e repetição %', v1, v2;
   end if;
@@ -262,7 +265,7 @@ set local request.jwt.claims = '{"sub":"f0000000-0000-4000-8000-000000000005","r
 do $$
 begin
   begin
-    perform public.concluir_chamada('f0000000-0000-4000-8000-00000000b002');
+    perform public.concluir_chamada('f0000000-0000-4000-9000-00000000b002');
     raise exception 'FALHOU T7: professor de outra aula concluiu chamada';
   exception when insufficient_privilege then
     raise notice 'OK T7: só o professor da aula (ou admin) conclui a chamada';
