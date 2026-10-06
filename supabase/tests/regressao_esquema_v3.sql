@@ -1358,9 +1358,11 @@ end $$;
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"e3000000-0000-4000-8000-000000000010","role":"authenticated"}';
+-- A semana corrente: já começou e está sempre no prazo. A semana passada,
+-- com aula de segunda a sexta, sai do prazo no sábado às 00:00 (D22).
 do $$
 declare
-  v_semana date := date_trunc('week', (now() - interval '7 days') at time zone 'America/Sao_Paulo')::date;
+  v_semana date := date_trunc('week', now() at time zone 'America/Sao_Paulo')::date;
 begin
   insert into public.absence_justifications (class_id, user_id, message, scope, week_start)
   values (null, 'e3000000-0000-4000-8000-000000000010', 'Viagem a trabalho', 'week', v_semana);
