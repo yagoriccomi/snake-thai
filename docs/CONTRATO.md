@@ -29,6 +29,8 @@
 > servidor** e a tabela de códigos e mensagens de cada rota (§ 13.6); a errata da segunda barreira
 > (§ 13.5): falha do Supabase dá 502, 503 ou 504, nunca 403, e o alarme só soa no 403; e o que isso
 > muda para o APK 1.8/1.9 e para a web atual (§ 15): **nada quebra**. Nenhum nome de banco nem rota muda.
+> Completada em 06/10 com o inventário do servidor: função ou coluna ausente dá 502; o Auth fora do ar
+> deixa de dar 401; o que depende de migration nova só é ligado com ela em produção (G4).
 >
 > **Caminho absoluto** (para os chats de outros repositórios):
 > `C:\Users\USER\Desktop\GIT\academy\snake-thai\docs\CONTRATO.md`
@@ -1790,7 +1792,9 @@ quem continuar na 1.8.0, o aviso da 2.0.0 vai por outro canal (ROADMAP 4.13).
 > **O que a v6 acrescenta:** a § 13.6, com o código HTTP, o `code` e a mensagem de cada erro de cada
 > rota (D20), e a errata da § 13.5. As linhas marcadas como "muda" na § 13.6 ainda não estão no
 > servidor: o #37 do `snake-server` (segunda barreira) já entra pela errata, e as outras rotas vão em
-> PR próprio depois da v6 (C15).
+> PR próprio depois da v6 (C15). Completada em 06/10 com o inventário de erros do servidor: os
+> códigos são os do #37, função ou coluna ausente é 502, o Auth fora do ar deixa de dar 401, e a
+> chamada que depende de migration nova só é ligada com ela em produção (G4).
 
 ### 13.1 Módulo novo `motivos`
 
@@ -1929,9 +1933,11 @@ public.pode_decidir_justificativa(p_id uuid) returns boolean      -- § 9.1; nas
   `pode_decidir_justificativa` devolve `false` para linha decidida, e o professor recebe 403, como
   na RLS.
 - **Quando:** a parte do comprovante pode ser feita já. `is_admin()` está na `main` e no banco
-  local com `execute` para `authenticated` (conferido em 29/09). A parte da justificativa espera o
-  **4.8 na `main`**, anotado no Registro do `ROADMAP-thai.md`. Até lá, `pode_decidir_justificativa`
-  não existe: a chamada daria 404 e bloquearia o professor que hoje lê pela RLS.
+  local com `execute` para `authenticated` (conferido em 29/09). A parte da justificativa pode ser
+  escrita e mesclada já (o 4.8 está na `main`), mas **só é ligada com o 4.8 em produção (G4)**
+  (v6). Até lá, `pode_decidir_justificativa` não existe em produção: a chamada daria 502 (função
+  ausente, § 13.6) e bloquearia o professor que hoje lê pela RLS. Desligada, a rota segue só com a
+  RLS, como hoje.
 - **Sem RPC nova.** O servidor não ganha um papel próprio: continua usando o token de quem pede.
   `/v1/motivos/view-url` continua só com a RLS (`pode_ler_motivo`), porque um motivo tem muitos
   leitores legítimos (§ 8) e a regra deles já está numa função única.
@@ -1941,7 +1947,8 @@ public.pode_decidir_justificativa(p_id uuid) returns boolean      -- § 9.1; nas
 ### 13.6 Política de erros e códigos de cada rota (v6, D20)
 
 **Corpo de todo erro:** `{ "error": "<mensagem>", "code": "<código>", "traceId": "<id>" }`, montado
-pelo handler único do servidor. A exceção é o 429 do limitador, que sai sem `traceId`.
+pelo handler único do servidor. O 429 do limitador, que hoje sai sem `traceId`, passa a sair no
+mesmo formato, com o mesmo `code` e a mesma mensagem; o cliente não muda.
 
 **Regras:**
 
@@ -1972,6 +1979,7 @@ pelo handler único do servidor. A exceção é o 429 do limitador, que sai sem 
 | Sem `Authorization` | 401 | `no_token` | Não autenticado | já é assim |
 | `Authorization` sem `Bearer <token>` | 401 | `bad_token_format` | Formato de token inválido | já é assim |
 | Token recusado pelo Auth (4xx) ou pelo PostgREST (401) | 401 | `bad_token` | Sessão inválida | já é assim no Auth; **muda** no 401 do PostgREST (hoje vira 403) |
+| Auth fora do ar ao validar o token (rede ou gateway 502/503); se demorou ou respondeu de forma inesperada, 504 ou 502 (tabela abaixo) | 503 | `supabase_unreachable` | Não foi possível falar com o servidor de dados | **muda:** hoje o 5xx e o 200 sem usuário dão 401 `bad_token`, e o aluno lê "Sessão inválida" com o Supabase fora do ar; o JSON inválido dá 500 |
 | Rota que não existe | 404 | `route_not_found` | Rota não encontrada | já é assim |
 | Limite de requisições (60/min global, 20/min em `/v1/proofs`, `/v1/justifications` e `/v1/motivos`) | 429 | `rate_limited` | Muitas requisições. Tente de novo em instantes. | já é assim (sem `traceId`) |
 | Erro que o servidor não identifica | 500 | `internal_error` | Erro interno | já é assim |
@@ -1980,10 +1988,21 @@ pelo handler único do servidor. A exceção é o 429 do limitador, que sai sem 
 
 | Situação | Status | `code` | Mensagem | Hoje |
 | --- | --- | --- | --- | --- |
-| Fora do ar pela rede (conexão recusada, DNS, conexão caída) | 503 | `supabase_unreachable` | Não foi possível falar com o servidor de dados | já é assim |
-| Respondeu 502 ou 503 | 503 | `supabase_unavailable` | Servidor de dados indisponível | **muda:** hoje é `supabase_error` |
+| Fora do ar: rede (conexão recusada, DNS, conexão caída) ou o gateway respondeu 502 ou 503 | 503 | `supabase_unreachable` | Não foi possível falar com o servidor de dados | já é assim na rede; **muda** no 502/503 (hoje 503 `supabase_error`, "Servidor de dados indisponível") |
 | Tempo esgotado (10 s do servidor) ou respondeu 504 | 504 | `supabase_timeout` | O servidor de dados demorou demais para responder | **muda:** hoje é 503 `supabase_unreachable` |
-| Resposta inválida: respondeu 500 ou outro 5xx; corpo que não é JSON; formato inesperado (consulta sem lista, RPC sem booleano, Auth 200 sem usuário, valor fora do contrato, como `attempt` fora de 1–2); 4xx do PostgREST que não seja 401 (função ou coluna ausente, falta de `grant`) | 502 | `supabase_bad_response` | O servidor de dados respondeu de um jeito inesperado | **muda:** hoje o 5xx é 503 `supabase_error`, o 4xx e o formato inesperado viram 403 (ou nada encontrado), o JSON inválido vira 500, e no Auth qualquer falha vira 401 |
+| Resposta inválida: respondeu 500 ou outro 5xx; corpo que não é JSON; formato inesperado (consulta sem lista, RPC sem booleano, Auth 200 sem usuário, valor fora do contrato, como `attempt` fora de 1–2); 4xx do PostgREST que não seja 401 (função ou coluna ausente, falta de `grant`) | 502 | `supabase_invalid_response` | O servidor de dados respondeu de forma inesperada | **muda:** hoje o 5xx é 503 `supabase_error`, o 4xx e o formato inesperado viram 403 (ou nada encontrado), o JSON inválido vira 500, e no Auth qualquer falha vira 401 |
+
+São os três códigos que o #37 já usa na segunda barreira. O 502 diz "tentar de novo agora não
+resolve"; o 503 e o 504 dizem "vale tentar de novo". Nos três, o servidor registra o erro com o
+`traceId` e não soa o alarme de acesso indevido.
+
+**Função ou coluna ausente é 502, não 403** (pergunta 1 do inventário do servidor, respondida pelo
+dono em 06/10, pela D20). O 4xx do PostgREST que não é 401 — por exemplo `PGRST202` (função que não
+existe) ou `42703` (coluna que não existe) — é dependência quebrada, não falta de permissão: dá
+502 `supabase_invalid_response` já no PR das outras rotas, sem esperar o G4. A consequência para a
+ordem da § 14 está nela: o servidor vai para produção antes das migrations, então a chamada a
+função ou coluna que só uma migration nova cria fica **desligada no servidor** até essa migration
+estar em produção (G4). Antes disso, a rota segue o caminho de hoje, sem a chamada nova.
 
 **Por rota** (além dos erros comuns). "Leitor legítimo" é o da § 13.5.
 
@@ -2016,7 +2035,7 @@ pelo handler único do servidor. A exceção é o 429 do limitador, que sai sem 
 | `{justificationId}`: linha que a RLS não devolve, ou de outra pessoa (sem alarme: professor e admin leem a linha pela RLS, mas só o dono anexa) | 403 | `forbidden` | Sem acesso | já é assim |
 | `{justificationId}` do próprio aluno, com `status` diferente de `'pending'` | 409 | `justification_not_pending` | Esta justificativa já foi decidida e não aceita anexo | **muda:** hoje 403 |
 | `{justificationId}` do próprio aluno, com `proof_public_id` preenchido | 409 | `justification_already_has_attachment` | Esta justificativa já tem anexo | **muda:** hoje 403 |
-| `{justificationId}` com `attempt` fora de 1–2 | 502 | `supabase_bad_response` | (a da falha do Supabase) | **muda:** hoje 403 |
+| `{justificationId}` com `attempt` fora de 1–2 | 502 | `supabase_invalid_response` | (a da falha do Supabase) | **muda:** hoje 403 |
 
 `POST /v1/justifications/view-url`:
 
@@ -2028,7 +2047,7 @@ pelo handler único do servidor. A exceção é o 429 do limitador, que sai sem 
 | Leitor legítimo; justificativa sem anexo | 404 | `justification_attachment_not_found` | Esta justificativa não tem anexo | **muda:** hoje 403 |
 | Leitor legítimo; anexo fora da Cloudinary | 409 | `justification_attachment_not_on_cloudinary` | Este anexo está no armazenamento antigo e não abre por aqui | **muda:** hoje 403 |
 | Leitor legítimo; `proof_public_id` diferente de todos os caminhos derivados (§ 13.2) | 409 | `justification_attachment_path_mismatch` | O anexo desta justificativa não está no lugar esperado | **muda:** hoje 403 |
-| Banco sem a coluna `attempt` (anterior ao 4.1) | 502 | `supabase_bad_response` | (a da falha do Supabase) | **muda:** hoje 403 (decisão de 25/09, revista pela D20) |
+| Banco sem a coluna `attempt` (anterior ao 4.1) | 502 | `supabase_invalid_response` | (a da falha do Supabase) | **muda:** hoje 403 (decisão de 25/09, revista pela D20). Em produção não acontece: a leitura de `attempt` só é ligada com o 4.1 em produção (G4; função ou coluna ausente, acima) |
 
 `POST /v1/motivos/sign-upload`:
 
@@ -2052,7 +2071,18 @@ pelo handler único do servidor. A exceção é o 429 do limitador, que sai sem 
   própria. As de `paymentId`, `classId`, `justificationId`, `motivoId`, `anexoId` e a da escolha
   entre `classId` e `justificationId` são as que ele já tem no `zod`; a de `pagina` é nova (hoje o
   `zod` usa a frase padrão dele, em inglês).
-- `supabase_error` deixa de existir: nenhum cliente o lê (§ 15).
+- `supabase_error` deixa de existir: nenhum cliente o lê (§ 15). Os nomes `supabase_unavailable` e
+  `supabase_bad_response`, do primeiro texto desta v6 (05/10), nunca existiram no servidor: valem
+  `supabase_unreachable` e `supabase_invalid_response`, os do #37.
+- **Ligar só com a migration em produção:** a chamada a `pode_decidir_justificativa` (4.8) na
+  segunda barreira e a leitura de `attempt` (4.1) nas rotas de justificativa só são ligadas quando
+  a migration estiver em produção (G4). Com o servidor publicado antes (§ 14), elas dariam 502 ao
+  professor que hoje lê o atestado pela RLS. O servidor escolhe como desliga (variável de ambiente
+  ou constante), e o teste cobre os dois estados. No `view-url`, o `attempt` não entra nos caminhos
+  derivados (§ 13.2): desligado, a consulta só não pede a coluna. O `sign-upload` com
+  `{justificationId}` só é chamado pelo APK 2.0.0, que sai depois do G4.
+- A Cloudinary nunca gera erro para o cliente: a assinatura é calculada no servidor, sem rede, e a
+  contagem de páginas do PDF, quando falha, cai para 1 com aviso no log.
 - "#37" na coluna "Hoje" quer dizer que a linha já está no PR da segunda barreira, que só mescla
   depois desta v6 na `main`, já com a errata da § 13.5 (C15, D19).
 
@@ -2194,3 +2224,4 @@ escolher; o caminho vale se o dono não vetar até o G0:
 | v4 | 2026-09-29 | Aprovada pelo dono em 28/09 (D4 da coordenação), com quatro itens. **(1)** Errata de `plans_cota_coerente` (§ 5.2): o texto da v3 deixava passar o plano livre sem cota, porque o `check` com a cota nula dá nulo e passa. A migration do 4.1 já fazia o certo. Entra a regra 9 na § 0.1. **(2)** `snake.justificativa_rpc` na § 0.1 e na § 9.1, para as RPCs de justificativa do 4.8 (achado 12 do 4.1). **(3)** A 2ª dica do aviso de atualização na § 3 e na § 12.3, que estava no mockup aprovado. O "Baixa" do mockup virou "Baixe", para concordar com "abra" e "toque". **(4)** § 13.5, a segunda barreira do servidor (P-9, item 5.5 do `ROADMAP-server.md`), com `is_admin()` e `pode_decidir_justificativa(p_id)`, as mesmas funções da RLS, sem RPC nova. A parte da justificativa espera o 4.8 na `main`. Nenhum nome existente mudou. |
 | v5 | 2026-10-02 | Aprovada pelo dono em 01/10 (D12 da coordenação), com os quatro itens da auditoria da Fase 4 (`REVIEW-FASE4.md`), que já estão no banco desde o 4.12 (#79). **(1) § 9.1 (A1):** decide e lê o atestado de aula só quem já estava na aula quando a justificativa chegou (`class_teachers.created_at <= j.created_at`) ou quem está escalado no horário; a § 13.5 acompanha. **(2) § 9.4 e § 6 (B2):** as FKs de `class_swap_periods` passam a `on delete restrict`; `encerrar_horario_da_grade` recusa, com a data mínima, apagar o horário que tem período; `excluir_turma` só encerra esse horário. **(3)** `quem_sera_avisado(p_class_id)` entra na § 6.1. **(4)** `solicitacao_para_decidir(p_id)` entra na § 9.3. **Nenhum nome mudou, e o servidor e a web não precisam mudar nada:** o 5.5 do servidor chama `pode_decidir_justificativa` com a mesma assinatura da v4 (só a regra ficou mais restrita, C10), e a web não usa nenhuma das quatro partes (conferido na `main` dos dois em 02/10). |
 | v6 | 2026-10-05 | Pedida pelo dono em 02/10 (D20 e C15 da coordenação). **(1) § 13.6:** a política de erros do servidor (um `code` e uma mensagem por erro identificado; 400 `bad_request` e 500 `internal_error` como genéricos; 403 só para falta de permissão) e a tabela de cada rota, montada a partir do servidor em `origin/main`, no #37 (`feature/segunda-barreira-5.5`) e no #36 (`chore/diagnostico-trust-proxy`, que não muda nenhum erro), com a coluna "Hoje" dizendo o que o servidor ainda precisa mudar. **(2) Errata da § 13.5:** falha do Supabase dá 502 (resposta inválida), 503 (fora do ar ou rede) ou 504 (tempo esgotado), nunca 403, e nada é liberado; o alarme de acesso indevido só no 403. A decisão de 25/09 (view-url em banco sem `attempt` → 403) passa a 502. **(3) § 15:** o APK 1.8/1.9 e a web atual não decidem pelo status nem pelo `code` do servidor, então nada quebra e nenhum código antigo é mantido. §§ 13.1 e 13.2 apontam para a § 13.6. Nenhum nome de banco, rota ou corpo de sucesso mudou. |
+| v6 (complemento) | 2026-10-06 | Antes do merge, com o inventário de erros do servidor (`docs/planos/INVENTARIO-erros-D20.md` do #37) e as respostas do dono. **(1)** Os códigos da falha do Supabase passam a ser os do #37: 503 `supabase_unreachable` (rede ou gateway 502/503; o `supabase_unavailable` do primeiro texto some), 504 `supabase_timeout` e 502 `supabase_invalid_response` (no lugar de `supabase_bad_response`), com as mensagens do servidor. **(2)** Pergunta 1 do inventário: função ou coluna ausente é dependência quebrada, 502, já no PR das outras rotas. **(3)** O Auth fora do ar ao validar o token deixa de dar 401 `bad_token` e passa a 503 (504 ou 502 se demorou ou respondeu de forma inesperada). **(4)** A chamada a `pode_decidir_justificativa` (4.8) e a leitura de `attempt` (4.1) só são ligadas no servidor com a migration em produção (G4); a § 13.5 dizia "4.8 na `main`". **(5)** O 429 passa a sair com `traceId`. Continua v6: nenhum chat implementou o texto de 05/10. |

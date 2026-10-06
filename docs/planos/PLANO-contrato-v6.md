@@ -30,19 +30,27 @@
    português e não usam as palavras que o APK lê como falha de rede. [#1][#24]
 2. **Genéricos:** 400 `bad_request` ("Requisição inválida") para o 4xx que o servidor não identifica e
    500 `internal_error` ("Erro interno"), que já existe. [#24][#93]
-3. **Supabase:** rede → 503 `supabase_unreachable` (já existe); tempo esgotado (10 s ou 504 do Supabase)
-   → 504 `supabase_timeout`; 502/503 do Supabase → 503 `supabase_unavailable` (substitui o
-   `supabase_error`, que nenhum cliente lê); 500 ou outro 5xx, corpo que não é JSON, formato inesperado
-   ou 4xx do PostgREST que não seja 401 → 502 `supabase_bad_response`. Vale também para o Auth: 5xx do
-   Auth deixa de virar 401. [#24][#93]
+3. **Supabase** (revista em 06/10 com o inventário do servidor, para usar os códigos do #37 e as três
+   categorias literais da D20): rede ou 502/503 do gateway → 503 `supabase_unreachable` (substitui o
+   `supabase_error`, que nenhum cliente lê); tempo esgotado (10 s ou 504 do Supabase) → 504
+   `supabase_timeout`; 500 ou outro 5xx, corpo que não é JSON, formato inesperado ou 4xx do PostgREST
+   que não seja 401 → 502 `supabase_invalid_response`. Vale também para o Auth: o Auth fora do ar deixa
+   de virar 401 e passa a 503 (pedido do dono em 06/10). [#6][#24][#93]
 4. **403 continua escondendo "não existe" e "é de outra pessoa"** (os dois dão o mesmo 403) [#55]. Os
    códigos específicos (404, 409) só aparecem para o dono ou para o leitor legítimo já confirmado, porque
    antes disso revelariam que a linha existe.
 5. **A decisão de 25/09 (view-url de justificativa em banco sem `attempt` → 403) passa a 502** pela D20:
-   coluna ausente é resposta inválida do banco, não falta de permissão.
+   coluna ausente é resposta inválida do banco, não falta de permissão. Confirmado pelo dono em 06/10
+   (pergunta 1 do inventário): função ou coluna ausente é dependência quebrada, 502, já no PR das outras
+   rotas, e não só depois do G4.
+5a. **Como o servidor vai para produção antes das migrations (§ 14)**, a chamada a
+   `pode_decidir_justificativa` (4.8) e a leitura de `attempt` (4.1) só são ligadas com a migration em
+   produção (G4); senão o professor que hoje lê pela RLS levaria 502. A § 13.5 dizia "4.8 na `main`",
+   que não protege a produção. [#84]
 6. **Nenhum cliente depende de um código que muda** (§ 15). Por isso nenhum código antigo é mantido até a
    2.0.0 e não é preciso perguntar ao dono.
-7. **A 429 continua sem `traceId`** (vem do limitador, fora do handler). A política não exige o campo.
+7. **O 429 passa a sair com `traceId`** (revista em 06/10: o inventário do servidor, achado 3, já
+   prevê; o cliente não muda).
 
 ## Decisão visual
 
@@ -60,6 +68,7 @@ Sem superfície visual: só documento.
 | 6 | § 15 | Clientes do servidor: APK 1.8/1.9 e web `main` | [#28] |
 | 7 | § 17 | Linha da v6 | [#96] |
 | 8 | `ROADMAP-thai.md` | Registro (v6, o que o servidor e a web ajustam), D20, D21 (item 5.3) e D13 revisto | [#96][#98] |
+| 9 | Todo o PR (06/10) | `main` com a D22 trazida para a branch; complemento com o inventário do servidor (premissas 3, 5, 5a e 7) nas §§ 0, 13, 13.5, 13.6 e 17 e no Registro | [#6][#96] |
 
 ## Riscos e rollback [#84]
 
