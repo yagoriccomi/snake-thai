@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AppText } from '@/components/AppText';
 import { ErrorState } from '@/components/ErrorState';
 import { JustificarSemanaCard, semanasParaJustificar } from '@/components/JustificarSemanaCard';
-import { JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
+import { AVISO_DE_ANEXO_QUE_FALHOU, JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
 import { MonthSelector, type MonthOption } from '@/components/MonthSelector';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useAuth } from '@/context/AuthProvider';
@@ -115,16 +115,17 @@ export function HistoricoFrequenciaScreen({
   const [semanaAJustificar, setSemanaAJustificar] = useState<SemanaDoMes | null>(null);
 
   const justificarSemana = useCallback(
-    async (draft: JustificationDraft): Promise<void> => {
-      if (semanaAJustificar === null) return;
-      await enviarJustificativa({
+    async (draft: JustificationDraft): Promise<string | undefined> => {
+      if (semanaAJustificar === null) return undefined;
+      const { anexoFalhou } = await enviarJustificativa({
         scope: 'week',
         classId: null,
         weekStart: semanaAJustificar.weekStart,
         texto: draft.message,
-        anexo: null,
+        anexo: draft.attachment,
       });
       void reload();
+      return anexoFalhou ? AVISO_DE_ANEXO_QUE_FALHOU : undefined;
     },
     [semanaAJustificar, reload],
   );
@@ -274,7 +275,6 @@ export function HistoricoFrequenciaScreen({
           titulo="Justificar semana"
           contexto={`${semanaAJustificar.label} · ${periodoDaSemana(semanaAJustificar)}. Cada justificativa aprovada devolve uma aula.`}
           perguntarSeQuer={false}
-          permiteAnexo={false}
           onClose={() => setSemanaAJustificar(null)}
           onSubmit={justificarSemana}
         />

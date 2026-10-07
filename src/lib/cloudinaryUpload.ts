@@ -20,6 +20,12 @@ export interface UploadAssinado {
   public_id: string;
   type: string;
   uploadUrl: string;
+  /**
+   * Só nos anexos novos (`{ justificationId }`, contrato § 13.2): entram na
+   * assinatura, e o upload sem eles volta da Cloudinary com "Invalid Signature".
+   */
+  overwrite?: boolean;
+  allowed_formats?: string;
 }
 
 /** O arquivo escolhido pelo usuário, como chega do seletor. */
@@ -68,6 +74,14 @@ export async function enviarArquivoAssinado(
   formulario.append('folder', assinatura.folder);
   formulario.append('public_id', assinatura.public_id);
   formulario.append('type', assinatura.type);
+  // Ausentes no comprovante e no `{ classId }` legado: mandar um campo que o
+  // servidor não assinou também quebra a assinatura.
+  if (assinatura.overwrite !== undefined) {
+    formulario.append('overwrite', String(assinatura.overwrite));
+  }
+  if (assinatura.allowed_formats !== undefined) {
+    formulario.append('allowed_formats', assinatura.allowed_formats);
+  }
 
   const resposta = await fetch(assinatura.uploadUrl, { method: 'POST', body: formulario });
   if (!resposta.ok) {

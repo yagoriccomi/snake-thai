@@ -6,7 +6,7 @@ import { BlocoDeContato } from '@/components/BlocoDeContato';
 import { EmptyState } from '@/components/EmptyState';
 import { ErroAoAtualizar } from '@/components/ErroAoAtualizar';
 import { ErrorState } from '@/components/ErrorState';
-import { JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
+import { AVISO_DE_ANEXO_QUE_FALHOU, JustificationSheet, type JustificationDraft } from '@/components/JustificationSheet';
 import { ScreenWrapper } from '@/components/ScreenWrapper';
 import { useMinhasJustificativas } from '@/hooks/useJustificativas';
 import type { AulasStackScreenProps } from '@/navigation/types';
@@ -46,10 +46,11 @@ export function MinhasJustificativasScreen(_props: AulasStackScreenProps<'Minhas
   );
 
   const reenviar = useCallback(
-    async (draft: JustificationDraft): Promise<void> => {
-      if (reenviando === null) return;
-      await reenviarJustificativa(reenviando.id, draft.message);
+    async (draft: JustificationDraft): Promise<string | undefined> => {
+      if (reenviando === null) return undefined;
+      const { anexoFalhou } = await reenviarJustificativa(reenviando.id, draft.message, draft.attachment);
       void recarregar();
+      return anexoFalhou ? AVISO_DE_ANEXO_QUE_FALHOU : undefined;
     },
     [reenviando, recarregar],
   );
@@ -114,7 +115,6 @@ export function MinhasJustificativasScreen(_props: AulasStackScreenProps<'Minhas
           titulo="Reenviar justificativa"
           contexto={`${assuntoDaJustificativa(reenviando)} · é a última tentativa.`}
           perguntarSeQuer={false}
-          permiteAnexo={false}
           onClose={() => setReenviando(null)}
           onSubmit={reenviar}
         />

@@ -65,27 +65,48 @@ function validarTexto(texto: string): string {
   return limpo;
 }
 
+function exigirBackendParaAnexo(anexo: ArquivoParaEnvio | null): void {
+  if (anexo !== null && !apiDisponivel()) {
+    throw new AnexoIndisponivelError();
+  }
+}
+
+/**
+ * Sobe o arquivo e o liga à justificativa já gravada (§ 9.1 e § 13.2).
+ *
+ * O servidor assina pelo id e deriva a pasta e o nome; a RPC grava o caminho
+ * que ela mesma deriva, com o `-2` da segunda tentativa. O app nunca escreve
+ * `proof_*` (C11). Qualquer falha aqui deixa a justificativa só com o texto
+ * (§ 9.1, fluxo 3): por isso devolve se falhou, em vez de lançar.
+ */
+async function anexar(id: string, anexo: ArquivoParaEnvio): Promise<boolean> {
+  try {
+    await enviarArquivoAssinado('/v1/justifications/sign-upload', { justificationId: id }, anexo);
+    const { error } = await supabase.rpc('anexar_a_justificativa', { p_id: id });
+    if (error !== null) {
+      throw lerErroDoBanco(error, RECUSAS_COM_FRASE);
+    }
+    return false;
+  } catch (falha) {
+    // O ApiError leva o código da D20 (ex.: `justification_not_pending`) ao log. [#91]
+    log.warn('Justificativa enviada sem o anexo', falha);
+    return true;
+  }
+}
+
 /**
  * Envia a justificativa (contrato § 9.1): o texto é obrigatório, e o banco
  * confere grade, prazo (D13), troca (T38) e cota (T17).
  *
- * O anexo vai depois, pela rota que o servidor tem hoje (por aula); até o G2
- * a justificativa da semana vai sem anexo. Se o anexo falhar, a justificativa
- * fica só com o texto (§ 9.1, fluxo) e a função devolve `anexoFalhou`.
+ * O anexo, de aula ou de semana, vai depois do texto aceito. Se falhar, a
+ * justificativa fica só com o texto e a função devolve `anexoFalhou`.
  *
- * @throws JustificativaInvalidaError texto vazio ou longo, ou anexo na semana.
+ * @throws JustificativaInvalidaError texto vazio ou longo.
  * @throws AnexoIndisponivelError     anexo pedido num build sem backend.
  */
 export async function enviarJustificativa(input: NovaJustificativa): Promise<{ id: string; anexoFalhou: boolean }> {
   const texto = validarTexto(input.texto);
-  if (input.anexo !== null) {
-    if (input.scope === 'week' || input.classId === null) {
-      throw new JustificativaInvalidaError('O anexo na justificativa da semana chega numa próxima versão. Envie só a mensagem.');
-    }
-    if (!apiDisponivel()) {
-      throw new AnexoIndisponivelError();
-    }
-  }
+  exigirBackendParaAnexo(input.anexo);
 
   const { data: id, error } = await supabase.rpc('enviar_justificativa', {
     p_scope: input.scope,
@@ -97,33 +118,32 @@ export async function enviarJustificativa(input: NovaJustificativa): Promise<{ i
   if (error !== null) {
     throw lerErroDoBanco(error, RECUSAS_COM_FRASE);
   }
-
-  if (input.anexo === null || input.classId === null) {
+  if (input.anexo === null) {
     return { id, anexoFalhou: false };
   }
-  try {
-    const publicId = await enviarArquivoAssinado('/v1/justifications/sign-upload', { classId: input.classId }, input.anexo);
-    // O dono troca o anexo da própria justificativa pendente (§ 9.1 f).
-    const { error: erroDoAnexo } = await supabase
-      .from('absence_justifications')
-      .update({ proof_provider: 'cloudinary', proof_public_id: publicId })
-      .eq('id', id);
-    if (erroDoAnexo !== null) {
-      throw erroDoAnexo;
-    }
-    return { id, anexoFalhou: false };
-  } catch (falha) {
-    log.warn('Justificativa enviada sem o anexo', falha);
-    return { id, anexoFalhou: true };
-  }
+  return { id, anexoFalhou: await anexar(id, input.anexo) };
 }
 
-/** Reenvio da primeira negada, em até 7 dias (D42). */
-export async function reenviarJustificativa(id: string, texto: string): Promise<void> {
-  const { error } = await supabase.rpc('reenviar_justificativa', { p_id: id, p_texto: validarTexto(texto) });
+/**
+ * Reenvio da primeira negada, em até 7 dias (D42). O anexo da tentativa 1
+ * fica com o admin; o novo, se houver, vai depois do texto, como no envio.
+ */
+export async function reenviarJustificativa(
+  id: string,
+  texto: string,
+  anexo: ArquivoParaEnvio | null = null,
+): Promise<{ anexoFalhou: boolean }> {
+  const limpo = validarTexto(texto);
+  exigirBackendParaAnexo(anexo);
+
+  const { error } = await supabase.rpc('reenviar_justificativa', { p_id: id, p_texto: limpo });
   if (error !== null) {
     throw lerErroDoBanco(error, RECUSAS_COM_FRASE);
   }
+  if (anexo === null) {
+    return { anexoFalhou: false };
+  }
+  return { anexoFalhou: await anexar(id, anexo) };
 }
 
 /** Aprovar ou negar, com a nota obrigatória (D15). */

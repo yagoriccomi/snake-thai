@@ -87,7 +87,7 @@ const PARA_REVISAR = {
 beforeEach(() => {
   mockMinhas.mockReset().mockResolvedValue([MINHA]);
   mockParaRevisar.mockReset().mockResolvedValue([PARA_REVISAR]);
-  mockReenviar.mockReset().mockResolvedValue(undefined);
+  mockReenviar.mockReset().mockResolvedValue({ anexoFalhou: false });
   mockDecidir.mockReset().mockResolvedValue(undefined);
   mockUrlDoAnexo.mockReset();
 });
@@ -102,7 +102,7 @@ describe('MinhasJustificativasScreen (§ 3, D42)', () => {
     fireEvent.changeText(tela.getByLabelText('Motivo da falta'), 'Segue o comprovante da viagem');
     fireEvent.press(tela.getByText('Enviar justificativa'));
 
-    await waitFor(() => expect(mockReenviar).toHaveBeenCalledWith('j-1', 'Segue o comprovante da viagem'));
+    await waitFor(() => expect(mockReenviar).toHaveBeenCalledWith('j-1', 'Segue o comprovante da viagem', null));
     await waitFor(() => expect(mockMinhas).toHaveBeenCalledTimes(2));
   });
 
