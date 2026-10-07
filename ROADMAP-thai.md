@@ -877,8 +877,9 @@ acharam classes de defeito que podem voltar na implementação:
 
 ### 4.12b Atualizar o Expo (D26)
 
-- [x] SDK 57 mais novo e `npm audit fix` · [x] marca de ensaio no versionName · [ ] 👤 o dono testa
-  o APK de ensaio no aparelho · [ ] merge
+- [x] SDK 57 mais novo e `npm audit fix` · [x] marca de ensaio no versionName · [x] CI verde ·
+  [ ] 👤 gerar o APK de ensaio (o build local parou por falta de memória; comando na ENTREGA) ·
+  [ ] 👤 o dono testa o APK no aparelho · [ ] merge
 
 Plano em [`PLANO-4.12b-atualizar-expo.md`](docs/planos/PLANO-4.12b-atualizar-expo.md); roteiro do
 aparelho em [`ENTREGA-4.12b-atualizar-expo.md`](docs/planos/ENTREGA-4.12b-atualizar-expo.md). O PR
