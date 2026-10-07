@@ -28,6 +28,8 @@ const LIMITE_DO_VERSION_CODE = 2_100_000_000;
 const PADRAO_DA_VERSAO = /^v?(\d+)\.(\d+)\.(\d+)$/;
 const PADRAO_DO_CABECALHO = /^(\w+)(?:\(([^)]*)\))?(!)?:\s*(.+)$/;
 const PADRAO_DO_DESCRIBE = /^(.+)-(\d+)-g([0-9a-f]+)(-dirty)?$/;
+/** Rótulo de APK de ensaio (ex.: `d26`): só minúsculas e dígitos, para não confundir os pontos do versionName. */
+const PADRAO_DO_ENSAIO = /^[a-z0-9]+$/;
 
 /** @typedef {'patch' | 'minor' | 'major'} VersionPart */
 /** @typedef {{ major: number, minor: number, patch: number }} ParsedVersion */
@@ -256,25 +258,45 @@ function describeGit(cwd = path.join(__dirname, '..')) {
  * - fora da tag: `1.6.0+12.abc1234`
  * - app DEV: `1.6.0+dev.12.abc1234`
  * - com alteração não commitada: `.dirty` no fim
+ * - APK de ensaio: `ensaio.<rótulo>.` logo depois do `+`, mesmo na tag
+ *   (`1.6.0+ensaio.d26.dev.12.abc1234`)
  *
- * @param {{ version: string, describe: GitDescribe | null, variant: 'dev' | 'prod' }} entrada
+ * @param {{ version: string, describe: GitDescribe | null, variant: 'dev' | 'prod', ensaio?: string | null }} entrada
  * @returns {string}
  */
-function buildVersionName({ version, describe, variant }) {
+function buildVersionName({ version, describe, variant, ensaio = null }) {
   const base = formatVersion(parseVersion(version));
-  const prefixo = variant === 'dev' ? 'dev.' : '';
+  const marcas = [ensaio === null ? '' : `ensaio.${ensaio}`, variant === 'dev' ? 'dev' : ''].filter(Boolean);
 
   if (describe === null) {
-    return variant === 'dev' ? `${base}+dev` : base;
+    return marcas.length === 0 ? base : `${base}+${marcas.join('.')}`;
   }
 
   const naTag = describe.commitsSinceTag === 0 && !describe.dirty && describe.tag === `v${base}`;
-  if (naTag && variant !== 'dev') {
+  if (naTag && marcas.length === 0) {
     return base;
   }
 
   const sujo = describe.dirty ? '.dirty' : '';
+  const prefixo = marcas.map((marca) => `${marca}.`).join('');
   return `${base}+${prefixo}${describe.commitsSinceTag}.${describe.sha}${sujo}`;
+}
+
+/**
+ * Rótulo do APK de ensaio, de APP_ENSAIO. Ensaio prova uma mudança no aparelho
+ * antes do merge e não é publicação: não ganha tag nem release, e o versionName
+ * precisa dizer isso para ninguém confundi-lo com uma versão (C18).
+ *
+ * @param {NodeJS.ProcessEnv} ambiente
+ * @returns {string | null} `null` quando a variável não existe ou está vazia.
+ */
+function ensaioDoAmbiente(ambiente) {
+  const valor = (ambiente.APP_ENSAIO ?? '').trim();
+  if (valor === '') return null;
+  if (!PADRAO_DO_ENSAIO.test(valor)) {
+    throw new Error(`APP_ENSAIO="${valor}" inválido. Use só letras minúsculas e números (ex.: d26).`);
+  }
+  return valor;
 }
 
 /**
@@ -338,6 +360,7 @@ module.exports = {
   buildSupabaseWarning,
   buildVersionName,
   describeGit,
+  ensaioDoAmbiente,
   extractChangelogSection,
   formatVersion,
   insertChangelogSection,

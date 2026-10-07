@@ -63,6 +63,13 @@ mostra ganha um sufixo quando o build não é uma publicação (`app.config.js`)
 | 12 commits depois da tag | `1.7.0+12.abc1234` |
 | App DEV | `1.7.0+dev.12.abc1234` |
 | Com alteração não commitada | `….dirty` no fim |
+| APK de ensaio (`APP_ENSAIO=d26`) | `1.7.0+ensaio.d26.dev.12.abc1234` |
+
+**APK de ensaio** prova uma mudança no aparelho antes do merge (ex.: a atualização
+do Expo da D26). Não é publicação: não muda a versão, não ganha tag nem GitHub
+Release, e o `versionName` diz `ensaio` mesmo num build exatamente na tag. Gere-o
+com a variável no ambiente, só para aquele build (prebuild e Gradle):
+`set APP_ENSAIO=d26` antes do `menu.bat`. O rótulo aceita só minúsculas e números.
 
 O versionCode do app DEV é o mesmo da última tag. Não há conflito: o DEV é outro
 pacote (`com.snakethai.app.dev`).

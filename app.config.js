@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { VARIANTE_PADRAO, VARIANTES, problemaDeAmbiente } = require('./src/config/regrasDeAmbiente');
-const { buildVersionName, describeGit } = require('./scripts/version-lib');
+const { buildVersionName, describeGit, ensaioDoAmbiente } = require('./scripts/version-lib');
 
 /** Mesmo âmbar do token `devBanner` (src/theme/colors.ts): a cor que diz "isto é DEV". */
 const COR_DO_ICONE_DEV = '#F59E0B';
@@ -85,11 +85,13 @@ module.exports = ({ config }) => {
   const android = googleServicesFile !== null ? { ...config.android, googleServicesFile } : config.android;
   // A versão do app.json só muda ao publicar (docs/VERSIONAMENTO.md). Build que
   // não é publicação ganha sufixo de commit (1.6.0+12.abc1234, 1.6.0+dev.12.abc1234)
-  // para dar para saber de onde veio um APK sem inflar o número.
+  // para dar para saber de onde veio um APK sem inflar o número. APK de ensaio
+  // (APP_ENSAIO=d26) leva `ensaio.d26.` no nome: não é release (C18).
   const version = buildVersionName({
     version: config.version,
     describe: describeGit(__dirname),
     variant: variante === 'development' ? 'dev' : 'prod',
+    ensaio: ensaioDoAmbiente(ambiente),
   });
 
   if (variante === 'production') {
