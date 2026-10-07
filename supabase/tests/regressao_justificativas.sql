@@ -302,6 +302,92 @@ begin
 end $$;
 
 -- =====================================================================
+-- J13 — C11: o anexo da forma nova só pela RPC; o legado (§ 15) segue
+-- =====================================================================
+reset role;
+select set_config('request.jwt.claims', '', true);
+insert into public.classes (id, title, type, group_id, date_time, audience, attendance_taken_at) values
+  ('d8c00000-0000-4000-8000-000000000004', 'J8 Aula D', 'routine', 'j8-g', now() - interval '1 day', 'both', now() - interval '1 day');
+insert into public.class_teachers (class_id, teacher_id) values
+  ('d8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000002');
+
+set local role authenticated;
+
+do $$
+declare
+  v_id uuid := gen_random_uuid();
+  v_legado text := 'justificativas/d8000000-0000-4000-8000-000000000005/d8c00000-0000-4000-8000-000000000004';
+begin
+  perform pg_temp.como('d8000000-0000-4000-8000-000000000005');
+  -- O upsert do APK 1.8/1.9 e da web atual: caminho por aula, escrito pelo dono.
+  insert into public.absence_justifications (id, class_id, user_id, message, proof_provider, proof_public_id)
+  values (v_id, 'd8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000005',
+          'Consulta', 'cloudinary', v_legado);
+  insert into ctx values ('c11', v_id);
+
+  begin
+    update public.absence_justifications
+       set proof_public_id = 'justificativas/d8000000-0000-4000-8000-000000000005/' || v_id::text
+     where id = v_id;
+    raise exception 'FALHOU J13: o dono gravou o caminho novo direto';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- O legado o dono ainda tira; o novo vem da RPC.
+  update public.absence_justifications set proof_provider = null, proof_public_id = null where id = v_id;
+  perform public.anexar_a_justificativa(v_id);
+
+  begin
+    update public.absence_justifications set proof_provider = null, proof_public_id = null where id = v_id;
+    raise exception 'FALHOU J13: o dono removeu o anexo da forma nova';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    update public.absence_justifications set proof_provider = 'cloudinary', proof_public_id = v_legado where id = v_id;
+    raise exception 'FALHOU J13: o dono trocou o anexo da forma nova pelo legado';
+  exception when insufficient_privilege then null;
+  end;
+  -- O texto continua do dono, com o anexo intacto.
+  update public.absence_justifications set message = 'Consulta, segue o atestado' where id = v_id;
+
+  perform pg_temp.como('d8000000-0000-4000-8000-000000000006');
+  begin
+    insert into public.absence_justifications (id, user_id, scope, week_start, message, proof_provider, proof_public_id)
+    values (gen_random_uuid(), 'd8000000-0000-4000-8000-000000000006', 'week',
+            date_trunc('week', now() at time zone 'America/Sao_Paulo')::date, 'x', 'cloudinary',
+            'justificativas/d8000000-0000-4000-8000-000000000006/' || v_id::text);
+    raise exception 'FALHOU J13: a semana nasceu com anexo escrito pelo dono';
+  exception when insufficient_privilege then null;
+  end;
+end $$;
+
+reset role;
+select set_config('request.jwt.claims', '', true);
+
+do $$
+declare v_id uuid := (select id from ctx where chave = 'c11');
+begin
+  if (select message || '|' || proof_public_id from public.absence_justifications where id = v_id)
+     <> 'Consulta, segue o atestado|justificativas/d8000000-0000-4000-8000-000000000005/' || v_id::text then
+    raise exception 'FALHOU J13: texto ou anexo da forma nova';
+  end if;
+  -- A constraint amarra o sufixo à tentativa, mesmo para o sistema.
+  begin
+    update public.absence_justifications
+       set proof_public_id = 'justificativas/d8000000-0000-4000-8000-000000000005/' || v_id::text || '-2'
+     where id = v_id;
+    raise exception 'FALHOU J13: -2 na tentativa 1';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.absence_justifications set attempt = 2 where id = v_id;
+    raise exception 'FALHOU J13: caminho sem -2 na tentativa 2';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK J13: o anexo da forma nova só pela RPC, imutável no UPDATE direto, com o sufixo da tentativa; o legado segue';
+end $$;
+
+-- =====================================================================
 -- J12 — anônimo
 -- =====================================================================
 set local role anon;
