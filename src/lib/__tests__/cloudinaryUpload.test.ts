@@ -68,6 +68,23 @@ describe('enviarArquivoAssinado', () => {
     expect(corpo?.get('folder')).toBe('justificativas/aluno');
     expect(corpo?.get('public_id')).toBe('aula');
     expect(corpo?.get('type')).toBe('authenticated');
+    // Sem os campos que só os anexos novos assinam.
+    expect(corpo?.has('overwrite')).toBe(false);
+    expect(corpo?.has('allowed_formats')).toBe(false);
+  });
+
+  it('deveRepassarOverwriteEAllowedFormatsQuandoOServidorOsAssina', async () => {
+    mockChamarApi.mockResolvedValue({ ...ASSINATURA, overwrite: false, allowed_formats: 'jpg,png,pdf' });
+    const fetchFalso = prepararFetch({ ok: true, json: () => Promise.resolve({ public_id: 'x' }) });
+
+    await enviarArquivoAssinado('/v1/justifications/sign-upload', { justificationId: 'j' }, ARQUIVO);
+
+    const chamadaDoUpload = fetchFalso.mock.calls.find((c) => c[0] === URL_DO_UPLOAD) as
+      | [string, { body: FormData }]
+      | undefined;
+    const corpo = chamadaDoUpload?.[1].body;
+    expect(corpo?.get('overwrite')).toBe('false');
+    expect(corpo?.get('allowed_formats')).toBe('jpg,png,pdf');
   });
 
   it('deveDevolverOPublicIdQueOProvedorConfirmou', async () => {

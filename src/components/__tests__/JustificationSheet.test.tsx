@@ -126,7 +126,6 @@ describe('JustificationSheet', () => {
             titulo="Justificar semana"
             contexto="Semana de 28/09"
             perguntarSeQuer={false}
-            permiteAnexo={false}
             onClose={jest.fn()}
             onSubmit={jest.fn()}
           />
@@ -136,7 +135,8 @@ describe('JustificationSheet', () => {
     expect(getByText('Justificar semana')).toBeTruthy();
     expect(queryByRole('checkbox')).toBeNull();
     expect(getByLabelText('Motivo da falta')).toBeTruthy();
-    expect(queryByText('Anexar imagem')).toBeNull();
+    // Desde a C11 a semana e o reenvio também levam anexo.
+    expect(queryByText('Anexar imagem')).toBeTruthy();
   });
 
   it('deveMostrarAMensagemDeValidacaoEContinuarAberta', async () => {

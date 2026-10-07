@@ -260,8 +260,11 @@ values ('d0000000-0000-4000-8000-0000000000e2','d0000000-0000-4000-8000-00000000
         'd0000000-0000-4000-8000-000000000002','cloudinary','justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000c2');
 
 -- Caminhos reais (contrato v3, § 9.1): o formato antigo, por aula, e o novo, por justificativa.
-update public.absence_justifications set proof_public_id = 'justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000e2'
+-- Desde a C11 o novo só entra pela RPC: o aluno troca o anexo antigo pelo texto
+-- (a linha não fica vazia, T9) e anexa de novo.
+update public.absence_justifications set message = 'Atestado', proof_provider = null, proof_public_id = null
  where id = 'd0000000-0000-4000-8000-0000000000e2';
+select public.anexar_a_justificativa('d0000000-0000-4000-8000-0000000000e2');
 
 -- =====================================================================
 -- Ator: ALUNO 1 — privacidade entre alunos

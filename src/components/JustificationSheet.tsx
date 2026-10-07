@@ -41,8 +41,6 @@ interface JustificationSheetProps {
   contexto?: string;
   /** Depois do "Não vou", pergunta antes se quer justificar. Padrão: sim. */
   perguntarSeQuer?: boolean;
-  /** A semana e o reenvio vão sem anexo até o G2. Padrão: sim. */
-  permiteAnexo?: boolean;
   onClose: () => void;
   /**
    * Deve lançar em caso de falha; a folha mostra a mensagem e continua aberta.
@@ -83,7 +81,6 @@ export function JustificationSheet({
   titulo = 'Falta avisada',
   contexto,
   perguntarSeQuer = true,
-  permiteAnexo = true,
   onClose,
   onSubmit,
 }: JustificationSheetProps): React.JSX.Element {
@@ -166,7 +163,7 @@ export function JustificationSheet({
             {mensagem.length}/{JUSTIFICATION_MESSAGE_MAX}
           </Text>
 
-          {!permiteAnexo ? null : anexo !== null ? (
+          {anexo !== null ? (
             <View style={styles.anexo}>
               <Ionicons name="document-attach-outline" size={18} color={colors.textSecondary} />
               <Text style={styles.anexoNome} numberOfLines={1}>

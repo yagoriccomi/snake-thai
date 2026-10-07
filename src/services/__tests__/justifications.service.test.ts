@@ -66,13 +66,6 @@ describe('enviarJustificativa — validação antes da rede', () => {
     expect(mockEnviarArquivo).not.toHaveBeenCalled();
   });
 
-  it('deveRecusarAnexoNaSemanaAteOG2', async () => {
-    await expect(
-      enviarJustificativa({ scope: 'week', classId: null, weekStart: '2026-09-28', texto: 'Viagem', anexo: ANEXO }),
-    ).rejects.toBeInstanceOf(JustificativaInvalidaError);
-    expect(mockRpc).not.toHaveBeenCalled();
-  });
-
   it('deveRecusarAnexoNumBuildSemBackendEmVezDeFalharEmSilencio', async () => {
     mockApiDisponivel.mockReturnValue(false);
     await expect(enviarJustificativa(daAula({ anexo: ANEXO }))).rejects.toBeInstanceOf(AnexoIndisponivelError);
@@ -115,25 +108,43 @@ describe('enviarJustificativa — envio', () => {
     });
   });
 
-  it('deveSubirOAnexoDepoisDeCriarAJustificativa', async () => {
-    const chain = createQueryChain({ data: null, error: null });
-    mockFrom.mockReturnValue(chain);
-    mockEnviarArquivo.mockResolvedValue(`justificativas/x/${AULA}`);
+  it('deveSubirOAnexoPeloIdELigaloPelaRpcDepoisDeCriarAJustificativa', async () => {
+    mockEnviarArquivo.mockResolvedValue(`justificativas/x/${JUSTIFICATIVA}`);
 
     await expect(enviarJustificativa(daAula({ anexo: ANEXO }))).resolves.toEqual({
       id: JUSTIFICATIVA,
       anexoFalhou: false,
     });
 
-    expect(mockEnviarArquivo).toHaveBeenCalledWith('/v1/justifications/sign-upload', { classId: AULA }, ANEXO);
+    expect(mockEnviarArquivo).toHaveBeenCalledWith('/v1/justifications/sign-upload', { justificationId: JUSTIFICATIVA }, ANEXO);
+    expect(mockRpc).toHaveBeenNthCalledWith(2, 'anexar_a_justificativa', { p_id: JUSTIFICATIVA });
     // Só depois do texto aceito: a justificativa vale mesmo que o arquivo não chegue (§ 9.1).
     expect(mockRpc.mock.invocationCallOrder[0]).toBeLessThan(mockEnviarArquivo.mock.invocationCallOrder[0] ?? 0);
-    expect(chain.update).toHaveBeenCalledWith({ proof_provider: 'cloudinary', proof_public_id: `justificativas/x/${AULA}` });
-    expect(chain.eq).toHaveBeenCalledWith('id', JUSTIFICATIVA);
+    expect(mockEnviarArquivo.mock.invocationCallOrder[0]).toBeLessThan(mockRpc.mock.invocationCallOrder[1] ?? 0);
+    // C11: o caminho do anexo é do banco; o app não grava `proof_*` direto.
+    expect(mockFrom).not.toHaveBeenCalled();
+  });
+
+  it('deveAceitarAnexoNaJustificativaDaSemana', async () => {
+    await expect(
+      enviarJustificativa({ scope: 'week', classId: null, weekStart: '2026-09-28', texto: 'Viagem', anexo: ANEXO }),
+    ).resolves.toEqual({ id: JUSTIFICATIVA, anexoFalhou: false });
+    expect(mockEnviarArquivo).toHaveBeenCalledWith('/v1/justifications/sign-upload', { justificationId: JUSTIFICATIVA }, ANEXO);
   });
 
   it('deveAvisarQueOAnexoFalhouSemPerderOTexto', async () => {
     mockEnviarArquivo.mockRejectedValue(new Error('Cloudinary recusou o upload (HTTP 400)'));
+    await expect(enviarJustificativa(daAula({ anexo: ANEXO }))).resolves.toEqual({
+      id: JUSTIFICATIVA,
+      anexoFalhou: true,
+    });
+    expect(mockRpc).not.toHaveBeenCalledWith('anexar_a_justificativa', expect.anything());
+  });
+
+  it('deveAvisarQueOAnexoFalhouQuandoORegistroDoAnexoERecusado', async () => {
+    mockRpc
+      .mockResolvedValueOnce({ data: JUSTIFICATIVA, error: null })
+      .mockResolvedValueOnce({ data: null, error: { code: '42501', message: 'Operação negada.' } });
     await expect(enviarJustificativa(daAula({ anexo: ANEXO }))).resolves.toEqual({
       id: JUSTIFICATIVA,
       anexoFalhou: true,
@@ -144,13 +155,37 @@ describe('enviarJustificativa — envio', () => {
 describe('reenviar e decidir', () => {
   it('deveReenviarComOTextoAparado', async () => {
     mockRpc.mockResolvedValue({ data: null, error: null });
-    await reenviarJustificativa(JUSTIFICATIVA, ' Segue o atestado ');
+    await expect(reenviarJustificativa(JUSTIFICATIVA, ' Segue o atestado ')).resolves.toEqual({ anexoFalhou: false });
     expect(mockRpc).toHaveBeenCalledWith('reenviar_justificativa', { p_id: JUSTIFICATIVA, p_texto: 'Segue o atestado' });
+    expect(mockEnviarArquivo).not.toHaveBeenCalled();
   });
 
   it('deveRecusarReenvioSemTexto', async () => {
     await expect(reenviarJustificativa(JUSTIFICATIVA, '')).rejects.toBeInstanceOf(JustificativaInvalidaError);
     expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('deveAnexarNoReenvioDepoisDoTextoAceito', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: null });
+    await expect(reenviarJustificativa(JUSTIFICATIVA, 'Segue o atestado', ANEXO)).resolves.toEqual({ anexoFalhou: false });
+    // O `-2` da tentativa 2 é o banco quem deriva; o app manda só o id.
+    expect(mockRpc).toHaveBeenNthCalledWith(1, 'reenviar_justificativa', { p_id: JUSTIFICATIVA, p_texto: 'Segue o atestado' });
+    expect(mockEnviarArquivo).toHaveBeenCalledWith('/v1/justifications/sign-upload', { justificationId: JUSTIFICATIVA }, ANEXO);
+    expect(mockRpc).toHaveBeenNthCalledWith(2, 'anexar_a_justificativa', { p_id: JUSTIFICATIVA });
+  });
+
+  it('deveRecusarAnexoNoReenvioNumBuildSemBackend', async () => {
+    mockApiDisponivel.mockReturnValue(false);
+    await expect(reenviarJustificativa(JUSTIFICATIVA, 'Segue', ANEXO)).rejects.toBeInstanceOf(AnexoIndisponivelError);
+    expect(mockRpc).not.toHaveBeenCalled();
+  });
+
+  it('naoDeveAnexarQuandoOReenvioERecusado', async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { code: '22023', message: 'O prazo de reenvio acabou.' } });
+    await expect(reenviarJustificativa(JUSTIFICATIVA, 'Segue', ANEXO)).rejects.toMatchObject({
+      message: 'O prazo de reenvio acabou.',
+    });
+    expect(mockEnviarArquivo).not.toHaveBeenCalled();
   });
 
   it('deveDecidirComANota', async () => {

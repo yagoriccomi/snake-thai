@@ -32,6 +32,10 @@
 > Completada em 06/10 com o inventário do servidor: função ou coluna ausente dá 502; o Auth fora do ar
 > deixa de dar 401; o que depende de migration nova só é ligado com ela em produção (G4).
 >
+> **Errata de 07/10 (C11, `REVIEW-FASE4.md`):** na § 9.1, a escrita direta do dono só aceita o anexo
+> legado da § 15, e o sufixo `-2` fica amarrado a `attempt = 2` na constraint do caminho. O servidor e
+> a web atual não mudam; o `view-url` continua sem pedir `attempt` até o G4 (D27).
+>
 > **Caminho absoluto** (para os chats de outros repositórios):
 > `C:\Users\USER\Desktop\GIT\academy\snake-thai\docs\CONTRATO.md`
 
@@ -783,7 +787,7 @@ Se um anexo falhar, o app avisa e deixa tentar de novo ou seguir sem ele (D18).
 | constraint `absence_justifications_escopo_coerente` | `(scope = 'class' and class_id is not null) or (scope = 'week' and class_id is null)` |
 | `absence_justifications_unica_por_aula` | **Continua** `unique (class_id, user_id)` (T16). |
 | `attempt` | `smallint not null default 1`, com `check (attempt in (1, 2))` (D42) |
-| constraint `absence_justifications_caminho_do_anexo` | `check (proof_public_id is null or proof_public_id = 'justificativas/' \|\| user_id::text \|\| '/' \|\| id::text or proof_public_id = 'justificativas/' \|\| user_id::text \|\| '/' \|\| id::text \|\| '-2' or (class_id is not null and proof_public_id = 'justificativas/' \|\| user_id::text \|\| '/' \|\| class_id::text))`, criada como `NOT VALID` (§ 0.1). |
+| constraint `absence_justifications_caminho_do_anexo` | `check (proof_public_id is null or proof_public_id = 'justificativas/' \|\| user_id::text \|\| '/' \|\| id::text or proof_public_id = 'justificativas/' \|\| user_id::text \|\| '/' \|\| id::text \|\| '-2' or (class_id is not null and proof_public_id = 'justificativas/' \|\| user_id::text \|\| '/' \|\| class_id::text))`, criada como `NOT VALID` (§ 0.1). **Errata da C11 (07/10):** o `<id>` só vale com `attempt = 1`, e o `<id>-2` só com `attempt = 2`; a migration confere os dados antigos antes do `VALIDATE`. |
 | `public.absence_justification_reviews` | `justification_id uuid pk → absence_justifications on delete cascade`, `reviewer_id uuid → profiles on delete set null`, `review_note text not null` (1..500), `decided_at timestamptz not null`. **`select` só `is_admin()`**. **A nota nunca fica na tabela principal** (D16). |
 | `public.absence_justification_attempts` | Guarda a **primeira tentativa negada** quando o aluno reenvia (D42, T16): `justification_id uuid pk → absence_justifications on delete cascade`, `message text`, `proof_provider public.media_provider`, `proof_public_id text`, `reviewer_id uuid`, `reviewed_at timestamptz`, `review_note text`. **`select` só `is_admin()`**. |
 | `reviewed_by` na linha principal | **Na negativa, o gatilho grava `reviewed_by = null`**: quem negou fica só em `absence_justification_reviews` (D16). Na aprovação, fica o aprovador. |
@@ -801,6 +805,13 @@ Se um anexo falhar, o app avisa e deixa tentar de novo ou seguir sem ele (D18).
   e todo INSERT nasce `pending`, `attempt = 1`.
 - **(f) UPDATE pelo dono, enquanto pendente:** só `message`, `proof_provider` e `proof_public_id`.
   `scope`, `week_start`, `class_id`, `user_id` e `attempt` nunca mudam por UPDATE direto.
+  **Errata da C11 (07/10):** no INSERT e no UPDATE diretos do dono, o anexo só pode ser nulo ou o
+  caminho **legado** da § 15 (`justificativas/<user_id>/<class_id>`, com `proof_provider =
+  'cloudinary'`). Os caminhos `<id>` e `<id>-2` só entram por `anexar_a_justificativa`, e o anexo
+  gravado pela RPC não é trocado nem apagado por UPDATE direto. Recusa: `42501`, *"Operação
+  negada: o anexo da justificativa é enviado depois, pelo aplicativo."* ou *"Operação negada: o
+  anexo desta justificativa não pode ser trocado nem removido."*. Tirar `proof_*` de vez da
+  escrita direta fica para a Fase B, junto com o upsert legado (§ 15).
 - **(g) Linha decidida:** nenhuma coluna muda por UPDATE direto, nem para o admin.
 - **(h) Decisão por UPDATE direto de `status`** (APK ≤ 1.8): `22023`, *"Atualize o aplicativo para
   decidir justificativas."*
