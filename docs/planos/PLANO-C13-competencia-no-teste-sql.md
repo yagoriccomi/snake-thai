@@ -1,7 +1,7 @@
 # Plano — C13: teste SQL do perfil que depende do dia do mês
 
 > Modo 🔁 Loop, 2026-10-02. Branch `fix/teste-sql-competencia`. Origem: C13 de
-> `handoffs/COORDENACAO.md` (02/10) e `handoffs/snake-thai/2026-10-02.md`.
+> `handoffs/COORDENACAO.md` (02/10) e `snake-thai/handoff/loop/003 - 02_10_2026 chat do QR e C13.md`.
 
 ## Enunciado canônico
 
