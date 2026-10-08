@@ -141,6 +141,10 @@ arquivo certo. Build e app **recusam** combinações perigosas: o DEV apontando
 para um servidor da internet, ou o de produção apontando para endereço local ou
 sem https. O `.env` simples não é mais lido.
 
+`APP_ENSAIO` (opcional, só no build) marca um **APK de ensaio**: com
+`APP_ENSAIO=d26`, o nome da versão sai `1.8.0+ensaio.d26.…`. Ensaio não é
+publicação e não ganha tag; ver [`docs/VERSIONAMENTO.md`](docs/VERSIONAMENTO.md#nome-do-build-versionname).
+
 > **Windows:** o `menu.bat` na raiz concentra o dia a dia — subir o Metro, conectar
 > o aparelho por ADB Wi-Fi, gerar o APK e instalar. Ele elege um único alvo ADB
 > (`ANDROID_SERIAL`), então o erro `more than one device/emulator` não ocorre nem

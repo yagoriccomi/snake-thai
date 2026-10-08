@@ -6,6 +6,7 @@ const {
   buildChangelogSection,
   buildSupabaseWarning,
   buildVersionName,
+  ensaioDoAmbiente,
   extractChangelogSection,
   insertChangelogSection,
   isSmallerThanSuggested,
@@ -175,6 +176,29 @@ describe('buildVersionName', () => {
   it('deveCairNaVersaoPuraSemGit', () => {
     expect(buildVersionName({ version: '1.6.0', describe: null, variant: 'prod' })).toBe('1.6.0');
     expect(buildVersionName({ version: '1.6.0', describe: null, variant: 'dev' })).toBe('1.6.0+dev');
+  });
+
+  it('deveMarcarOApkDeEnsaioMesmoNaTag', () => {
+    expect(buildVersionName({ version: '1.6.0', describe: naTag, variant: 'prod', ensaio: 'd26' })).toBe(
+      '1.6.0+ensaio.d26.0.abc1234',
+    );
+    expect(buildVersionName({ version: '1.6.0', describe: foraDaTag, variant: 'dev', ensaio: 'd26' })).toBe(
+      '1.6.0+ensaio.d26.dev.12.abc1234',
+    );
+    expect(buildVersionName({ version: '1.6.0', describe: null, variant: 'prod', ensaio: 'd26' })).toBe(
+      '1.6.0+ensaio.d26',
+    );
+  });
+
+  it('deveLerORotuloDeEnsaioDoAmbienteEIgnorarVazio', () => {
+    expect(ensaioDoAmbiente({ APP_ENSAIO: 'd26' })).toBe('d26');
+    expect(ensaioDoAmbiente({ APP_ENSAIO: '  ' })).toBeNull();
+    expect(ensaioDoAmbiente({})).toBeNull();
+  });
+
+  it('deveRecusarRotuloDeEnsaioComPontoOuMaiuscula', () => {
+    expect(() => ensaioDoAmbiente({ APP_ENSAIO: 'D26' })).toThrow('APP_ENSAIO');
+    expect(() => ensaioDoAmbiente({ APP_ENSAIO: 'd.26' })).toThrow('APP_ENSAIO');
   });
 
   it('deveLerASaidaDoGitDescribe', () => {

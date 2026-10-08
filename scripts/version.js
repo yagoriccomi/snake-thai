@@ -337,7 +337,12 @@ function conferirAndroid(codigoEsperado, variante, versao) {
   const conteudo = fs.readFileSync(gradle, 'utf8');
   const codigo = Number(/versionCode\s+(\d+)/.exec(conteudo)?.[1]);
   const nome = /versionName\s+["']([^"']+)["']/.exec(conteudo)?.[1];
-  const nomeEsperado = lib.buildVersionName({ version: versao, describe: lib.describeGit(RAIZ), variant: variante });
+  const nomeEsperado = lib.buildVersionName({
+    version: versao,
+    describe: lib.describeGit(RAIZ),
+    variant: variante,
+    ensaio: lib.ensaioDoAmbiente(process.env),
+  });
   const ATUALIZE = 'android/ desatualizada: rode o prebuild (menu [P]).';
 
   const problemas = [];
@@ -362,7 +367,14 @@ function notas(args) {
 
 /** @param {string[]} args */
 function nomeDoBuild(args) {
-  console.log(lib.buildVersionName({ version: versaoDoApp(), describe: lib.describeGit(RAIZ), variant: varianteDe(args) }));
+  console.log(
+    lib.buildVersionName({
+      version: versaoDoApp(),
+      describe: lib.describeGit(RAIZ),
+      variant: varianteDe(args),
+      ensaio: lib.ensaioDoAmbiente(process.env),
+    }),
+  );
 }
 
 function main() {
