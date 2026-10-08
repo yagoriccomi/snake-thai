@@ -1,5 +1,5 @@
--- Regressão do push semanal de versão nova (D49 da coordenação; contrato v7,
--- § 10; migrations 20261008120000 e 20261008120100). Roda numa transação e
+-- Regressão do push de versão nova (D49 e D54 a D56 da coordenação; contrato
+-- v7, § 10; migrations 20261008120000 e 20261008120100). Roda numa transação e
 -- termina em ROLLBACK; mesmo assim, rode SÓ no banco local (scripts\db-dev test).
 --
 -- Versão vigente nos testes: 2.10.0 — de propósito com dois dígitos, para
@@ -137,21 +137,36 @@ end $$;
 reset role;
 set local request.jwt.claims = '';
 do $$
+declare
+  -- definir usa o relógio real: a chave é a da semana de hoje.
+  v_chave text := 'versao_nova:2.10.0:' || to_char(now() at time zone 'America/Sao_Paulo', 'IYYY-"W"IW');
 begin
   if (select s.current_app_version from public.academy_settings s) is distinct from '2.10.0' then
     raise exception 'FALHOU V5: versão vigente não gravada';
   end if;
-  raise notice 'OK V5: admin grava a vigente normalizada; formato ruim recebe 22023';
+  -- D55: definir já avisa os desatualizados, sem comando extra.
+  if (select count(*) from public.notification_outbox o
+       where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%') <> 2
+     or (select count(*) from public.notification_outbox o
+          where o.kind = 'versao_nova' and o.dedupe_key = v_chave
+            and o.recipient_id in ('d4900000-0000-4000-8000-000000000002', 'd4900000-0000-4000-8000-000000000003')) <> 2 then
+    raise exception 'FALHOU V5: definir a versão não enfileirou o aviso aos dois desatualizados';
+  end if;
+  raise notice 'OK V5: admin grava a vigente normalizada e já enfileira o aviso (D55); formato ruim recebe 22023';
 end $$;
+
+-- Os próximos testes usam semanas fixas: sai o aviso da semana real.
+delete from public.notification_outbox o
+ where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%';
 
 -- =====================================================================
 -- V6 — o envio da semana: só os desatualizados ativos, uma linha cada
 --
--- Segunda, 12/10/2026, 10h em São Paulo = semana ISO 2026-W42.
+-- Sexta, 16/10/2026, 20h em São Paulo = semana ISO 2026-W42 (D54).
 -- =====================================================================
 do $$
 begin
-  if public.enfileirar_avisos_de_versao_nova('2026-10-12 13:00:00+00') < 2 then
+  if public.enfileirar_avisos_de_versao_nova('2026-10-16 23:00:00+00') < 2 then
     raise exception 'FALHOU V6: enfileirou menos que os dois desatualizados do teste';
   end if;
   if (select count(*) from public.notification_outbox o
@@ -163,24 +178,26 @@ begin
   end if;
   if exists (select 1 from public.notification_outbox o
               where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%'
-                and (o.dedupe_key <> 'versao_nova:2026-W42'
+                and (o.dedupe_key <> 'versao_nova:2.10.0:2026-W42'
                      or o.data <> '{}'::jsonb
                      or o.class_id is not null or o.payment_id is not null or o.justification_id is not null)) then
     raise exception 'FALHOU V6: chave ou data fora da § 10';
   end if;
-  raise notice 'OK V6: só os desatualizados (comparação numérica, sem versão conta), com a chave da semana';
+  raise notice 'OK V6: só os desatualizados (comparação numérica, sem versão conta), com a chave da versão e da semana';
 end $$;
 
 -- =====================================================================
--- V7 — de novo na mesma semana não reenvia (até domingo 23:30 em SP)
+-- V7 — a mesma versão na mesma semana não reenvia (de segunda 0h a
+-- domingo 23:30 em SP)
 -- =====================================================================
 do $$
 begin
-  if public.enfileirar_avisos_de_versao_nova('2026-10-12 13:00:00+00') <> 0
+  if public.enfileirar_avisos_de_versao_nova('2026-10-12 03:00:00+00') <> 0
+     or public.enfileirar_avisos_de_versao_nova('2026-10-16 23:00:00+00') <> 0
      or public.enfileirar_avisos_de_versao_nova('2026-10-19 02:30:00+00') <> 0 then
     raise exception 'FALHOU V7: reenviou na mesma semana';
   end if;
-  raise notice 'OK V7: a mesma semana (no fuso de São Paulo) não reenvia';
+  raise notice 'OK V7: a mesma versão na mesma semana (no fuso de São Paulo) não reenvia';
 end $$;
 
 -- =====================================================================
@@ -189,22 +206,51 @@ end $$;
 update public.push_devices set app_version = '2.10.0' where expo_token = 'ExponentPushToken[v49prof]';
 do $$
 begin
-  perform public.enfileirar_avisos_de_versao_nova('2026-10-19 13:00:00+00');
+  perform public.enfileirar_avisos_de_versao_nova('2026-10-23 23:00:00+00');
   if not exists (select 1 from public.notification_outbox o
                   where o.recipient_id = 'd4900000-0000-4000-8000-000000000003'
-                    and o.dedupe_key = 'versao_nova:2026-W43')
+                    and o.dedupe_key = 'versao_nova:2.10.0:2026-W43')
      or exists (select 1 from public.notification_outbox o
                  where o.recipient_id = 'd4900000-0000-4000-8000-000000000002'
-                   and o.dedupe_key = 'versao_nova:2026-W43') then
+                   and o.dedupe_key = 'versao_nova:2.10.0:2026-W43') then
     raise exception 'FALHOU V8: a semana seguinte não seguiu quem continua (ou não) desatualizado';
   end if;
   raise notice 'OK V8: semana nova avisa de novo só quem não atualizou';
 end $$;
 
 -- =====================================================================
+-- V8b — D56: versão nova na mesma semana avisa de novo; a repetição da
+-- mesma versão continua uma por semana
+--
+-- Na W43, o aluno já recebeu o aviso da 2.10.0 (V8). A 2.11.0 sai no
+-- sábado, 24/10 (ainda W43): aluno, professor e admin (os dois em 2.10.0)
+-- recebem.
+-- O update direto, e não definir, porque definir usa o relógio real.
+-- =====================================================================
+update public.academy_settings set current_app_version = '2.11.0' where id;
+do $$
+begin
+  if public.enfileirar_avisos_de_versao_nova('2026-10-24 15:00:00+00') <> 3 then
+    raise exception 'FALHOU V8b: a versão nova não avisou os três desatualizados na mesma semana';
+  end if;
+  if (select count(*) from public.notification_outbox o
+       where o.dedupe_key = 'versao_nova:2.11.0:2026-W43'
+         and o.recipient_id in ('d4900000-0000-4000-8000-000000000001', 'd4900000-0000-4000-8000-000000000002',
+                                'd4900000-0000-4000-8000-000000000003')) <> 3 then
+    raise exception 'FALHOU V8b: chave da versão nova errada';
+  end if;
+  if public.enfileirar_avisos_de_versao_nova('2026-10-25 20:00:00+00') <> 0 then
+    raise exception 'FALHOU V8b: a mesma versão nova repetiu na mesma semana';
+  end if;
+  raise notice 'OK V8b: cada versão nova avisa de novo; a mesma versão, uma vez por semana (D56)';
+end $$;
+
+-- =====================================================================
 -- V9 — sem versão vigente, o push semanal fica desligado
 -- =====================================================================
 do $$
+declare
+  v_antes bigint := (select count(*) from public.notification_outbox o where o.kind = 'versao_nova');
 begin
   -- Duas instruções: na mesma, a leitura usaria o snapshot de antes do update.
   if public.definir_versao_vigente_do_app(null) is not null then
@@ -213,7 +259,8 @@ begin
   if (select s.current_app_version from public.academy_settings s) is not null then
     raise exception 'FALHOU V9: o sistema não desligou a versão vigente';
   end if;
-  if public.enfileirar_avisos_de_versao_nova('2026-10-26 13:00:00+00') <> 0 then
+  if public.enfileirar_avisos_de_versao_nova('2026-10-30 23:00:00+00') <> 0
+     or (select count(*) from public.notification_outbox o where o.kind = 'versao_nova') <> v_antes then
     raise exception 'FALHOU V9: enfileirou sem versão vigente';
   end if;
   raise notice 'OK V9: o sistema (SQL Editor) desliga com nulo, e nada é enfileirado';
@@ -285,11 +332,11 @@ begin
   end if;
   if not exists (select 1 from cron.job j
                   where j.jobname = 'push-versao-nova-semanal'
-                    and j.schedule = '0 13 * * 1'
+                    and j.schedule = '0 23 * * 5'
                     and j.command like '%enfileirar_avisos_de_versao_nova()%') then
     raise exception 'FALHOU V12: agendamento semanal ausente';
   end if;
-  raise notice 'OK V12: só o sistema dispara; o cron roda segunda 13:00 UTC (10h em SP)';
+  raise notice 'OK V12: só o sistema dispara; o cron roda sexta 23:00 UTC (20h em SP, D54)';
 end $$;
 
 rollback;
