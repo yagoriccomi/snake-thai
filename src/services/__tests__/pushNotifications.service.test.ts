@@ -32,10 +32,11 @@ import {
 import { createQueryChain } from '@/test-utils/supabaseMock';
 
 const notificacoes = jest.mocked(Notifications);
-const constantes = Constants as unknown as { expoConfig: { extra: Record<string, unknown> } };
+const constantes = Constants as unknown as { expoConfig: { version?: string; extra: Record<string, unknown> } };
 
 beforeEach(() => {
   jest.clearAllMocks();
+  constantes.expoConfig.version = '9.9.9';
   constantes.expoConfig.extra = { eas: { projectId: 'projeto-de-teste' } };
   mockClearStoredToken.mockResolvedValue(undefined);
 });
@@ -86,11 +87,35 @@ describe('pedirPermissao', () => {
 });
 
 describe('registrarDispositivo', () => {
-  it('deveMandarOTokenComAPlataformaEAVarianteDoApp', async () => {
+  it('deveMandarOTokenComAPlataformaAVarianteEAVersaoDoApp', async () => {
     mockRpc.mockResolvedValue({ data: 'id-1', error: null });
 
     await registrarDispositivo('ExponentPushToken[abc]');
 
+    expect(mockRpc).toHaveBeenCalledWith('registrar_dispositivo_push', {
+      p_token: 'ExponentPushToken[abc]',
+      p_plataforma: 'android',
+      p_variante: 'development',
+      p_versao: '9.9.9',
+    });
+  });
+
+  it('deveMandarSoONucleoDaVersaoDeUmBuildForaDaTag', async () => {
+    mockRpc.mockResolvedValue({ data: 'id-1', error: null });
+    constantes.expoConfig.version = '2.0.0+3.abc1234';
+
+    await registrarDispositivo('ExponentPushToken[abc]');
+
+    expect(mockRpc).toHaveBeenCalledWith('registrar_dispositivo_push', expect.objectContaining({ p_versao: '2.0.0' }));
+  });
+
+  it('deveDeixarAVersaoDeForaQuandoNaoDaParaLer', async () => {
+    mockRpc.mockResolvedValue({ data: 'id-1', error: null });
+    constantes.expoConfig.version = 'v2';
+
+    await registrarDispositivo('ExponentPushToken[abc]');
+
+    // Sem a chave, o banco grava nulo: o aparelho conta como desatualizado (D49).
     expect(mockRpc).toHaveBeenCalledWith('registrar_dispositivo_push', {
       p_token: 'ExponentPushToken[abc]',
       p_plataforma: 'android',

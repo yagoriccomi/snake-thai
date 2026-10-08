@@ -88,6 +88,21 @@ export function lerVersaoInstalada(versao: string | null | undefined): Versao | 
   return encontrado === null ? null : paraVersao(encontrado);
 }
 
+/** Maior parte que o banco aceita em `push_devices.app_version` (até 4 dígitos). */
+const MAIOR_PARTE_DA_VERSAO_NO_BANCO = 9999;
+
+/**
+ * Núcleo `X.Y.Z` da versão instalada, como o banco guarda (D49 da coordenação).
+ * `null` fora do formato: o banco recusaria, e o aparelho sem versão conta como
+ * desatualizado, que é o lado seguro.
+ */
+export function nucleoDaVersaoInstalada(versao: string | null | undefined): string | null {
+  const lida = lerVersaoInstalada(versao);
+  if (lida === null) return null;
+  const partes = [lida.major, lida.minor, lida.patch];
+  return partes.every((parte) => parte <= MAIOR_PARTE_DA_VERSAO_NO_BANCO) ? formatar(lida) : null;
+}
+
 /** `true` só se `nova` for maior que `instalada`, parte a parte, como números. */
 export function ehVersaoMaior(nova: Versao, instalada: Versao): boolean {
   if (nova.major !== instalada.major) return nova.major > instalada.major;

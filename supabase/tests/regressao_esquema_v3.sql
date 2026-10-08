@@ -202,14 +202,16 @@ begin
 
   update public.academy_settings set contact_whatsapp = '5511912345678', contact_email = 'contato@academia.test';
 
-  -- O APK 1.8 faz select('*') em academy_settings (§ 15): a coluna nova vem por último.
-  select column_name into v_ultima
-    from information_schema.columns
-   where table_schema = 'public' and table_name = 'academy_settings'
-   order by ordinal_position desc
-   limit 1;
-  if v_ultima <> 'contact_whatsapp' then
-    raise exception 'FALHOU F2.5: contact_whatsapp não é a última coluna (é %)', v_ultima;
+  -- O APK 1.8 faz select('*') em academy_settings (§ 15): a coluna nova vem
+  -- por último. Depois dela, só as que vieram mais tarde (D49).
+  select string_agg(c.column_name, ', ' order by c.ordinal_position) into v_ultima
+    from information_schema.columns c
+   where c.table_schema = 'public' and c.table_name = 'academy_settings'
+     and c.ordinal_position > (select w.ordinal_position from information_schema.columns w
+                                where w.table_schema = 'public' and w.table_name = 'academy_settings'
+                                  and w.column_name = 'contact_whatsapp');
+  if coalesce(v_ultima, '') not in ('', 'current_app_version') then
+    raise exception 'FALHOU F2.5: contact_whatsapp não está no fim da tabela (depois dela: %)', v_ultima;
   end if;
   raise notice 'OK F2.5: dias de aula, WhatsApp, e-mail e guarda validados; WhatsApp no fim da tabela';
 end $$;

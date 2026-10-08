@@ -45,6 +45,11 @@ describe('destinoDaNotificacao', () => {
     });
   });
 
+  it('naoDeveNavegarNoAvisoDeVersaoNovaParaOAppSoAbrir', () => {
+    // Contrato v7, § 10: o toque só abre o app, onde o aviso de atualização aparece.
+    expect(destinoDaNotificacao({ tipo: 'versao_nova' })).toBeNull();
+  });
+
   it('naoDeveNavegarComPayloadDesconhecidoOuMalformado', () => {
     expect(destinoDaNotificacao(null)).toBeNull();
     expect(destinoDaNotificacao('comprovante_enviado')).toBeNull();

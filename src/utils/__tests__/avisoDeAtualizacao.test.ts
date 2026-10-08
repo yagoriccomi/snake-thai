@@ -5,6 +5,7 @@ import {
   lerTagDaRelease,
   lerVersaoInstalada,
   montarLinkDaAtualizacao,
+  nucleoDaVersaoInstalada,
 } from '@/utils/avisoDeAtualizacao';
 
 const LINK_DO_APK_200 =
@@ -46,6 +47,24 @@ describe('lerVersaoInstalada', () => {
   it.each([[undefined], [null], [''], ['1.9'], ['v1.9.0']])('deveVoltarNuloSemVersaoValida %p', (versao) => {
     expect(lerVersaoInstalada(versao)).toBeNull();
   });
+});
+
+describe('nucleoDaVersaoInstalada', () => {
+  it.each([
+    ['2.0.0', '2.0.0'],
+    ['2.0.0+3.abc1234', '2.0.0'],
+    ['2.0.0+dev.3.abc1234', '2.0.0'],
+    ['02.10.00', '2.10.0'],
+  ])('deveMandarAoBancoSoONucleoNormalizado %p', (versao, esperado) => {
+    expect(nucleoDaVersaoInstalada(versao)).toBe(esperado);
+  });
+
+  it.each([[undefined], [null], [''], ['1.9'], ['v2.0.0'], ['12345.0.0']])(
+    'deveMandarNuloQuandoOBancoRecusariaAVersao %p',
+    (versao) => {
+      expect(nucleoDaVersaoInstalada(versao)).toBeNull();
+    },
+  );
 });
 
 describe('ehVersaoMaior', () => {

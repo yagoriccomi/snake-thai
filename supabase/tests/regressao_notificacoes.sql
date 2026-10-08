@@ -327,7 +327,7 @@ begin
      or has_function_privilege('authenticated', 'public.reivindicar_notificacoes(integer, public.app_variant)', 'execute')
      or has_function_privilege('authenticated', 'public.registrar_envio_de_push(jsonb)', 'execute')
      or has_function_privilege('authenticated', 'public.disparar_envio_de_push()', 'execute')
-     or has_function_privilege('anon', 'public.registrar_dispositivo_push(text, public.push_platform, public.app_variant)', 'execute')
+     or has_function_privilege('anon', 'public.registrar_dispositivo_push(text, public.push_platform, public.app_variant, text)', 'execute')
      or has_table_privilege('authenticated', 'public.notification_deliveries', 'select')
      or has_table_privilege('authenticated', 'public.notification_outbox', 'insert')
      or not has_function_privilege('service_role', 'public.reivindicar_notificacoes(integer, public.app_variant)', 'execute') then

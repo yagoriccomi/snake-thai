@@ -171,6 +171,20 @@ Deno.test('a justificativa semanal não tem aula', () => {
   igual(conteudoDaNotificacao(base('justificativa_pendente')).body, 'Justificativa semanal para revisar.');
 });
 
+Deno.test('contrato v7 (D49): versao_nova tem o texto fixo e só diz o tipo no data', () => {
+  const aviso = conteudoDaNotificacao(base('versao_nova'));
+  igual(aviso.title, 'Nova versão disponível');
+  igual(aviso.body, 'Abra o app para baixar.');
+  igual(aviso.channelId, 'frequencia');
+  igual(aviso.data, { tipo: 'versao_nova' });
+});
+
+Deno.test('versao_nova ignora o que vier em data e não cita versão', () => {
+  const aviso = conteudoDaNotificacao(base('versao_nova', { data: { major: 2, minor: 0, patch: 0 } }));
+  igual(aviso.title, 'Nova versão disponível');
+  igual(aviso.data, { tipo: 'versao_nova' });
+});
+
 Deno.test('tipo desconhecido vira texto genérico e não derruba o lote', () => {
   const desconhecido = base('tipo_que_ainda_nao_existe' as NotificacaoDaFila['kind'], { class_id: 'c-1' });
   const conteudo = conteudoDaNotificacao(desconhecido);

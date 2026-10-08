@@ -27,6 +27,7 @@ export type Database = {
                   Row: {
                     "justification_id": string,"message": string | null,"proof_provider": Database["public"]['Enums']["media_provider"] | null,"proof_public_id": string | null,"review_note": string | null,"reviewed_at": string | null,"reviewer_id": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "justification_id": string,"message"?: string | null,"proof_provider"?: Database["public"]['Enums']["media_provider"] | null,"proof_public_id"?: string | null,"review_note"?: string | null,"reviewed_at"?: string | null,"reviewer_id"?: string | null
                   }
@@ -58,6 +59,7 @@ isOneToOne: false
                   Row: {
                     "decided_at": string,"justification_id": string,"review_note": string,"reviewer_id": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "decided_at": string,"justification_id": string,"review_note": string,"reviewer_id"?: string | null
                   }
@@ -89,6 +91,7 @@ isOneToOne: false
                   Row: {
                     "attempt": number,"class_id": string | null,"created_at": string,"id": string,"message": string | null,"proof_provider": Database["public"]['Enums']["media_provider"] | null,"proof_public_id": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"scope": Database["public"]['Enums']["justification_scope"],"status": Database["public"]['Enums']["justification_status"],"updated_at": string,"user_id": string,"week_start": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "attempt"?: number,"class_id"?: string | null,"created_at"?: string,"id"?: string,"message"?: string | null,"proof_provider"?: Database["public"]['Enums']["media_provider"] | null,"proof_public_id"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"scope"?: Database["public"]['Enums']["justification_scope"],"status"?: Database["public"]['Enums']["justification_status"],"updated_at"?: string,"user_id": string,"week_start"?: string
                   }
@@ -132,6 +135,7 @@ isOneToOne: false
                   Row: {
                     "default_student_password": string,"id": boolean,"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "default_student_password": string,"id"?: boolean,"updated_at"?: string
                   }
@@ -143,13 +147,14 @@ isOneToOne: false
                   ]
                 },"academy_settings": {
                   Row: {
-                    "academy_name": string,"address": string | null,"attachment_retention_days": number,"class_weekdays": (number)[],"contact_email": string | null,"contact_phone": string | null,"contact_whatsapp": string | null,"created_at": string,"default_due_day": number,"default_plan_id": string | null,"default_student_password": string,"default_weekly_goal": number,"id": boolean,"logo_url": string | null,"pix_holder_name": string | null,"pix_key": string | null,"primary_color": string,"proof_retention_days": number | null,"updated_at": string
+                    "academy_name": string,"address": string | null,"attachment_retention_days": number,"class_weekdays": (number)[],"contact_email": string | null,"contact_phone": string | null,"contact_whatsapp": string | null,"created_at": string,"current_app_version": string | null,"default_due_day": number,"default_plan_id": string | null,"default_student_password": string,"default_weekly_goal": number,"id": boolean,"logo_url": string | null,"pix_holder_name": string | null,"pix_key": string | null,"primary_color": string,"proof_retention_days": number | null,"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
-                    "academy_name"?: string,"address"?: string | null,"attachment_retention_days"?: number,"class_weekdays"?: (number)[],"contact_email"?: string | null,"contact_phone"?: string | null,"contact_whatsapp"?: string | null,"created_at"?: string,"default_due_day"?: number,"default_plan_id"?: string | null,"default_student_password"?: string,"default_weekly_goal"?: number,"id"?: boolean,"logo_url"?: string | null,"pix_holder_name"?: string | null,"pix_key"?: string | null,"primary_color"?: string,"proof_retention_days"?: number | null,"updated_at"?: string
+                    "academy_name"?: string,"address"?: string | null,"attachment_retention_days"?: number,"class_weekdays"?: (number)[],"contact_email"?: string | null,"contact_phone"?: string | null,"contact_whatsapp"?: string | null,"created_at"?: string,"current_app_version"?: string | null,"default_due_day"?: number,"default_plan_id"?: string | null,"default_student_password"?: string,"default_weekly_goal"?: number,"id"?: boolean,"logo_url"?: string | null,"pix_holder_name"?: string | null,"pix_key"?: string | null,"primary_color"?: string,"proof_retention_days"?: number | null,"updated_at"?: string
                   }
                   Update: {
-                    "academy_name"?: string,"address"?: string | null,"attachment_retention_days"?: number,"class_weekdays"?: (number)[],"contact_email"?: string | null,"contact_phone"?: string | null,"contact_whatsapp"?: string | null,"created_at"?: string,"default_due_day"?: number,"default_plan_id"?: string | null,"default_student_password"?: string,"default_weekly_goal"?: number,"id"?: boolean,"logo_url"?: string | null,"pix_holder_name"?: string | null,"pix_key"?: string | null,"primary_color"?: string,"proof_retention_days"?: number | null,"updated_at"?: string
+                    "academy_name"?: string,"address"?: string | null,"attachment_retention_days"?: number,"class_weekdays"?: (number)[],"contact_email"?: string | null,"contact_phone"?: string | null,"contact_whatsapp"?: string | null,"created_at"?: string,"current_app_version"?: string | null,"default_due_day"?: number,"default_plan_id"?: string | null,"default_student_password"?: string,"default_weekly_goal"?: number,"id"?: boolean,"logo_url"?: string | null,"pix_holder_name"?: string | null,"pix_key"?: string | null,"primary_color"?: string,"proof_retention_days"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -164,6 +169,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"id": string,"provider": Database["public"]['Enums']["media_provider"],"public_id": string,"reason_id": string,"uploaded_by": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"id": string,"provider": Database["public"]['Enums']["media_provider"],"public_id": string,"reason_id": string,"uploaded_by": string
                   }
@@ -195,6 +201,7 @@ isOneToOne: false
                   Row: {
                     "audited_at": string | null,"audited_by": string | null,"author_id": string | null,"body": string,"class_id": string | null,"created_at": string,"id": string,"kind": Database["public"]['Enums']["action_reason_kind"],"used_at": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "audited_at"?: string | null,"audited_by"?: string | null,"author_id"?: string | null,"body": string,"class_id"?: string | null,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["action_reason_kind"],"used_at"?: string | null
                   }
@@ -238,6 +245,7 @@ isOneToOne: false
                   Row: {
                     "class_id": string,"created_at": string,"declared_at": string | null,"declared_status": Database["public"]['Enums']["attendance_status"] | null,"edited": boolean,"id": string,"included": boolean,"status": Database["public"]['Enums']["attendance_status"] | null,"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "class_id": string,"created_at"?: string,"declared_at"?: string | null,"declared_status"?: Database["public"]['Enums']["attendance_status"] | null,"edited"?: boolean,"id"?: string,"included"?: boolean,"status"?: Database["public"]['Enums']["attendance_status"] | null,"updated_at"?: string,"user_id": string
                   }
@@ -269,6 +277,7 @@ isOneToOne: false
                   Row: {
                     "added_by": string | null,"attendance_id": string,"edit_reason_id": string | null,"edited_at": string | null,"edited_by": string | null,"previous_status": Database["public"]['Enums']["attendance_status"] | null,"taken_by": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "added_by"?: string | null,"attendance_id": string,"edit_reason_id"?: string | null,"edited_at"?: string | null,"edited_by"?: string | null,"previous_status"?: Database["public"]['Enums']["attendance_status"] | null,"taken_by"?: string | null
                   }
@@ -330,6 +339,7 @@ isOneToOne: false
                   Row: {
                     "attended": number,"cancelled": number,"closed_at": string,"counted_classes": number,"excused": number,"expected": number,"frequency_percent": number,"group_id": string | null,"id": string,"justified": number,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"total_classes": number,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "attended": number,"cancelled": number,"closed_at"?: string,"counted_classes": number,"excused": number,"expected": number,"frequency_percent": number,"group_id"?: string | null,"id"?: string,"justified": number,"reference_month": string,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"total_classes": number,"user_id": string
                   }
@@ -361,6 +371,7 @@ isOneToOne: false
                   Row: {
                     "id": number,"queued_at": string,"reference_month": string,"user_id": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "id"?: never,"queued_at"?: string,"reference_month": string,"user_id"?: string | null
                   }
@@ -386,6 +397,7 @@ isOneToOne: false
                   Row: {
                     "action": string,"actor_id": string | null,"changes": Json | null,"created_at": string,"entity": string,"entity_id": string | null,"id": number
                   }
+                  ComputedFields: never
                   Insert: {
                     "action": string,"actor_id"?: string | null,"changes"?: Json | null,"created_at"?: string,"entity": string,"entity_id"?: string | null,"id"?: never
                   }
@@ -399,6 +411,7 @@ isOneToOne: false
                   Row: {
                     "attendance_edited_at": string | null,"attendance_edited_by": string | null,"attendance_taken_by": string | null,"cancel_reason_id": string | null,"cancelled_by": string | null,"class_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "attendance_edited_at"?: string | null,"attendance_edited_by"?: string | null,"attendance_taken_by"?: string | null,"cancel_reason_id"?: string | null,"cancelled_by"?: string | null,"class_id": string
                   }
@@ -460,6 +473,7 @@ isOneToOne: true
                   Row: {
                     "created_at": string,"occurrence_date": string,"schedule_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"occurrence_date": string,"schedule_id": string
                   }
@@ -479,6 +493,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"schedule_id": string,"teacher_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"schedule_id": string,"teacher_id": string
                   }
@@ -510,6 +525,7 @@ isOneToOne: false
                   Row: {
                     "audience": Database["public"]['Enums']["class_audience"],"created_at": string,"created_by": string | null,"group_id": string | null,"id": string,"start_time": string,"title": string,"updated_at": string,"valid_from": string,"valid_until": string | null,"weekday": number
                   }
+                  ComputedFields: never
                   Insert: {
                     "audience"?: Database["public"]['Enums']["class_audience"],"created_at"?: string,"created_by"?: string | null,"group_id"?: string | null,"id"?: string,"start_time": string,"title": string,"updated_at"?: string,"valid_from": string,"valid_until"?: string | null,"weekday": number
                   }
@@ -541,6 +557,7 @@ isOneToOne: false
                   Row: {
                     "end_reason": string | null,"ended_at": string | null,"from_schedule_id": string,"id": string,"started_at": string,"swap_id": string | null,"to_schedule_id": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "end_reason"?: string | null,"ended_at"?: string | null,"from_schedule_id": string,"id"?: string,"started_at": string,"swap_id"?: string | null,"to_schedule_id": string,"user_id": string
                   }
@@ -584,6 +601,7 @@ isOneToOne: false
                   Row: {
                     "decided_at": string,"decided_via": string,"review_note": string | null,"reviewer_id": string | null,"swap_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "decided_at": string,"decided_via": string,"review_note"?: string | null,"reviewer_id"?: string | null,"swap_id": string
                   }
@@ -615,6 +633,7 @@ isOneToOne: true
                   Row: {
                     "created_at": string,"decided_at": string | null,"decided_by": string | null,"decided_via": string | null,"from_class_id": string | null,"from_schedule_id": string | null,"id": string,"kind": Database["public"]['Enums']["class_swap_kind"],"motivo_id": string | null,"status": Database["public"]['Enums']["class_swap_status"],"to_class_id": string | null,"to_schedule_id": string | null,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"decided_at"?: string | null,"decided_by"?: string | null,"decided_via"?: string | null,"from_class_id"?: string | null,"from_schedule_id"?: string | null,"id"?: string,"kind": Database["public"]['Enums']["class_swap_kind"],"motivo_id"?: string | null,"status"?: Database["public"]['Enums']["class_swap_status"],"to_class_id"?: string | null,"to_schedule_id"?: string | null,"user_id": string
                   }
@@ -682,6 +701,7 @@ isOneToOne: false
                   Row: {
                     "added_in_roll_call": boolean,"class_id": string,"edit_reason_id": string | null,"edited_at": string | null,"edited_by": string | null,"present": boolean,"previous": boolean | null,"set_by": string | null,"teacher_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "added_in_roll_call"?: boolean,"class_id": string,"edit_reason_id"?: string | null,"edited_at"?: string | null,"edited_by"?: string | null,"present": boolean,"previous"?: boolean | null,"set_by"?: string | null,"teacher_id": string
                   }
@@ -731,6 +751,7 @@ isOneToOne: false
                   Row: {
                     "class_id": string,"created_at": string,"teacher_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "class_id": string,"created_at"?: string,"teacher_id": string
                   }
@@ -762,6 +783,7 @@ isOneToOne: false
                   Row: {
                     "attendance_edited": boolean,"attendance_taken_at": string | null,"audience": Database["public"]['Enums']["class_audience"],"cancelled_at": string | null,"created_at": string,"date_time": string,"group_id": string | null,"id": string,"occurrence_date": string | null,"schedule_detached": boolean,"schedule_id": string | null,"title": string,"type": Database["public"]['Enums']["class_type"],"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "attendance_edited"?: boolean,"attendance_taken_at"?: string | null,"audience"?: Database["public"]['Enums']["class_audience"],"cancelled_at"?: string | null,"created_at"?: string,"date_time": string,"group_id"?: string | null,"id"?: string,"occurrence_date"?: string | null,"schedule_detached"?: boolean,"schedule_id"?: string | null,"title": string,"type"?: Database["public"]['Enums']["class_type"],"updated_at"?: string
                   }
@@ -787,6 +809,7 @@ isOneToOne: false
                   Row: {
                     "accepted_at": string,"document_id": string,"id": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "accepted_at"?: string,"document_id": string,"id"?: string,"user_id": string
                   }
@@ -806,6 +829,7 @@ isOneToOne: false
                   Row: {
                     "archived_at": string | null,"created_at": string,"id": string,"name": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "archived_at"?: string | null,"created_at"?: string,"id"?: string,"name": string
                   }
@@ -819,6 +843,7 @@ isOneToOne: false
                   Row: {
                     "ended_at": string | null,"id": string,"started_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "ended_at"?: string | null,"id"?: string,"started_at": string,"user_id": string
                   }
@@ -844,6 +869,7 @@ isOneToOne: false
                   Row: {
                     "content": string,"id": string,"is_current": boolean,"kind": Database["public"]['Enums']["legal_document_kind"],"published_at": string,"version": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "content": string,"id"?: string,"is_current"?: boolean,"kind": Database["public"]['Enums']["legal_document_kind"],"published_at"?: string,"version": string
                   }
@@ -857,6 +883,7 @@ isOneToOne: false
                   Row: {
                     "id": string,"updated_at": string,"value": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "id": string,"updated_at"?: string,"value": string
                   }
@@ -870,6 +897,7 @@ isOneToOne: false
                   Row: {
                     "body": string,"kind": Database["public"]['Enums']["legal_document_kind"],"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "body": string,"kind": Database["public"]['Enums']["legal_document_kind"],"updated_at"?: string
                   }
@@ -883,6 +911,7 @@ isOneToOne: false
                   Row: {
                     "asset_ref": string,"enfileirado_em": string,"id": string,"justification_id": string | null,"motivo": Database["public"]['Enums']["media_deletion_reason"],"payment_id": string | null,"processado_em": string | null,"provider": Database["public"]['Enums']["media_provider"],"tentativas": number,"ultimo_erro": string | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "asset_ref": string,"enfileirado_em"?: string,"id"?: string,"justification_id"?: string | null,"motivo": Database["public"]['Enums']["media_deletion_reason"],"payment_id"?: string | null,"processado_em"?: string | null,"provider": Database["public"]['Enums']["media_provider"],"tentativas"?: number,"ultimo_erro"?: string | null
                   }
@@ -908,6 +937,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"device_id": string | null,"error_code": string | null,"expo_ticket_id": string | null,"id": string,"outbox_id": string,"receipt_checked_at": string | null,"ticket_status": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"device_id"?: string | null,"error_code"?: string | null,"expo_ticket_id"?: string | null,"id"?: string,"outbox_id": string,"receipt_checked_at"?: string | null,"ticket_status": string
                   }
@@ -933,6 +963,7 @@ isOneToOne: false
                   Row: {
                     "attempts": number,"claimed_at": string | null,"class_id": string | null,"created_at": string,"data": NonNullable<Json>,"dedupe_key": string,"id": string,"justification_id": string | null,"kind": Database["public"]['Enums']["notification_kind"],"last_error": string | null,"payment_id": string | null,"recipient_id": string,"send_after": string,"sent_at": string | null,"status": Database["public"]['Enums']["notification_status"]
                   }
+                  ComputedFields: never
                   Insert: {
                     "attempts"?: number,"claimed_at"?: string | null,"class_id"?: string | null,"created_at"?: string,"data"?: NonNullable<Json>,"dedupe_key": string,"id"?: string,"justification_id"?: string | null,"kind": Database["public"]['Enums']["notification_kind"],"last_error"?: string | null,"payment_id"?: string | null,"recipient_id": string,"send_after"?: string,"sent_at"?: string | null,"status"?: Database["public"]['Enums']["notification_status"]
                   }
@@ -976,6 +1007,7 @@ isOneToOne: false
                   Row: {
                     "amount_cents": number,"created_at": string,"due_date": string,"id": string,"paid_at": string | null,"plan_id": string | null,"proof_provider": Database["public"]['Enums']["media_provider"] | null,"proof_public_id": string | null,"proof_storage_path": string | null,"proof_url": string | null,"reference_month": string,"status": Database["public"]['Enums']["payment_status"],"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "amount_cents"?: number,"created_at"?: string,"due_date": string,"id"?: string,"paid_at"?: string | null,"plan_id"?: string | null,"proof_provider"?: Database["public"]['Enums']["media_provider"] | null,"proof_public_id"?: string | null,"proof_storage_path"?: string | null,"proof_url"?: string | null,"reference_month": string,"status"?: Database["public"]['Enums']["payment_status"],"updated_at"?: string,"user_id": string
                   }
@@ -1007,6 +1039,7 @@ isOneToOne: false
                   Row: {
                     "ended_at": string | null,"id": string,"plan_id": string,"started_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "ended_at"?: string | null,"id"?: string,"plan_id": string,"started_at": string,"user_id": string
                   }
@@ -1038,6 +1071,7 @@ isOneToOne: false
                   Row: {
                     "billing_period": Database["public"]['Enums']["billing_period"],"created_at": string,"description": string | null,"due_day": number,"id": string,"is_active": boolean,"name": string,"price_cents": number,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"],"updated_at": string,"weekly_quota": number | null
                   }
+                  ComputedFields: never
                   Insert: {
                     "billing_period"?: Database["public"]['Enums']["billing_period"],"created_at"?: string,"description"?: string | null,"due_day"?: number,"id"?: string,"is_active"?: boolean,"name": string,"price_cents": number,"schedule_mode"?: Database["public"]['Enums']["plan_schedule_mode"],"updated_at"?: string,"weekly_quota"?: number | null
                   }
@@ -1051,6 +1085,7 @@ isOneToOne: false
                   Row: {
                     "access_channel": string,"anonymized_at": string | null,"color": string | null,"cpf": string | null,"created_at": string,"deactivated_at": string | null,"dob": string | null,"group_id": string | null,"group_since": string | null,"id": string,"is_first_login": boolean,"name": string | null,"phone": string | null,"plan_id": string | null,"role": Database["public"]['Enums']["user_role"],"status": Database["public"]['Enums']["profile_status"],"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "access_channel"?: string,"anonymized_at"?: string | null,"color"?: string | null,"cpf"?: string | null,"created_at"?: string,"deactivated_at"?: string | null,"dob"?: string | null,"group_id"?: string | null,"group_since"?: string | null,"id": string,"is_first_login"?: boolean,"name"?: string | null,"phone"?: string | null,"plan_id"?: string | null,"role"?: Database["public"]['Enums']["user_role"],"status"?: Database["public"]['Enums']["profile_status"],"updated_at"?: string
                   }
@@ -1074,13 +1109,14 @@ isOneToOne: false
                   ]
                 },"push_devices": {
                   Row: {
-                    "app_variant": Database["public"]['Enums']["app_variant"],"created_at": string,"expo_token": string,"id": string,"last_seen_at": string,"platform": Database["public"]['Enums']["push_platform"],"updated_at": string,"user_id": string
+                    "app_variant": Database["public"]['Enums']["app_variant"],"app_version": string | null,"created_at": string,"expo_token": string,"id": string,"last_seen_at": string,"platform": Database["public"]['Enums']["push_platform"],"updated_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
-                    "app_variant": Database["public"]['Enums']["app_variant"],"created_at"?: string,"expo_token": string,"id"?: string,"last_seen_at"?: string,"platform": Database["public"]['Enums']["push_platform"],"updated_at"?: string,"user_id": string
+                    "app_variant": Database["public"]['Enums']["app_variant"],"app_version"?: string | null,"created_at"?: string,"expo_token": string,"id"?: string,"last_seen_at"?: string,"platform": Database["public"]['Enums']["push_platform"],"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "app_variant"?: Database["public"]['Enums']["app_variant"],"created_at"?: string,"expo_token"?: string,"id"?: string,"last_seen_at"?: string,"platform"?: Database["public"]['Enums']["push_platform"],"updated_at"?: string,"user_id"?: string
+                    "app_variant"?: Database["public"]['Enums']["app_variant"],"app_version"?: string | null,"created_at"?: string,"expo_token"?: string,"id"?: string,"last_seen_at"?: string,"platform"?: Database["public"]['Enums']["push_platform"],"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -1101,6 +1137,7 @@ isOneToOne: false
                   Row: {
                     "class_id": string,"created_at": string,"id": string,"kind": Database["public"]['Enums']["roll_call_request_kind"],"motivo_id": string,"requester_id": string | null,"review_note": string | null,"reviewed_at": string | null,"reviewed_by": string | null,"status": Database["public"]['Enums']["justification_status"],"subject_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "class_id": string,"created_at"?: string,"id"?: string,"kind": Database["public"]['Enums']["roll_call_request_kind"],"motivo_id": string,"requester_id"?: string | null,"review_note"?: string | null,"reviewed_at"?: string | null,"reviewed_by"?: string | null,"status"?: Database["public"]['Enums']["justification_status"],"subject_id": string
                   }
@@ -1162,6 +1199,7 @@ isOneToOne: false
                   Row: {
                     "end_reason": string | null,"ended_at": string | null,"group_id": string,"id": string,"start_reason": string,"started_at": string,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "end_reason"?: string | null,"ended_at"?: string | null,"group_id": string,"id"?: string,"start_reason": string,"started_at": string,"user_id": string
                   }
@@ -1193,6 +1231,7 @@ isOneToOne: false
                   Row: {
                     "effective_week_start": string,"goal": number,"set_at": string,"set_by": string | null,"user_id": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "effective_week_start": string,"goal": number,"set_at"?: string,"set_by"?: string | null,"user_id": string
                   }
@@ -1233,6 +1272,7 @@ isOneToOne: false
                   Row: {
                     "color": string | null,"group_id": string | null,"id": string | null,"name": string | null,"role": Database["public"]['Enums']["user_role"] | null,"schedule_mode": Database["public"]['Enums']["plan_schedule_mode"] | null,"status": Database["public"]['Enums']["profile_status"] | null
                   }
+                  ComputedFields: never
                   Relationships: [
                     {
       foreignKeyName: "profiles_group_id_fkey"
@@ -1358,6 +1398,9 @@ isOneToOne: false
 "definir_senha_padrao_da_academia":
 { Args: { "p_senha": string }; Returns: undefined
                            },
+"definir_versao_vigente_do_app":
+{ Args: { "p_versao": string }; Returns: string
+                           },
 "desistir_da_troca":
 { Args: { "p_id": string }; Returns: undefined
                            },
@@ -1399,6 +1442,9 @@ isOneToOne: false
                            },
 "enfileirar_avisos_aula_sem_chamada":
 { Args: { "p_agora"?: string }; Returns: number
+                           },
+"enfileirar_avisos_de_versao_nova":
+{ Args: { "p_agora"?: string,"p_liberacao"?: boolean }; Returns: number
                            },
 "enfileirar_comprovantes_expirados":
 { Args: Record<PropertyKey, never>; Returns: number
@@ -1588,6 +1634,9 @@ isOneToOne: false
 "normalizar_declaracao":
 { Args: { "p_class_id": string,"p_user_id": string,"p_valor": Database["public"]['Enums']["attendance_status"] }; Returns: Database["public"]['Enums']["attendance_status"]
                            },
+"normalizar_versao_do_app":
+{ Args: { "p_versao": string }; Returns: string
+                           },
 "ocorrencias_da_grade":
 { Args: { "p_agora": string,"p_schedule_id": string }; Returns: {
               "audience": Database["public"]['Enums']["class_audience"],"date_time": string,"group_id": string,"occurrence_date": string,"schedule_id": string,"title": string
@@ -1702,7 +1751,7 @@ isOneToOne: false
 { Args: { "p_id": string,"p_texto": string }; Returns: undefined
                            },
 "registrar_dispositivo_push":
-{ Args: { "p_plataforma": Database["public"]['Enums']["push_platform"],"p_token": string,"p_variante": Database["public"]['Enums']["app_variant"] }; Returns: string
+{ Args: { "p_plataforma": Database["public"]['Enums']["push_platform"],"p_token": string,"p_variante": Database["public"]['Enums']["app_variant"],"p_versao"?: string }; Returns: string
                            },
 "registrar_envio_de_push":
 { Args: { "p_entregas": Json }; Returns: undefined
@@ -1815,7 +1864,7 @@ isOneToOne: false
                            }
           }
           Enums: {
-            "action_reason_kind": "roll_call_edit"|"class_cancel"|"class_reactivate"|"request_evidence"|"class_swap_evidence","app_variant": "production"|"development","attendance_status": "present"|"absent","billing_period": "monthly"|"quarterly"|"semiannual"|"annual","class_audience": "fixed"|"free"|"both","class_swap_kind": "once"|"permanent","class_swap_status": "pending"|"approved"|"rejected"|"expired"|"cancelled","class_type": "routine"|"event","justification_scope": "class"|"week","justification_status": "pending"|"approved"|"rejected","legal_document_kind": "terms_of_use"|"privacy_policy","media_deletion_reason": "conta_excluida"|"comprovante_recusado"|"retencao_expirada"|"migrado_de_provedor"|"justificativa_removida"|"anexo_de_motivo_removido"|"anexo_expirado","media_provider": "supabase_storage"|"cloudinary","notification_kind": "mensalidade_vence_em_breve"|"mensalidade_vence_hoje"|"mensalidade_atrasada"|"comprovante_enviado"|"comprovante_aprovado"|"comprovante_recusado"|"justificativa_pendente"|"aula_sem_chamada"|"aulas_sem_chamada_resumo"|"aula_cancelada"|"aula_reativada"|"justificativa_aprovada"|"justificativa_negada"|"chamada_retificada"|"solicitacao_pendente"|"troca_pendente"|"troca_aprovada"|"troca_negada"|"troca_aprovada_equipe","notification_status": "pending"|"sending"|"sent"|"cancelled"|"failed","payment_status": "pending_approval"|"open"|"overdue"|"paid","plan_schedule_mode": "fixed"|"free"|"unlimited","profile_status": "active"|"inactive","push_platform": "android"|"ios","roll_call_request_kind": "student_was_present"|"teacher_was_present"|"teacher_absence"|"teacher_asks_edit"|"teacher_asks_inclusion","user_role": "user"|"admin"|"professor"
+            "action_reason_kind": "roll_call_edit"|"class_cancel"|"class_reactivate"|"request_evidence"|"class_swap_evidence","app_variant": "production"|"development","attendance_status": "present"|"absent","billing_period": "monthly"|"quarterly"|"semiannual"|"annual","class_audience": "fixed"|"free"|"both","class_swap_kind": "once"|"permanent","class_swap_status": "pending"|"approved"|"rejected"|"expired"|"cancelled","class_type": "routine"|"event","justification_scope": "class"|"week","justification_status": "pending"|"approved"|"rejected","legal_document_kind": "terms_of_use"|"privacy_policy","media_deletion_reason": "conta_excluida"|"comprovante_recusado"|"retencao_expirada"|"migrado_de_provedor"|"justificativa_removida"|"anexo_de_motivo_removido"|"anexo_expirado","media_provider": "supabase_storage"|"cloudinary","notification_kind": "mensalidade_vence_em_breve"|"mensalidade_vence_hoje"|"mensalidade_atrasada"|"comprovante_enviado"|"comprovante_aprovado"|"comprovante_recusado"|"justificativa_pendente"|"aula_sem_chamada"|"aulas_sem_chamada_resumo"|"aula_cancelada"|"aula_reativada"|"justificativa_aprovada"|"justificativa_negada"|"chamada_retificada"|"solicitacao_pendente"|"troca_pendente"|"troca_aprovada"|"troca_negada"|"troca_aprovada_equipe"|"versao_nova","notification_status": "pending"|"sending"|"sent"|"cancelled"|"failed","payment_status": "pending_approval"|"open"|"overdue"|"paid","plan_schedule_mode": "fixed"|"free"|"unlimited","profile_status": "active"|"inactive","push_platform": "android"|"ios","roll_call_request_kind": "student_was_present"|"teacher_was_present"|"teacher_absence"|"teacher_asks_edit"|"teacher_asks_inclusion","user_role": "user"|"admin"|"professor"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -1824,13 +1873,14 @@ isOneToOne: false
           Tables: {
             "buckets": {
                   Row: {
-                    "allowed_mime_types": (string)[] | null,"avif_autodetection": boolean | null,"created_at": string | null,"file_size_limit": number | null,"id": string,"name": string,"owner": string | null,"owner_id": string | null,"public": boolean | null,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string | null
+                    "allowed_mime_types": (string)[] | null,"avif_autodetection": boolean | null,"created_at": string | null,"file_size_limit": number | null,"id": string,"lifecycle_configuration": Json | null,"lifecycle_configuration_generation": string | null,"name": string,"owner": string | null,"owner_id": string | null,"public": boolean | null,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string | null,"versioning_status": string
                   }
+                  ComputedFields: never
                   Insert: {
-                    "allowed_mime_types"?: (string)[] | null,"avif_autodetection"?: boolean | null,"created_at"?: string | null,"file_size_limit"?: number | null,"id": string,"name": string,"owner"?: string | null,"owner_id"?: string | null,"public"?: boolean | null,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string | null
+                    "allowed_mime_types"?: (string)[] | null,"avif_autodetection"?: boolean | null,"created_at"?: string | null,"file_size_limit"?: number | null,"id": string,"lifecycle_configuration"?: Json | null,"lifecycle_configuration_generation"?: string | null,"name": string,"owner"?: string | null,"owner_id"?: string | null,"public"?: boolean | null,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string | null,"versioning_status"?: string
                   }
                   Update: {
-                    "allowed_mime_types"?: (string)[] | null,"avif_autodetection"?: boolean | null,"created_at"?: string | null,"file_size_limit"?: number | null,"id"?: string,"name"?: string,"owner"?: string | null,"owner_id"?: string | null,"public"?: boolean | null,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string | null
+                    "allowed_mime_types"?: (string)[] | null,"avif_autodetection"?: boolean | null,"created_at"?: string | null,"file_size_limit"?: number | null,"id"?: string,"lifecycle_configuration"?: Json | null,"lifecycle_configuration_generation"?: string | null,"name"?: string,"owner"?: string | null,"owner_id"?: string | null,"public"?: boolean | null,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string | null,"versioning_status"?: string
                   }
                   Relationships: [
                     
@@ -1839,6 +1889,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"deleted_at": string | null,"format": string,"id": string,"name": string,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"deleted_at"?: string | null,"format"?: string,"id"?: string,"name": string,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string
                   }
@@ -1852,6 +1903,7 @@ isOneToOne: false
                   Row: {
                     "created_at": string,"id": string,"type": Database["storage"]['Enums']["buckettype"],"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "created_at"?: string,"id": string,"type"?: Database["storage"]['Enums']["buckettype"],"updated_at"?: string
                   }
@@ -1865,6 +1917,7 @@ isOneToOne: false
                   Row: {
                     "bucket_name": string,"catalog_id": string,"created_at": string,"id": string,"metadata": NonNullable<Json>,"name": string,"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "bucket_name": string,"catalog_id": string,"created_at"?: string,"id"?: string,"metadata"?: NonNullable<Json>,"name": string,"updated_at"?: string
                   }
@@ -1884,6 +1937,7 @@ isOneToOne: false
                   Row: {
                     "bucket_name": string,"catalog_id": string,"created_at": string,"id": string,"location": string,"name": string,"namespace_id": string,"remote_table_id": string | null,"shard_id": string | null,"shard_key": string | null,"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "bucket_name": string,"catalog_id": string,"created_at"?: string,"id"?: string,"location": string,"name": string,"namespace_id": string,"remote_table_id"?: string | null,"shard_id"?: string | null,"shard_key"?: string | null,"updated_at"?: string
                   }
@@ -1909,6 +1963,7 @@ isOneToOne: false
                   Row: {
                     "executed_at": string | null,"hash": string,"id": number,"name": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "executed_at"?: string | null,"hash": string,"id": number,"name": string
                   }
@@ -1920,13 +1975,14 @@ isOneToOne: false
                   ]
                 },"objects": {
                   Row: {
-                    "bucket_id": string | null,"created_at": string | null,"id": string,"last_accessed_at": string | null,"metadata": Json | null,"name": string | null,"owner": string | null,"owner_id": string | null,"path_tokens": (string)[] | null,"updated_at": string | null,"user_metadata": Json | null,"version": string | null
+                    "archived_at": string | null,"bucket_id": string | null,"created_at": string | null,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"last_accessed_at": string | null,"metadata": Json | null,"name": string | null,"owner": string | null,"owner_id": string | null,"path_tokens": (string)[] | null,"updated_at": string | null,"user_metadata": Json | null,"version": string | null
                   }
+                  ComputedFields: never
                   Insert: {
-                    "bucket_id"?: string | null,"created_at"?: string | null,"id"?: string,"last_accessed_at"?: string | null,"metadata"?: Json | null,"name"?: string | null,"owner"?: string | null,"owner_id"?: string | null,"path_tokens"?: never,"updated_at"?: string | null,"user_metadata"?: Json | null,"version"?: string | null
+                    "archived_at"?: string | null,"bucket_id"?: string | null,"created_at"?: string | null,"id"?: string,"is_delete_marker"?: boolean,"is_versioned"?: boolean,"last_accessed_at"?: string | null,"metadata"?: Json | null,"name"?: string | null,"owner"?: string | null,"owner_id"?: string | null,"path_tokens"?: never,"updated_at"?: string | null,"user_metadata"?: Json | null,"version"?: string | null
                   }
                   Update: {
-                    "bucket_id"?: string | null,"created_at"?: string | null,"id"?: string,"last_accessed_at"?: string | null,"metadata"?: Json | null,"name"?: string | null,"owner"?: string | null,"owner_id"?: string | null,"path_tokens"?: never,"updated_at"?: string | null,"user_metadata"?: Json | null,"version"?: string | null
+                    "archived_at"?: string | null,"bucket_id"?: string | null,"created_at"?: string | null,"id"?: string,"is_delete_marker"?: boolean,"is_versioned"?: boolean,"last_accessed_at"?: string | null,"metadata"?: Json | null,"name"?: string | null,"owner"?: string | null,"owner_id"?: string | null,"path_tokens"?: never,"updated_at"?: string | null,"user_metadata"?: Json | null,"version"?: string | null
                   }
                   Relationships: [
                     {
@@ -1941,6 +1997,7 @@ isOneToOne: false
                   Row: {
                     "bucket_id": string,"created_at": string,"id": string,"in_progress_size": number,"key": string,"metadata": Json | null,"owner_id": string | null,"upload_signature": string,"user_metadata": Json | null,"version": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "bucket_id": string,"created_at"?: string,"id": string,"in_progress_size"?: number,"key": string,"metadata"?: Json | null,"owner_id"?: string | null,"upload_signature": string,"user_metadata"?: Json | null,"version": string
                   }
@@ -1960,6 +2017,7 @@ isOneToOne: false
                   Row: {
                     "bucket_id": string,"created_at": string,"etag": string,"id": string,"key": string,"owner_id": string | null,"part_number": number,"size": number,"upload_id": string,"version": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "bucket_id": string,"created_at"?: string,"etag": string,"id"?: string,"key": string,"owner_id"?: string | null,"part_number": number,"size"?: number,"upload_id": string,"version": string
                   }
@@ -1985,6 +2043,7 @@ isOneToOne: false
                   Row: {
                     "bucket_id": string,"created_at": string,"data_type": string,"dimension": number,"distance_metric": string,"id": string,"metadata_configuration": Json | null,"name": string,"updated_at": string
                   }
+                  ComputedFields: never
                   Insert: {
                     "bucket_id": string,"created_at"?: string,"data_type": string,"dimension": number,"distance_metric": string,"id"?: string,"metadata_configuration"?: Json | null,"name": string,"updated_at"?: string
                   }
@@ -2028,36 +2087,36 @@ isOneToOne: false
 { Args: { "p_delimiter": string,"p_key": string,"p_prefix": string }; Returns: string
                            },
 "get_size_by_bucket":
-{ Args: Record<PropertyKey, never>; Returns: {
+{ Args: { "delete_markers"?: string,"noncurrent_versions"?: string }; Returns: {
               "bucket_id": string,"size": number
             }[]
                            },
 "list_multipart_uploads_with_delimiter":
-{ Args: { "bucket_id": string,"delimiter_param": string,"max_keys"?: number,"next_key_token"?: string,"next_upload_token"?: string,"prefix_param": string }; Returns: {
+{ Args: { "bucket_id": string,"delimiter_param": string,"max_keys"?: number,"next_key_token"?: string,"next_upload_token"?: string,"prefix_param": string,"raw_prefix_param"?: string }; Returns: {
               "created_at": string,"id": string,"key": string
             }[]
                            },
 "list_objects_with_delimiter":
-{ Args: { "_bucket_id": string,"delimiter_param": string,"max_keys"?: number,"next_token"?: string,"prefix_param": string,"sort_order"?: string,"start_after"?: string }; Returns: {
-              "created_at": string,"id": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string
+{ Args: { "_bucket_id": string,"delete_markers"?: string,"delimiter_param": string,"max_keys"?: number,"next_token"?: string,"next_token_archived_at"?: string,"next_token_version"?: string,"noncurrent_versions"?: string,"prefix_param": string,"sort_order"?: string,"start_after"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
             }[]
                            },
 "operation":
 { Args: Record<PropertyKey, never>; Returns: string
                            },
 "search":
-{ Args: { "bucketname": string,"levels"?: number,"limits"?: number,"offsets"?: number,"prefix": string,"search"?: string,"sortcolumn"?: string,"sortorder"?: string }; Returns: {
-              "created_at": string,"id": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string
+{ Args: { "bucketname": string,"delete_markers"?: string,"levels"?: number,"limits"?: number,"noncurrent_versions"?: string,"offsets"?: number,"prefix": string,"search"?: string,"sortcolumn"?: string,"sortorder"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
             }[]
                            },
 "search_by_timestamp":
-{ Args: { "p_bucket_id": string,"p_level": number,"p_limit": number,"p_prefix": string,"p_sort_column": string,"p_sort_column_after": string,"p_sort_order": string,"p_start_after": string }; Returns: {
-              "created_at": string,"id": string,"key": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string
+{ Args: { "delete_markers"?: string,"noncurrent_versions"?: string,"p_bucket_id": string,"p_level": number,"p_limit": number,"p_prefix": string,"p_sort_column": string,"p_sort_column_after": string,"p_sort_order": string,"p_start_after": string,"p_start_after_version"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"key": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
             }[]
                            },
 "search_v2":
-{ Args: { "bucket_name": string,"levels"?: number,"limits"?: number,"prefix": string,"sort_column"?: string,"sort_column_after"?: string,"sort_order"?: string,"start_after"?: string }; Returns: {
-              "created_at": string,"id": string,"key": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string
+{ Args: { "bucket_name": string,"delete_markers"?: string,"levels"?: number,"limits"?: number,"noncurrent_versions"?: string,"prefix": string,"sort_column"?: string,"sort_column_after"?: string,"sort_order"?: string,"start_after"?: string,"start_after_archived_at"?: string,"start_after_is_continuation"?: boolean,"start_after_version"?: string }; Returns: {
+              "archived_at": string,"created_at": string,"id": string,"is_delete_marker": boolean,"is_versioned": boolean,"key": string,"last_accessed_at": string,"metadata": Json,"name": string,"updated_at": string,"version": string
             }[]
                            }
           }
@@ -2182,7 +2241,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "action_reason_kind": ["roll_call_edit", "class_cancel", "class_reactivate", "request_evidence", "class_swap_evidence"],"app_variant": ["production", "development"],"attendance_status": ["present", "absent"],"billing_period": ["monthly", "quarterly", "semiannual", "annual"],"class_audience": ["fixed", "free", "both"],"class_swap_kind": ["once", "permanent"],"class_swap_status": ["pending", "approved", "rejected", "expired", "cancelled"],"class_type": ["routine", "event"],"justification_scope": ["class", "week"],"justification_status": ["pending", "approved", "rejected"],"legal_document_kind": ["terms_of_use", "privacy_policy"],"media_deletion_reason": ["conta_excluida", "comprovante_recusado", "retencao_expirada", "migrado_de_provedor", "justificativa_removida", "anexo_de_motivo_removido", "anexo_expirado"],"media_provider": ["supabase_storage", "cloudinary"],"notification_kind": ["mensalidade_vence_em_breve", "mensalidade_vence_hoje", "mensalidade_atrasada", "comprovante_enviado", "comprovante_aprovado", "comprovante_recusado", "justificativa_pendente", "aula_sem_chamada", "aulas_sem_chamada_resumo", "aula_cancelada", "aula_reativada", "justificativa_aprovada", "justificativa_negada", "chamada_retificada", "solicitacao_pendente", "troca_pendente", "troca_aprovada", "troca_negada", "troca_aprovada_equipe"],"notification_status": ["pending", "sending", "sent", "cancelled", "failed"],"payment_status": ["pending_approval", "open", "overdue", "paid"],"plan_schedule_mode": ["fixed", "free", "unlimited"],"profile_status": ["active", "inactive"],"push_platform": ["android", "ios"],"roll_call_request_kind": ["student_was_present", "teacher_was_present", "teacher_absence", "teacher_asks_edit", "teacher_asks_inclusion"],"user_role": ["user", "admin", "professor"]
+            "action_reason_kind": ["roll_call_edit", "class_cancel", "class_reactivate", "request_evidence", "class_swap_evidence"],"app_variant": ["production", "development"],"attendance_status": ["present", "absent"],"billing_period": ["monthly", "quarterly", "semiannual", "annual"],"class_audience": ["fixed", "free", "both"],"class_swap_kind": ["once", "permanent"],"class_swap_status": ["pending", "approved", "rejected", "expired", "cancelled"],"class_type": ["routine", "event"],"justification_scope": ["class", "week"],"justification_status": ["pending", "approved", "rejected"],"legal_document_kind": ["terms_of_use", "privacy_policy"],"media_deletion_reason": ["conta_excluida", "comprovante_recusado", "retencao_expirada", "migrado_de_provedor", "justificativa_removida", "anexo_de_motivo_removido", "anexo_expirado"],"media_provider": ["supabase_storage", "cloudinary"],"notification_kind": ["mensalidade_vence_em_breve", "mensalidade_vence_hoje", "mensalidade_atrasada", "comprovante_enviado", "comprovante_aprovado", "comprovante_recusado", "justificativa_pendente", "aula_sem_chamada", "aulas_sem_chamada_resumo", "aula_cancelada", "aula_reativada", "justificativa_aprovada", "justificativa_negada", "chamada_retificada", "solicitacao_pendente", "troca_pendente", "troca_aprovada", "troca_negada", "troca_aprovada_equipe", "versao_nova"],"notification_status": ["pending", "sending", "sent", "cancelled", "failed"],"payment_status": ["pending_approval", "open", "overdue", "paid"],"plan_schedule_mode": ["fixed", "free", "unlimited"],"profile_status": ["active", "inactive"],"push_platform": ["android", "ios"],"roll_call_request_kind": ["student_was_present", "teacher_was_present", "teacher_absence", "teacher_asks_edit", "teacher_asks_inclusion"],"user_role": ["user", "admin", "professor"]
           }
         },"storage": {
           Enums: {
@@ -2190,4 +2249,3 @@ export const Constants = {
           }
         }
 } as const
-

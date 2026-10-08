@@ -7,6 +7,7 @@ import { env } from '@/config/env';
 import { createLogger } from '@/lib/logger';
 import { supabase } from '@/lib/supabase';
 import { clearStoredPushToken, getStoredPushToken } from '@/services/pushPreference.service';
+import { nucleoDaVersaoInstalada } from '@/utils/avisoDeAtualizacao';
 
 const log = createLogger('pushNotifications');
 
@@ -124,12 +125,18 @@ export async function obterTokenExpo(tokenDoAparelho?: DevicePushToken): Promise
   }
 }
 
-/** Grava (ou atualiza) o aparelho de quem está logado. */
+/**
+ * Grava (ou atualiza) o aparelho de quem está logado, com a versão do app: o
+ * push semanal de versão nova só vai para quem está atrás (D49 da coordenação).
+ */
 export async function registrarDispositivo(token: string): Promise<void> {
+  const versao = nucleoDaVersaoInstalada(Constants.expoConfig?.version);
   const { error } = await supabase.rpc('registrar_dispositivo_push', {
     p_token: token,
     p_plataforma: Platform.OS === 'ios' ? 'ios' : 'android',
     p_variante: env.appVariant,
+    // Sem versão legível, a chave fica de fora: o banco grava nulo (desatualizado).
+    ...(versao !== null ? { p_versao: versao } : {}),
   });
   if (error !== null) {
     throw error;

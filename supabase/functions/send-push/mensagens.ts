@@ -26,7 +26,9 @@ export type TipoDeNotificacao =
   | 'troca_pendente'
   | 'troca_aprovada'
   | 'troca_negada'
-  | 'troca_aprovada_equipe';
+  | 'troca_aprovada_equipe'
+  // Contrato v7, § 10 (D45, revista pela D49).
+  | 'versao_nova';
 
 /** Canais Android criados pelo app: dá para silenciar cada um nas configurações. */
 export type CanalAndroid = 'financeiro' | 'frequencia';
@@ -233,6 +235,15 @@ export function conteudoDaNotificacao(n: NotificacaoDaFila, quantidade = 1): Con
         data: payload,
       };
     }
+    case 'versao_nova':
+      // Só sai para quem tem aparelho desatualizado (D49): o texto não precisa
+      // dizer a versão nem "ignore se já atualizou". O aviso do app mostra o link.
+      return {
+        title: 'Nova versão disponível',
+        body: 'Abra o app para baixar.',
+        channelId: 'frequencia',
+        data: { tipo: n.kind },
+      };
     default:
       // Tipo que esta versão não conhece (o banco pode sair antes): texto
       // genérico em vez de derrubar o lote inteiro (§ 10, § 14).
