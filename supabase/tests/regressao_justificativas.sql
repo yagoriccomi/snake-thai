@@ -302,14 +302,22 @@ begin
 end $$;
 
 -- =====================================================================
--- J13 — C11: o anexo da forma nova só pela RPC; o legado (§ 15) segue
+-- J13 — C11 e D42 revista: o anexo só pela RPC, nem o caminho legado (§ 15)
 -- =====================================================================
 reset role;
 select set_config('request.jwt.claims', '', true);
 insert into public.classes (id, title, type, group_id, date_time, audience, attendance_taken_at) values
-  ('d8c00000-0000-4000-8000-000000000004', 'J8 Aula D', 'routine', 'j8-g', now() - interval '1 day', 'both', now() - interval '1 day');
+  ('d8c00000-0000-4000-8000-000000000004', 'J8 Aula D', 'routine', 'j8-g', now() - interval '1 day', 'both', now() - interval '1 day'),
+  ('d8c00000-0000-4000-8000-000000000005', 'J8 Aula E', 'routine', 'j8-g', now() - interval '3 days', 'both', now() - interval '3 days');
 insert into public.class_teachers (class_id, teacher_id) values
-  ('d8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000002');
+  ('d8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000002'),
+  ('d8c00000-0000-4000-8000-000000000005', 'd8000000-0000-4000-8000-000000000002');
+
+-- Um anexo legado gravado antes do db-push-prod (o sistema simula o upsert antigo).
+insert into public.absence_justifications (id, class_id, user_id, message, proof_provider, proof_public_id)
+values ('d8e00000-0000-4000-8000-000000000001', 'd8c00000-0000-4000-8000-000000000005',
+        'd8000000-0000-4000-8000-000000000005', 'Antiga', 'cloudinary',
+        'justificativas/d8000000-0000-4000-8000-000000000005/d8c00000-0000-4000-8000-000000000005');
 
 set local role authenticated;
 
@@ -317,24 +325,37 @@ do $$
 declare
   v_id uuid := gen_random_uuid();
   v_legado text := 'justificativas/d8000000-0000-4000-8000-000000000005/d8c00000-0000-4000-8000-000000000004';
+  v_antiga uuid := 'd8e00000-0000-4000-8000-000000000001';
 begin
   perform pg_temp.como('d8000000-0000-4000-8000-000000000005');
-  -- O upsert do APK 1.8/1.9 e da web atual: caminho por aula, escrito pelo dono.
-  insert into public.absence_justifications (id, class_id, user_id, message, proof_provider, proof_public_id)
-  values (v_id, 'd8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000005',
-          'Consulta', 'cloudinary', v_legado);
+  -- O upsert do APK 1.8/1.9 e da web atual com anexo: recusado já na 2.0.0.
+  begin
+    insert into public.absence_justifications (id, class_id, user_id, message, proof_provider, proof_public_id)
+    values (v_id, 'd8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000005',
+            'Consulta', 'cloudinary', v_legado);
+    raise exception 'FALHOU J13: o dono gravou o anexo legado no INSERT direto';
+  exception when invalid_parameter_value then null;
+  end;
+
+  -- O mesmo upsert só com o texto segue aceito (§ 15).
+  insert into public.absence_justifications (id, class_id, user_id, message)
+  values (v_id, 'd8c00000-0000-4000-8000-000000000004', 'd8000000-0000-4000-8000-000000000005', 'Consulta');
   insert into ctx values ('c11', v_id);
 
   begin
+    update public.absence_justifications set proof_provider = 'cloudinary', proof_public_id = v_legado where id = v_id;
+    raise exception 'FALHOU J13: o dono gravou o anexo legado no UPDATE direto';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
     update public.absence_justifications
-       set proof_public_id = 'justificativas/d8000000-0000-4000-8000-000000000005/' || v_id::text
+       set proof_provider = 'cloudinary',
+           proof_public_id = 'justificativas/d8000000-0000-4000-8000-000000000005/' || v_id::text
      where id = v_id;
     raise exception 'FALHOU J13: o dono gravou o caminho novo direto';
-  exception when insufficient_privilege then null;
+  exception when invalid_parameter_value then null;
   end;
 
-  -- O legado o dono ainda tira; o novo vem da RPC.
-  update public.absence_justifications set proof_provider = null, proof_public_id = null where id = v_id;
   perform public.anexar_a_justificativa(v_id);
 
   begin
@@ -350,6 +371,14 @@ begin
   -- O texto continua do dono, com o anexo intacto.
   update public.absence_justifications set message = 'Consulta, segue o atestado' where id = v_id;
 
+  -- O anexo legado já gravado fica como está: o texto muda, o anexo não some.
+  begin
+    update public.absence_justifications set proof_provider = null, proof_public_id = null where id = v_antiga;
+    raise exception 'FALHOU J13: o dono removeu o anexo legado por UPDATE direto';
+  exception when insufficient_privilege then null;
+  end;
+  update public.absence_justifications set message = 'Antiga, corrigida' where id = v_antiga;
+
   perform pg_temp.como('d8000000-0000-4000-8000-000000000006');
   begin
     insert into public.absence_justifications (id, user_id, scope, week_start, message, proof_provider, proof_public_id)
@@ -357,7 +386,7 @@ begin
             date_trunc('week', now() at time zone 'America/Sao_Paulo')::date, 'x', 'cloudinary',
             'justificativas/d8000000-0000-4000-8000-000000000006/' || v_id::text);
     raise exception 'FALHOU J13: a semana nasceu com anexo escrito pelo dono';
-  exception when insufficient_privilege then null;
+  exception when invalid_parameter_value then null;
   end;
 end $$;
 
@@ -370,6 +399,11 @@ begin
   if (select message || '|' || proof_public_id from public.absence_justifications where id = v_id)
      <> 'Consulta, segue o atestado|justificativas/d8000000-0000-4000-8000-000000000005/' || v_id::text then
     raise exception 'FALHOU J13: texto ou anexo da forma nova';
+  end if;
+  if (select message || '|' || proof_public_id from public.absence_justifications
+       where id = 'd8e00000-0000-4000-8000-000000000001')
+     <> 'Antiga, corrigida|justificativas/d8000000-0000-4000-8000-000000000005/d8c00000-0000-4000-8000-000000000005' then
+    raise exception 'FALHOU J13: texto ou anexo legado já gravado';
   end if;
   -- A constraint amarra o sufixo à tentativa, mesmo para o sistema.
   begin
@@ -384,7 +418,7 @@ begin
     raise exception 'FALHOU J13: caminho sem -2 na tentativa 2';
   exception when check_violation then null;
   end;
-  raise notice 'OK J13: o anexo da forma nova só pela RPC, imutável no UPDATE direto, com o sufixo da tentativa; o legado segue';
+  raise notice 'OK J13: o anexo só pela RPC (o legado também é recusado), imutável no UPDATE direto, com o sufixo da tentativa';
 end $$;
 
 -- =====================================================================

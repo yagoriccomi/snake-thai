@@ -17,8 +17,10 @@
 
 ## Escopo negativo [#8]
 
-- Não tira `proof_*` de vez da escrita direta: o upsert legado do APK 1.8/1.9 e da web atual grava
-  `justificativas/<user_id>/<class_id>` até o G6 (§ 15). Isso fica para a Fase B.
+- ~~Não tira `proof_*` de vez da escrita direta: o upsert legado do APK 1.8/1.9 e da web atual grava
+  `justificativas/<user_id>/<class_id>` até o G6 (§ 15). Isso fica para a Fase B.~~ **08/10, D42
+  revista da coordenação:** tira, já no `db-push-prod` da 2.0.0. O upsert antigo segue só com o
+  texto; com anexo, `22023`.
 - Não muda o servidor nem o `view-url` (D27: sem `attempt` até o G4).
 - Sem tela nova e **sem mockup**: a folha da justificativa reaproveita o seletor de imagem e de PDF
   que a aula já tinha; a semana e o reenvio só deixam de escondê-lo.

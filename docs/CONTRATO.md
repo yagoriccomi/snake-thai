@@ -36,6 +36,12 @@
 > legado da § 15, e o sufixo `-2` fica amarrado a `attempt = 2` na constraint do caminho. O servidor e
 > a web atual não mudam; o `view-url` continua sem pedir `attempt` até o G4 (D27).
 >
+> **Errata de 08/10 (D42 revista da coordenação):** o jeito antigo de anexar é desligado já no
+> `db-push-prod` da 2.0.0, sem os 90 dias. Na § 9.1 (f), a escrita direta do dono não grava anexo
+> nenhum, nem o caminho legado: o anexo só entra por `anexar_a_justificativa`. O upsert do APK 1.8/1.9
+> e da web atual continua aceito **só com o texto**; com anexo, dá `22023`. A variante
+> `sign-upload {classId}` (§ 13.2) é aposentada no mesmo passo. O anexo legado já gravado fica como está.
+>
 > **Caminho absoluto** (para os chats de outros repositórios):
 > `C:\Users\USER\Desktop\GIT\academy\snake-thai\docs\CONTRATO.md`
 
@@ -803,15 +809,20 @@ Se um anexo falhar, o app avisa e deixa tentar de novo ou seguir sem ele (D18).
 - **(d) `scope = 'week'`:** só para aluno **livre**, nunca à vontade (D39), com o teto T17.
 - **(e) INSERT:** só com `user_id = auth.uid()`. A política vira `absence_justifications_insert_own`,
   e todo INSERT nasce `pending`, `attempt = 1`.
-- **(f) UPDATE pelo dono, enquanto pendente:** só `message`, `proof_provider` e `proof_public_id`.
+- **(f) UPDATE pelo dono, enquanto pendente:** só `message` (o anexo, só pela RPC: errata abaixo).
   `scope`, `week_start`, `class_id`, `user_id` e `attempt` nunca mudam por UPDATE direto.
-  **Errata da C11 (07/10):** no INSERT e no UPDATE diretos do dono, o anexo só pode ser nulo ou o
-  caminho **legado** da § 15 (`justificativas/<user_id>/<class_id>`, com `proof_provider =
-  'cloudinary'`). Os caminhos `<id>` e `<id>-2` só entram por `anexar_a_justificativa`, e o anexo
-  gravado pela RPC não é trocado nem apagado por UPDATE direto. Recusa: `42501`, *"Operação
-  negada: o anexo da justificativa é enviado depois, pelo aplicativo."* ou *"Operação negada: o
-  anexo desta justificativa não pode ser trocado nem removido."*. Tirar `proof_*` de vez da
-  escrita direta fica para a Fase B, junto com o upsert legado (§ 15).
+  **Errata da C11 (07/10), revista em 08/10 (D42 revista da coordenação):** no INSERT e no UPDATE
+  diretos do dono, o anexo **não entra, não muda e não some**, nem com o caminho legado
+  (`justificativas/<user_id>/<class_id>`): o anexo só entra por `anexar_a_justificativa`, com o
+  caminho que ela deriva (`<id>` ou `<id>-2`). Recusas:
+  - INSERT com `proof_*` preenchido, ou UPDATE que põe anexo numa linha sem anexo: `22023`,
+    *"Atualize o aplicativo para anexar arquivo à justificativa."*;
+  - UPDATE que troca ou apaga o anexo já gravado (pela RPC ou o legado, de antes do
+    `db-push-prod`): `42501`, *"Operação negada: o anexo desta justificativa não pode ser trocado
+    nem removido."*.
+
+  O texto (`message`) continua editável pelo dono enquanto pendente. A constraint do caminho segue
+  aceitando o caminho legado, para os dados gravados antes.
 - **(g) Linha decidida:** nenhuma coluna muda por UPDATE direto, nem para o admin.
 - **(h) Decisão por UPDATE direto de `status`** (APK ≤ 1.8): `22023`, *"Atualize o aplicativo para
   decidir justificativas."*
@@ -1849,7 +1860,10 @@ FORMATOS_DE_ANEXO = 'jpg,png,webp,heic,pdf'   -- v3: allowed_formats (motivos e 
 - **Corpo:** **exatamente um** de dois (o `zod` recusa os dois juntos ou nenhum).
 - **Legado `{ "classId": "<uuid>" }`:**
   - comportamento de hoje: `public_id = classId`, sem consulta ao banco;
-  - vale até a Fase B.
+  - **aposentado no `db-push-prod` da 2.0.0** (D42 revista da coordenação, 08/10), e não mais na
+    Fase B: a partir dali o banco recusa o anexo legado (§ 9.1 f), e o arquivo assinado ficaria
+    órfão na Cloudinary. Resposta: **410** `legacy_upload_retired`, *"Atualize o aplicativo para
+    anexar arquivo à justificativa."* (§ 13.6).
 - **Novo `{ "justificationId": "<uuid>" }`:**
   - o servidor lê
     `absence_justifications?id=eq.<id>&select=id,user_id,status,attempt,proof_public_id` com o
@@ -2043,6 +2057,7 @@ estar em produção (G4). Antes disso, a rota segue o caminho de hoje, sem a cha
 | --- | --- | --- | --- | --- |
 | Nenhum ou os dois de `classId` e `justificationId` | 400 | `bad_input` | Envie exatamente um: classId ou justificationId | muda (mensagem) |
 | `classId` ou `justificationId` que não é UUID | 400 | `bad_input` | classId precisa ser um UUID válido · justificationId precisa ser um UUID válido | muda (mensagem) |
+| `{classId}` válido, depois do `db-push-prod` da 2.0.0 (D42 revista, § 13.2) | 410 | `legacy_upload_retired` | Atualize o aplicativo para anexar arquivo à justificativa. | **muda:** hoje assina |
 | `{justificationId}`: linha que a RLS não devolve, ou de outra pessoa (sem alarme: professor e admin leem a linha pela RLS, mas só o dono anexa) | 403 | `forbidden` | Sem acesso | já é assim |
 | `{justificationId}` do próprio aluno, com `status` diferente de `'pending'` | 409 | `justification_not_pending` | Esta justificativa já foi decidida e não aceita anexo | **muda:** hoje 403 |
 | `{justificationId}` do próprio aluno, com `proof_public_id` preenchido | 409 | `justification_already_has_attachment` | Esta justificativa já tem anexo | **muda:** hoje 403 |
@@ -2133,7 +2148,7 @@ O servidor e a `send-push` vêm antes porque aceitam o banco antigo. As migratio
 
 | Cliente antigo faz | O banco novo responde |
 | --- | --- |
-| Upsert de justificativa `{class_id, user_id, message, proof_*}` (APK 1.8, web atual) | Funciona: `scope = 'class'` e `week_start` preenchidos pelo gatilho, e o `unique (class_id, user_id)` mantido. |
+| Upsert de justificativa `{class_id, user_id, message, proof_*}` (APK 1.8, web atual) | **Só com o texto** (`proof_*` nulos): funciona, com `scope = 'class'` e `week_start` preenchidos pelo gatilho, e o `unique (class_id, user_id)` mantido. **08/10, D42 revista:** com anexo, `22023`, *"Atualize o aplicativo para anexar arquivo à justificativa."*; o APK 1.8/1.9 mostra a falha genérica de envio, e a web atual, a mensagem. Reenviar só o texto de uma linha que já tem anexo (`proof_*` nulos) dá `42501`, porque apagaria o anexo (§ 9.1 f). |
 | Professor decide justificativa com `update({status})` (APK 1.8) | `22023`, *"Atualize o aplicativo para decidir justificativas."* **O APK novo sai no mesmo dia das migrations.** |
 | `select('*')` em `absence_justifications` (APK 1.8) | Não vê nota nem quem negou: a nota está em outra tabela, e a negada tem `reviewed_by` nulo. O professor deixa de ver as decididas. |
 | `salvar_chamada` (APK ≤ 1.8), primeira conclusão | Aceita. **Aula com público `'free'`:** recusa, com `22023`, *"Atualize o aplicativo para fazer a chamada desta aula."* **Nas outras:** grava de `p_ausentes` só os fixos esperados (**v3:** os da grade efetiva, T33) e ignora os demais ids (T11); quem estiver em `p_presentes` e não for esperado vira incluído. Grava `taken_by` e `present = true` para quem chama. **v3:** aula com troca ou extra é recusada (linha abaixo). **v3:** presença gravada por ele na **aula original de uma troca avulsa pendente** (o aluno aparece como da turma) **cancela** a troca (`decided_via = 'system'`), como na regra 8 da § 7.2, e dispara a T31. |
@@ -2171,7 +2186,7 @@ status ou `code` que muda. As duas regras que protegem os APKs instalados estão
 
 - revogar o `select` direto de `reviewed_by` pelo aluno;
 - revogar `plans.price_cents` para quem não é admin, com o preço servido por RPC;
-- aposentar `salvar_chamada`, `concluir_chamada`, `frequencia_mensal` e a variante `{classId}`.
+- aposentar `salvar_chamada`, `concluir_chamada` e `frequencia_mensal` (a variante `{classId}` sai antes, no G4: D42 revista).
 
 ## 16. Pendências do dono (o contrato não inventa)
 

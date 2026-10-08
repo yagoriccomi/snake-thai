@@ -2,12 +2,12 @@
 -- C11 (item 4.8; contrato v6, § 9.1 e § 15) — o anexo da justificativa sai da
 -- escrita direta do aluno e passa pela anexar_a_justificativa.
 --
--- (1) Na escrita direta do dono (INSERT e UPDATE fora das RPCs), o anexo só
---     pode ser o caminho legado por aula, que o upsert do APK 1.8/1.9 e da web
---     atual ainda grava até o G6 (§ 15). Os caminhos da forma nova, '<id>' e
---     '<id>-2', só nascem na RPC, que os deriva no banco; e o anexo da forma
---     nova não muda nem some por UPDATE direto. A retirada completa de proof_*
---     da escrita do dono vai para a Fase B, junto com o upsert legado.
+-- (1) Na escrita direta do dono (INSERT e UPDATE fora das RPCs), o anexo não
+--     entra, não muda e não some: só a RPC o grava, com o caminho que ela
+--     deriva no banco ('<id>' ou '<id>-2'). D42 revista (coordenação, 08/10):
+--     o caminho legado por aula, que o upsert do APK 1.8/1.9 e da web atual
+--     gravavam, é desligado já na 2.0.0, sem carência. O texto do upsert
+--     legado segue aceito (§ 15); o anexo legado já gravado fica como está.
 -- (2) A constraint do caminho amarra o sufixo à tentativa: '<id>' só na 1ª,
 --     '<id>-2' só na 2ª (REVIEW-FASE4, risco médio). O view-url do servidor
 --     segue sem pedir attempt até o G4 (D27): ele aceita os três caminhos
@@ -24,7 +24,7 @@ security definer
 set search_path = ''
 as $function$
 declare
-  colunas_do_dono constant text[] := array['message', 'proof_provider', 'proof_public_id', 'updated_at'];
+  colunas_do_dono constant text[] := array['message', 'updated_at'];
   v_uid uuid := (select auth.uid());
   v_sistema boolean := (select auth.uid()) is null and coalesce(auth.role(), '') <> 'anon';
   -- § 0.1 regra 4 (v4): as RPCs de justificativa ligam a variável em volta
@@ -35,7 +35,6 @@ declare
   v_ultimo_dia date;
   v_cota smallint;
   coluna text;
-  v_anexo_legado boolean;
 begin
   -- (i) DELETE: só o dono, com a linha pendente. Decidida fica (D15).
   if tg_op = 'DELETE' then
@@ -67,11 +66,6 @@ begin
     return new;
   end if;
 
-  -- (j) C11, § 15: o único caminho que o upsert legado conhece é o da aula.
-  v_anexo_legado := new.proof_public_id is null
-    or (new.proof_provider = 'cloudinary' and new.class_id is not null
-        and new.proof_public_id = 'justificativas/' || new.user_id::text || '/' || new.class_id::text);
-
   -- INSERT ------------------------------------------------------------------
   if tg_op = 'INSERT' then
     -- (e) só a própria, e sempre pendente, tentativa 1.
@@ -81,9 +75,10 @@ begin
     if new.status <> 'pending' or new.attempt <> 1 or new.reviewed_by is not null or new.reviewed_at is not null then
       raise exception 'Operação negada: justificativa nasce pendente de revisão.' using errcode = '42501';
     end if;
-    -- (j) o anexo da forma nova nasce na anexar_a_justificativa.
-    if not v_anexo_legado then
-      raise exception 'Operação negada: o anexo da justificativa é enviado depois, pelo aplicativo.' using errcode = '42501';
+    -- (j) D42 revista: o anexo nasce só na anexar_a_justificativa, nunca no
+    -- INSERT direto (nem o caminho legado do APK 1.8/1.9 e da web atual).
+    if new.proof_provider is not null or new.proof_public_id is not null then
+      raise exception 'Atualize o aplicativo para anexar arquivo à justificativa.' using errcode = '22023';
     end if;
 
     if new.scope = 'class' then
@@ -152,28 +147,27 @@ begin
     raise exception 'Operação negada: justificativa já decidida não pode ser alterada.' using errcode = '42501';
   end if;
 
-  -- (f) pendente: só o dono, e só o texto e o anexo.
+  -- (f) pendente: só o dono, e só o texto.
   if old.user_id is distinct from v_uid then
     raise exception 'Operação negada: só o aluno altera a própria justificativa.' using errcode = '42501';
   end if;
+
+  -- (j) D42 revista: o anexo não muda por UPDATE direto. O que já existe fica
+  -- como foi gravado; o novo entra só pela anexar_a_justificativa.
+  if (new.proof_provider, new.proof_public_id) is distinct from (old.proof_provider, old.proof_public_id) then
+    if old.proof_public_id is not null then
+      raise exception 'Operação negada: o anexo desta justificativa não pode ser trocado nem removido.' using errcode = '42501';
+    end if;
+    raise exception 'Atualize o aplicativo para anexar arquivo à justificativa.' using errcode = '22023';
+  end if;
+
   for coluna in select jsonb_object_keys(to_jsonb(new)) loop
     if (to_jsonb(old) -> coluna) is distinct from (to_jsonb(new) -> coluna)
        and not (coluna = any (colunas_do_dono)) then
-      raise exception 'Operação negada: na justificativa, o aluno só altera o texto e o anexo (coluna "%").', coluna
+      raise exception 'Operação negada: na justificativa, o aluno só altera o texto (coluna "%").', coluna
         using errcode = '42501';
     end if;
   end loop;
-
-  -- (j) o anexo só se mexe no caminho legado; o da forma nova fica como a RPC gravou.
-  if (new.proof_provider, new.proof_public_id) is distinct from (old.proof_provider, old.proof_public_id) then
-    if old.proof_public_id is not null
-       and old.proof_public_id is distinct from 'justificativas/' || old.user_id::text || '/' || old.class_id::text then
-      raise exception 'Operação negada: o anexo desta justificativa não pode ser trocado nem removido.' using errcode = '42501';
-    end if;
-    if not v_anexo_legado then
-      raise exception 'Operação negada: o anexo da justificativa é enviado depois, pelo aplicativo.' using errcode = '42501';
-    end if;
-  end if;
 
   return new;
 end;

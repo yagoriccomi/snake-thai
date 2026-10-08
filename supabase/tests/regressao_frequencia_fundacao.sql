@@ -254,17 +254,17 @@ begin
   end;
 end $$;
 
--- T14a — prepara a troca de anexo (ainda como aluno 2, pendente)
-insert into public.absence_justifications (id, class_id, user_id, proof_provider, proof_public_id)
+-- T14a — prepara a troca de anexo (do aluno 2, pendente). Desde a C11 e a D42
+-- revista, o aluno não grava anexo direto (§ 9.1): o caminho legado por aula
+-- só existe em dado de antes da 2.0.0, que o sistema simula aqui.
+reset role;
+set local request.jwt.claims = '';
+insert into public.absence_justifications (id, class_id, user_id, message, proof_provider, proof_public_id)
 values ('d0000000-0000-4000-8000-0000000000e2','d0000000-0000-4000-8000-0000000000c2',
-        'd0000000-0000-4000-8000-000000000002','cloudinary','justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000c2');
-
--- Caminhos reais (contrato v3, § 9.1): o formato antigo, por aula, e o novo, por justificativa.
--- Desde a C11 o novo só entra pela RPC: o aluno troca o anexo antigo pelo texto
--- (a linha não fica vazia, T9) e anexa de novo.
-update public.absence_justifications set message = 'Atestado', proof_provider = null, proof_public_id = null
- where id = 'd0000000-0000-4000-8000-0000000000e2';
-select public.anexar_a_justificativa('d0000000-0000-4000-8000-0000000000e2');
+        'd0000000-0000-4000-8000-000000000002','Atestado','cloudinary',
+        'justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000c2');
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"d0000000-0000-4000-8000-000000000002","role":"authenticated"}';
 
 -- =====================================================================
 -- Ator: ALUNO 1 — privacidade entre alunos
@@ -394,9 +394,12 @@ end $$;
 reset role;
 set local request.jwt.claims = '';
 
--- T14 — trocar o anexo enfileira o ANTIGO para eliminação (LGPD)
+-- T14 — trocar o anexo enfileira o ANTIGO para eliminação (LGPD). O anexo
+-- legado só sai pelo sistema: o aluno não o remove mais por UPDATE direto.
 do $$
 begin
+  update public.absence_justifications set proof_provider = null, proof_public_id = null
+   where id = 'd0000000-0000-4000-8000-0000000000e2';
   if not exists (select 1 from public.media_deletion_queue
                   where asset_ref = 'justificativas/d0000000-0000-4000-8000-000000000002/d0000000-0000-4000-8000-0000000000c2'
                     and justification_id = 'd0000000-0000-4000-8000-0000000000e2'
