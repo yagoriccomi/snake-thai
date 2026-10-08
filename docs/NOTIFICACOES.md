@@ -128,7 +128,8 @@ Contas e arquivos que só você cria:
 
    No menu: perfil **`dev`** (ou `prod`) → **Google Service Account** → *Set up a
    Google Service Account Key for Push Notifications (FCM V1)* → caminho do arquivo.
-   Repita para os dois pacotes e apague a cópia local depois.
+   Repita para os dois pacotes e apague a cópia local depois. O de produção, em linguagem
+   simples e com a conferência, está em [`CHAVE-FCM-PRODUCAO.md`](CHAVE-FCM-PRODUCAO.md).
 
    O `eas.json` da raiz existe só para esse comando ter um perfil para escolher, e os
    perfis carregam `APP_VARIANT` para o pacote certo ser resolvido. O projeto **não**
