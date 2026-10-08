@@ -1,9 +1,8 @@
-# Roteiro do G4: da 1.9.0 à Política publicada
+# Roteiro do G4: da 1.8.0 à Política publicada
 
 Este é o passo a passo para o dono. Ele leva a produção da 1.8.0 até a 2.0.0, com a Política
 publicada (G5) no mesmo dia. Ele junta as decisões da coordenação de 08/10:
 
-- **D37:** a 1.9.0 sai antes;
 - **D38:** quem está desatualizado é avisado;
 - **D39:** o dono testa antes de liberar;
 - **D40:** a Política está aprovada;
@@ -11,30 +10,31 @@ publicada (G5) no mesmo dia. Ele junta as decisões da coordenação de 08/10:
 - **D42 revista:** o jeito antigo de anexar é desligado no `db-push-prod`, sem os 90 dias;
 - **D43:** a equipe recebe a 2.0.0 junto com o dono;
 - **D44:** sem aviso à equipe sobre os três casos do APK antigo;
-- **D45:** o push de versão nova;
 - **D46:** o G5 entra durante o teste;
 - **D47:** o #92 vai na 2.0.0;
-- **D48:** a chave do servidor já está ligada.
+- **D48:** a chave do servidor já está ligada;
+- **D49:** o push de versão nova é semanal e vai só para quem está desatualizado. Ele substitui
+  o aviso único da D45;
+- **D51:** a chave FCM de produção é configurada antes do dia do G4;
+- **D52:** não há APK 1.9.0. O aviso de atualização que seria da 1.9.0 já está na `main` e vai
+  na 2.0.0. A D37 (a 1.9.0 sai antes) foi revogada;
+- **D53:** o G4 acontece assim que todos os testes de validação passarem, inclusive o de push com
+  a chave FCM de produção. Não há data fixa.
 
-> ⚠️ **Falta uma aprovação sua antes do passo 2: o texto do push de versão nova (D45).** O texto
-> proposto está no #96 e no handoff `snake-thai\handoff\loop\009`:
->
-> - título: "Nova versão do app: 2.0.0";
-> - corpo: "Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso.".
->
-> Se você mudar o texto, este chat ajusta o #96 antes do dia do G4.
+O texto do push de versão nova é fixo (D49): **"Nova versão disponível"**, com o corpo **"Abra o
+app para baixar."**. Não falta aprovação de texto.
 
 ## A ordem, de relance
 
 | Ordem | Passo | Quem faz | Quando |
 | --- | --- | --- | --- |
-| 1 | APK 1.9.0, tag `v1.9.0` e #54 (D37) | você; o #54 por este chat | qualquer dia antes do G4 |
+| 1 | Chave FCM de produção (item 3.4, D51) | você, pelo passo a passo | **antes** do dia do G4 |
 | 2 | #94 e #96, `send-push`, `db-push-prod`, `create-staff` | você, com este chat | **dia do G4** |
 | 3a | Servidor (#37 e a aposentadoria da rota antiga de anexo) | chat do servidor; você confirma | no dia do G4, quando o chat do servidor disser |
 | 3b | Site: `fase-6` → `main` | chat da web; você confirma | logo depois do passo 3a |
-| 4 | APK 2.0.0 no seu celular **e no da equipe**, e o teste (D39, D43) | você | logo depois do passo 3b |
+| 4 | APK 2.0.0 no seu celular **e no da equipe**, e o teste, com o de push (D39, D43, D53) | você | logo depois do passo 3b |
 | 4b | G5: Dados dos termos e `legal:publicar` (D46) | você, com este chat | **durante o teste**, antes do passo 5 |
-| 5 | Liberar a 2.0.0 aos alunos e avisar por push (D38, D45) | você | quando o teste passar |
+| 5 | Liberar a 2.0.0 aos alunos, definir a versão vigente e avisar por push (D38, D49) | você | quando o teste passar |
 | 6 | Conferir G1 e G3 em produção; anotar "G4 aberto em dd/mm" | você roda; este chat anota | logo depois do passo 5 |
 
 **Por que o site sobe antes do teste:** é a ordem da D39. O motivo para deixar o site para depois
@@ -51,7 +51,7 @@ eram as chamadas que o professor no APK antigo deixaria travadas. Com a D43, a e
 - **`<PROJECT_REF>`** é o "Reference ID" do projeto. Ele fica no painel do Supabase, em *Project
   Settings → General*.
 - **Nada de build nativo junto com outra coisa pesada.** A máquina tem pouca memória: antes dos
-  passos 1 e 4, feche o Metro, o Android Studio e os chats que estiverem rodando bateria.
+  passo 4, feche o Metro, o Android Studio e os chats que estiverem rodando bateria.
 
 **Se um passo falhar:** pare ali.
 
@@ -64,75 +64,31 @@ voltar atrás.
 
 ---
 
-## Passo 1 — Publicar a 1.9.0 (D37)
+## Passo 1 — A chave FCM de produção, antes do G4 (D51)
 
-A 1.9.0 só traz o aviso de atualização. Não tem banco nem Edge Function nova. A tag `v1.9.0` já
-existe **só no seu computador**. Ela está no último commit da `release/1.9.0` (`893d1e1`), que é a
-cabeça do #54.
+Sem esta chave, o Google não entrega nenhum push do app de produção (`com.snakethai.app`). O
+passo a passo completo, com onde clicar, o que copiar e onde colar, está em
+[`docs/CHAVE-FCM-PRODUCAO.md`](../CHAVE-FCM-PRODUCAO.md). Em resumo:
 
-O workflow *Release Android* do GitHub está **desligado**. Por isso o push da tag não compila
-nada, e o APK sai do seu computador, pelo `menu.bat`. Nunca use os dois caminhos para a mesma tag.
+1. **No Firebase:** *Configurações do projeto → Contas de serviço → Gerar nova chave privada*.
+   Guarde o arquivo **fora** de `Desktop\GIT`.
+2. **No PowerShell:** `npx --yes eas-cli@latest login` e depois
+   `npx --yes eas-cli@latest credentials -p android`. Escolha o perfil **`prod`**, depois *Google
+   Service Account* e *FCM V1*, e informe o caminho do arquivo.
+3. **Apague o arquivo** e esvazie a Lixeira.
 
-**1.1 Pôr o computador na tag.**
+**A chave é segredo:** não vai para o chat, para o Git nem para nenhum documento.
 
-```bat
-git fetch origin
-git switch --detach v1.9.0
-npm ci
-npm run versao:verificar -- --tag v1.9.0
-```
+Confira: em <https://expo.dev>, *snake-thai → Credentials → Android → com.snakethai.app*, a seção
+**FCM V1 service account key** mostra a chave, com um e-mail `firebase-adminsdk-…`.
 
-Confira: o `versao:verificar` termina sem erro e não mostra o aviso de banco ou de Edge Function.
+A prova de que o push chega só acontece no passo 4, com o APK 2.0.0 (D53).
 
-**1.2 Gerar o APK de produção.** No `menu.bat`, aperte `[V]` até aparecer **PROD**, depois `[P]`
-(preparar) e `[5]` (gerar o release).
+**Não há APK 1.9.0 (D52).** O aviso de atualização dentro do app já está na `main` e sai na
+2.0.0. Não existe tag `v1.9.0`, e nada precisa ser publicado antes do G4 além da chave.
 
-Confira: o arquivo `release\snake-thai-v1.9.0.apk` existe, com exatamente esse nome, e o menu diz
-que a assinatura é a de produção.
-
-**1.3 Instalar no seu celular e abrir.** No `menu.bat`, aperte `[9]`. O app abre, entra na sua
-conta e funciona como a 1.8.0. Enquanto a 1.9.0 for a versão mais nova, o aviso **não** aparece.
-É o esperado.
-
-**1.4 Publicar a tag e o release.**
-
-```bat
-git push origin v1.9.0
-node scripts\version.js notes v1.9.0 > %TEMP%\notas.md
-gh release create v1.9.0 release\snake-thai-v1.9.0.apk --title "Snake Thai 1.9.0" --notes-file %TEMP%\notas.md
-```
-
-Confira com `gh release list --limit 3`:
-
-- a **1.9.0** aparece como **Latest**;
-- a página do release tem o arquivo `snake-thai-v1.9.0.apk`, com esse nome exato. O aviso de
-  atualização depende disso.
-
-**1.5 Mesclar o #54.** Peça a este chat. Ele marca o PR como pronto e o mescla **com merge
-commit**, nunca com squash, para a tag entrar no histórico da `main`. Para conferir, rode
-`git fetch origin` e depois `git merge-base --is-ancestor v1.9.0 origin/main && echo ok`. O
-resultado deve ser `ok`.
-
-**1.6 Voltar o computador para a `main`.**
-
-```bat
-git switch main
-git pull --ff-only
-npm ci
-```
-
-**1.7 Pedir a quem usa o app hoje** (equipe e contas de teste) que instale a 1.9.0 pelo link do
-release. Quanto mais gente estiver na 1.9.0, mais gente vê o aviso da 2.0.0 no próprio app.
-
-**Se falhar:**
-
-- **O build falhou ou faltou memória:** nada foi publicado. Feche o que estiver aberto e repita o
-  1.2.
-- **O release saiu sem ser Latest:** rode `gh release edit v1.9.0 --latest`.
-- **O release saiu com o arquivo errado:** apague só o arquivo na página do release e suba o
-  certo. **A tag publicada nunca se move nem é apagada.**
-- **Apareceu um defeito na 1.9.0 depois de publicada:** ela fica como está, e a correção vira a
-  1.9.1.
+**Se falhar:** a tabela "Se der errado" do passo a passo cobre os erros comuns. A produção não
+muda enquanto a chave não estiver lá: os avisos só esperam na fila.
 
 ---
 
@@ -145,7 +101,7 @@ Thai. **A `send-push` vem antes do banco.** O banco novo cria tipos de notifica�
 - os tipos de troca travariam todos os pushes;
 - o `versao_nova` sairia com um texto genérico.
 
-**2.1 Mesclar o #94 (C11, D41) e o #96 (D45).** Peça a este chat. Ele confere que o CI dos dois
+**2.1 Mesclar o #94 (C11, D41) e o #96 (D49).** Peça a este chat. Ele confere que o CI dos dois
 está verde e os mescla, nesta ordem. Depois, no seu computador:
 
 ```bat
@@ -156,7 +112,8 @@ npm ci
 
 Confira: `gh run list --branch main --limit 1` mostra o CI da `main` verde.
 
-**2.2 Publicar a `send-push`** a partir da `main` atualizada, que já tem o texto do `versao_nova`.
+**2.2 Publicar a `send-push`** a partir da `main` atualizada, que já tem o texto do `versao_nova`
+("Nova versão disponível" / "Abra o app para baixar.").
 
 ```bat
 npx supabase functions deploy send-push --no-verify-jwt --project-ref <PROJECT_REF>
@@ -175,10 +132,13 @@ O script faz o backup (em `%USERPROFILE%\snake-thai-backups`), mostra a simulaç
 confirmações. Confira:
 
 - a simulação lista **26 migrations**, da `20260925200000_v3_valores_de_enum` à
-  `20261008120100_d45_avisar_versao_nova`;
+  `20261008120100_d49_versao_nova_semanal`;
 - o script termina sem erro e lista as migrations de produção, com a `20261008120100` por último.
 
-**Neste passo, o jeito antigo de anexar justificativa é desligado** (D42 revista). O APK 1.8/1.9
+A migration da D49 cria o agendamento semanal do push de versão nova, mas ele **não envia nada**
+até o passo 5.2: a versão vigente começa vazia.
+
+**Neste passo, o jeito antigo de anexar justificativa é desligado** (D42 revista). O APK 1.8
 e o site antigo continuam mandando justificativa só com texto. Mandar com anexo passa a falhar. O
 anexo antigo que já está gravado não muda.
 
@@ -282,14 +242,18 @@ no aparelho".
 | Trocas | Trocar só nesta semana e permanente; desistir; revisar | `ENTREGA-4.9b` |
 | Pessoas e fichas | Abas, busca, filtros, ficha do aluno e do professor | `ENTREGA-4.10` |
 | Dados dos termos | A tela existe em *Dados*, e "Ver Política" mostra o texto novo com os campos a preencher | `docs/legal/README.md` |
-| Notificações | Se o push estiver ativo em produção (item 3.4), chegam os avisos de cancelamento, justificativa e troca | `docs/NOTIFICACOES.md` |
+| Notificações (**obrigatório**, D53) | Com a chave FCM do passo 1: ative as notificações no aluno de teste, feche o app de vez e cancele uma aula de teste dele. O aviso "Aula cancelada" chega em até 1 minuto. Repita com o app aberto, e tocar no aviso abre a aula. Depois, confira os avisos de justificativa e de troca | `docs/CHAVE-FCM-PRODUCAO.md`, `docs/NOTIFICACOES.md` |
 
 **Lembre:** o teste roda no sistema real. Cancelar aula, decidir pedido ou retificar chamada
 **avisa** por push as contas envolvidas. Use aulas e contas de teste. **Não cancele aula de verdade
-durante o teste.** Quem está no APK 1.8 ou 1.9 continua vendo a aula cancelada como normal e pode
-ir à academia à toa.
+durante o teste.** Quem está no APK 1.8 continua vendo a aula cancelada como normal e pode ir à
+academia à toa.
 
-**Durante o teste, o aluno no APK 1.8 ou 1.9:**
+**Se o push não chegar, o G4 espera (D53).** Antes de repetir o teste, siga a tabela "Se der
+errado" do [`CHAVE-FCM-PRODUCAO.md`](../CHAVE-FCM-PRODUCAO.md) e mande a este chat o que aparece
+nos logs da `send-push`, sem token nem chave.
+
+**Durante o teste, o aluno no APK 1.8:**
 
 - continua marcando "Vou" e "Não vou";
 - só falha em aula trocada, cancelada ou de plano livre;
@@ -304,7 +268,7 @@ aplicativo" nas ações novas. Nada se perde: o banco recusa a operação inteir
 **Se o teste achar um defeito:** não publique a 2.0.0. Este chat corrige num PR, e a versão
 publicada passa a ser a **2.0.1** (`npm run versao:patch` e depois `npm run versao:tag`). A tag
 `v2.0.0`, que nunca saiu do seu computador, fica sem uso, e o passo 4 recomeça do 4.2. Mande a
-2.0.1 à equipe do mesmo jeito. O banco não volta atrás: a 1.8 e a 1.9 continuam funcionando com as
+2.0.1 à equipe do mesmo jeito. O banco não volta atrás: a 1.8 continua funcionando com as
 limitações acima.
 
 ## Passo 4b — G5 no mesmo dia, durante o teste (D46)
@@ -346,8 +310,8 @@ select version from public.legal_documents where kind = 'privacy_policy' and is_
 O resultado deve ser **1.0**.
 
 **Quem vê a Política nova:** cada pessoa a vê na próxima vez que abrir o app ou o site, e só entra
-depois de aceitar. **O APK 1.8 e o 1.9 também mostram a tela "Termos atualizados"**. Ela é a
-mesma nas duas versões, e o banco já monta o texto preenchido. A pergunta vem quando o app é
+depois de aceitar. **O APK 1.8 também mostra a tela "Termos atualizados"**. Ela é a mesma da
+2.0.0, e o banco já monta o texto preenchido. A pergunta vem quando o app é
 aberto do zero. Quem só volta ao app que estava aberto em segundo plano vê a tela na próxima
 abertura.
 
@@ -356,7 +320,7 @@ Política publicada não muda: para corrigir, publica-se a versão 1.1, e todos 
 
 ---
 
-## Passo 5 — Liberar a 2.0.0 aos alunos, com o aviso (D38, D45)
+## Passo 5 — Liberar a 2.0.0 aos alunos, com o aviso (D38, D49)
 
 **5.1 Publicar o release.**
 
@@ -373,31 +337,51 @@ e o mescla com merge commit antes do push da tag.
 Confira:
 
 - `gh release list --limit 3` mostra a **2.0.0** como **Latest**, com o arquivo
-  `snake-thai-v2.0.0.apk`;
-- num celular com a **1.9.0**, ao abrir o app, aparece o aviso de atualização, e o link baixa a
-  2.0.0. Essa é a prova final do 3A.4.
+  `snake-thai-v2.0.0.apk`, com esse nome exato. O aviso de atualização dentro do app depende
+  disso.
 
-**5.2 Avisar por push (D45).** Só depois do 5.1, para o link do aviso já apontar a 2.0.0. No **SQL
-Editor de produção**, rode:
+**O aviso dentro do app só existe a partir da 2.0.0 (D52).** Ninguém vê esse aviso hoje, porque a
+1.8.0 não o tem. A prova final dele (o 3A.4) fica para a próxima versão publicada: num celular com
+a 2.0.0, ao abrir o app, aparece o aviso, e o link baixa a versão nova.
+
+**5.2 Definir a versão vigente e avisar por push (D49).** Só depois do 5.1, para o link do push já
+apontar a 2.0.0. No **SQL Editor de produção**, rode:
 
 ```sql
-select public.avisar_versao_nova('2.0.0');
+select public.definir_versao_vigente_do_app('2.0.0');
 ```
 
-O número que aparece é quantas pessoas entraram na fila do aviso: todas as ativas com o app
-instalado e o push ligado, inclusive a equipe que já atualizou. Fora do horário de silêncio
-(22h às 7h), o aviso sai em até 1 minuto. Dentro dele, sai às 7h. Rodar de novo devolve 0 e não
-repete o aviso.
+O resultado deve ser `2.0.0`. Se o teste do passo 4 tiver virado 2.0.1, use `'2.0.1'`.
 
-**O push só chega com a chave FCM de produção (item 3.4).** Sem ela, o aviso fica na fila e não
-chega. Nesse caso, avise por mensagem quem está na 1.8.0, porque a 1.8.0 não mostra o aviso ao
-abrir. Quem está na 1.9.0 vê o aviso ao abrir o app de qualquer jeito.
+Daqui em diante, o agendamento semanal manda o push **toda segunda-feira às 10h**, só para quem
+tem algum aparelho abaixo dessa versão: quem está no APK 1.8 e quem nunca abriu a 2.0.0. Quem
+atualiza para de receber. O texto é "Nova versão disponível" / "Abra o app para baixar.".
+
+**Para não esperar a segunda**, rode logo em seguida:
+
+```sql
+select public.enfileirar_avisos_de_versao_nova();
+```
+
+O número que aparece é quantas pessoas entraram na fila agora. A equipe, que já abriu a 2.0.0 no
+passo 4, fica de fora. Fora do horário de silêncio (22h às 7h), o push sai em até 1 minuto.
+Dentro dele, sai às 7h. Rodar de novo na mesma semana devolve 0 e não repete o aviso. Na segunda
+seguinte, o agendamento manda de novo para quem continuar desatualizado.
+
+**Para desligar o push semanal**, rode `select public.definir_versao_vigente_do_app(null);`.
+
+**Se o push não chegar a alguém**, avise essa pessoa por mensagem, porque a 1.8.0 não mostra o
+aviso ao abrir.
 
 **Se falhar:**
 
 - **Release sem ser Latest:** rode `gh release edit v2.0.0 --latest`.
 - **Arquivo errado:** troque só o arquivo. A tag publicada não se move.
-- **O `avisar_versao_nova` deu erro:** confira se a versão está escrita como `2.0.0`, sem "v".
+- **O `definir_versao_vigente_do_app` deu "Versão inválida":** escreva só os números, como
+  `2.0.0`, sem "v" e sem sufixo.
+- **O `enfileirar_avisos_de_versao_nova` devolveu 0 logo na primeira vez:** confira com
+  `select current_app_version from public.academy_settings;` se a versão vigente está gravada. Se
+  estiver, pode ser que todos já tenham atualizado.
 
 ---
 
