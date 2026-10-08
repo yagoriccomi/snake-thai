@@ -27,7 +27,7 @@
 | | |
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **1.9.0**, com o aviso de atualização (Fase 3A) |
-| **`main`** | Em `51f0809` (merge do PR #93, 07/10), **CI verde**. Abertos e sem merge: #54 (1.9.0, espera a tag), #92 (Expo, D26, espera o APK de ensaio) e #94 (C11, entra no dia do G4) |
+| **`main`** | Em `c336712` (merge do PR #92, Expo, 08/10, D47 da coordenação), **CI verde**. Abertos e sem merge: #54 (1.9.0, espera a tag), #94 (C11 com a D42 revista, entra no dia do G4) e #96 (D45, push de versão nova e contrato v7, entra no dia do G4) |
 | **Branches** | Desde 29/09 este chat mescla os próprios PRs com o CI verde (D2 da coordenação). As branches mescladas são apagadas no GitHub e no disco |
 | **Banco local** | Recriado da `main` em 29/09 às 11:26 (`db-dev test`, 0 falhas) e às 11:27 (`db-dev reset`, com o histórico de demonstração). **G1 conferido nele** |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
@@ -363,8 +363,8 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
 6. **Produção:** tudo sai **junto**, numa versão só, na ordem do § 14: servidor (G2) →
    `send-push` com os **dez** tipos novos e o `default` → migrations → `create-staff` → APK no
    mesmo dia → web. **Antes de tudo isso, a 1.9.0 (Fase 3A).** **Desde 08/10 (D39 da
-   coordenação), o APK 2.0.0 vai primeiro só para o celular do dono**, que testa no sistema real
-   antes de liberar aos demais; o passo a passo é o
+   coordenação), o APK 2.0.0 vai primeiro ao dono e à equipe (D43)**, que testam no sistema real
+   antes de liberar aos alunos, e o G5 sai durante o teste (D46); o passo a passo é o
    [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md) (4.13).
    - **Por que junto:** as travas novas desligam funções do APK 1.8: decidir justificativa,
      retificar chamada e, pela T47, fazer a chamada de aula com troca, extra ou aluno que mudou de
@@ -722,9 +722,11 @@ o roteamento do toque (`notificationRouting`).
   da justificativa troca de rota para `sign-upload {justificationId}` + `anexar_a_justificativa`;
   o app tira `proof_*` das colunas que o dono grava direto e amarra o sufixo `-2` ao `attempt`
   (`REVIEW-FASE4.md`, risco médio). PR próprio. **Pronta no #94** (07/10), sem merge: entra
-  logo antes do `db-push-prod` do G4 (D41 da coordenação). O caminho legado (o APK 1.8/1.9
-  grava `proof_*`) continua aceito por **90 dias depois da 2.0.0** e então é desligado (D42 da
-  coordenação); a data-alvo fica **a definir** até a 2.0.0 sair.
+  logo antes do `db-push-prod` do G4 (D41 da coordenação). **O caminho legado (o APK 1.8/1.9 e
+  a web atual gravam `proof_*`) é desligado no próprio `db-push-prod`** (D42 revista da
+  coordenação, 08/10; `d04b30b` no #94): o upsert só com o texto continua aceito, e com anexo dá
+  `22023`. O anexo legado já gravado fica como está. A variante `sign-upload {classId}` do
+  servidor sai no mesmo passo.
 
 ### 4.9 Solicitações e troca de aula (abre G3)
 
@@ -885,12 +887,13 @@ acharam classes de defeito que podem voltar na implementação:
 ### 4.12b Atualizar o Expo (D26)
 
 - [x] SDK 57 mais novo e `npm audit fix` · [x] marca de ensaio no versionName · [x] CI verde ·
-  [ ] 👤 gerar o APK de ensaio (o build local parou por falta de memória; comando na ENTREGA) ·
-  [ ] 👤 o dono testa o APK no aparelho · [ ] merge
+  [x] merge (08/10, D47 da coordenação: sem APK de ensaio, o teste é o da 2.0.0)
 
 Plano em [`PLANO-4.12b-atualizar-expo.md`](docs/planos/PLANO-4.12b-atualizar-expo.md); roteiro do
-aparelho em [`ENTREGA-4.12b-atualizar-expo.md`](docs/planos/ENTREGA-4.12b-atualizar-expo.md). O PR
-fica aberto e verde até o teste do dono (C18).
+aparelho em [`ENTREGA-4.12b-atualizar-expo.md`](docs/planos/ENTREGA-4.12b-atualizar-expo.md). **O
+#92 foi mesclado na `main` em 08/10** (`c336712`, D47 da coordenação), com o CI verde. O merge não
+publica nada: o app não tem `expo-updates`, e os workflows de release só rodam por tag ou à mão. O
+APK 2.0.0 do dono (4.13) faz as vezes do APK de ensaio.
 
 **Os 31 altos não zeram.** `node-forge` 1.4.0 e `braces` 3.0.3 são as últimas versões publicadas e
 continuam vulneráveis; o `@expo/cli` e o Metro dependem deles também no SDK 58. A atualização tira
@@ -901,38 +904,43 @@ os 7 que têm correção (31 → 24 em produção); os 24 restantes esperam corr
 **Antes:**
 
 - a **1.9.0 (Fase 3A)** já publicada: quem estiver nela recebe o aviso da 2.0.0 no próprio app;
-- para quem ficou na 1.8.0, o aviso de "atualize" vai **por outro canal** (§ 12.3). Priorize
-  professores e admins: o APK 1.8 deixa de decidir justificativas, de retificar chamadas e de
-  fazer a chamada de aula com troca, extra ou aluno que mudou de turma depois dela (T47).
+- para quem ficou na 1.8.0, o aviso de "atualize" vai por push (`avisar_versao_nova`, D45 da
+  coordenação, se a chave FCM de produção do 3.4 estiver ativa) ou **por outro canal** (§ 12.3).
+  A equipe recebe a 2.0.0 junto com o dono (D43 da coordenação).
 
-**Na ordem do § 14 do contrato, com o teste do dono (D39 da coordenação, 08/10).** O passo a
-passo, com os comandos e o que conferir, é o [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md):
+**Na ordem do § 14 do contrato, com o teste do dono (D39 e D43 da coordenação, 08/10).** O passo
+a passo, com os comandos e o que conferir, é o [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md):
 
 1. **G2** já aberto (servidor, em 07/10); a **C5** da web na `main` (05/10); a **1.9.0**
-   publicada e o #54 mesclado (D37 da coordenação);
-2. no dia do G4: o **#94 (C11)** mesclado logo antes do banco (D41 da coordenação) → `send-push`
-   nova, com os **dez** tipos novos e o `default` → `scripts\db-push-prod.bat` (24 migrations) →
-   `create-staff`;
-3. o servidor publica o #37 quando o chat dele disser;
-4. **APK 2.0.0 só no celular do dono**, que testa no sistema real (D39). Antes de gerar, o #92
-   (Expo, D26) precisa estar resolvido;
-5. passou o teste: a 2.0.0 sai a todos (tag, release Latest) com o aviso a quem está
-   desatualizado (D38 da coordenação);
-6. conferência do G1 e do G3 no SQL Editor de produção → **"G4 aberto em dd/mm"** no Registro;
-7. o site (`fase-6` → `main`) sobe depois do "G4 aberto". Ele gera aula extra e troca, que
-   travam a chamada de quem ainda está no APK 1.8/1.9 (pergunta P1 do handoff `loop/008`).
+   publicada e o #54 mesclado (D37 da coordenação); o **#92** (Expo) já na `main` (D47);
+2. no dia do G4: o **#94 (C11)** e o **#96 (D45)** mesclados logo antes do banco (D41) →
+   `send-push` nova, com os **onze** tipos novos (os dez da v3 e o `versao_nova`) e o `default` →
+   `scripts\db-push-prod.bat` (**26 migrations**, até a `20261008120100_d45_avisar_versao_nova`;
+   desliga o anexo legado, D42 revista) → `create-staff`;
+3. o servidor publica o #37 e aposenta o `sign-upload {classId}`, quando o chat dele disser. A
+   chave `MIGRATIONS_DO_G4_EM_PRODUCAO` já está ligada (D48): até o `db-push-prod`, o anexo de
+   justificativa dá 502, e isso foi aceito;
+4. o site (`fase-6` → `main`) sobe logo depois, como a D39 previa;
+5. **APK 2.0.0 no celular do dono e no da equipe** (professores e admins, D43), que testam no
+   sistema real (D39). Os alunos esperam;
+6. **G5 durante o teste** (D46): Dados dos termos, `legal:publicar -- politica 1.0` e
+   `db-push-prod`, antes de liberar aos alunos;
+7. passou o teste: a 2.0.0 sai a todos (tag, release Latest), e o dono roda
+   `select public.avisar_versao_nova('2.0.0');` no SQL Editor (D38 e D45);
+8. conferência do G1 e do G3 no SQL Editor de produção → **"G4 aberto em dd/mm"** e **"G5 aberto
+   em dd/mm"** no Registro.
 
-**Durante o teste do dono**, o professor no APK 1.8/1.9 recebe "Atualize o aplicativo" ao decidir
+**Durante o teste do dono**, quem ficar no APK 1.8/1.9 recebe "Atualize o aplicativo" ao decidir
 justificativa, retificar chamada e fazer a chamada de aula com troca, extra, cancelada, mudança de
-turma ou "só livres" (§ 15). Nada se perde: a chamada fica pendente até a 2.0.0. Por isso o teste
-é curto. A conferência de 08/10 achou três casos **fora da § 15**, que falham sem mensagem no APK
-antigo: entrar ou sair de aula já começada (`v3_travas`), professor criando aula com data passada
-(a aula fica sem professor) e admin editando aula com chamada; e o aluno no APK antigo vê a aula
-cancelada como normal. Pergunta P2 do handoff `loop/008`.
+turma ou "só livres" (§ 15). Nada se perde: o banco recusa a operação inteira. Com a equipe na
+2.0.0 (D43), essas travas só pegam quem não atualizou. Os três casos fora da § 15 (entrar ou sair
+de aula já começada, aula com data passada sem professor, edição de aula com chamada) ficam como
+estão, sem aviso à equipe e sem mudança no contrato (D44 da coordenação). O aluno no APK antigo vê
+a aula cancelada como normal e não anexa mais arquivo à justificativa (D42 revista).
 
 **Depois:** num aparelho com a 1.9.0, conferir que o aviso de atualização aparece e que o link
 baixa o `snake-thai-vX.Y.Z.apk` da 2.0.0 (a prova final do 3A.4). Anotar no Registro a data da
-2.0.0 e a **data-alvo da D42** (publicação + 90 dias), quando o anexo legado é desligado.
+2.0.0. Não há mais data-alvo da D42: o legado sai no `db-push-prod` (D42 revista).
 
 ### 4.14 Fase B (depois de G6)
 
@@ -1081,22 +1089,43 @@ depois da 2.0.0** (D13 revisto).
 | Limite de recados por dia | Definido no plano do 5.1d | 5.1d |
 | Recado em massa para quem usa iPhone (a web não tem push) | Decidir antes do 5.1d | 5.1d e web 7.1 |
 
-**Decididas em 08/10** (coordenação, oitava rodada):
+**Decididas em 08/10** (coordenação, nona rodada):
+
+- **D43:** o dono, os professores e os admins recebem a 2.0.0 juntos; só os alunos esperam o
+  teste (responde à P1 do handoff `loop/008`).
+- **D44:** os três casos do professor fora da § 15 no APK antigo ficam como estão, sem aviso à
+  equipe e sem contrato (responde à P2).
+- **D45:** push de versão nova: `versao_nova` em `notification_kind`, o texto na `send-push` e a
+  RPC só de admin `avisar_versao_nova(p_versao)`, no contrato **v7** (§ 10). **No #96, sem
+  merge**, até o dia do G4; o texto do push espera a aprovação do dono. Só chega com a chave FCM
+  de produção (3.4).
+- **D46:** o G5 sai no mesmo dia do G4, durante o teste, com o APK 2.0.0: Dados dos termos e
+  `legal:publicar -- politica 1.0` antes de liberar aos alunos. Substitui o "depois da 2.0.0"
+  da D40.
+- **D47:** o #92 (Expo) entra no APK candidato a 2.0.0; mesclado em 08/10 (4.12b).
+- **D48:** a chave `MIGRATIONS_DO_G4_EM_PRODUCAO` do servidor é ligada já; até o
+  `db-push-prod`, o anexo de justificativa dá 502, e isso foi aceito.
+- **D42 revista:** o jeito velho de anexar (o `proof_*` legado gravado direto e o
+  `sign-upload {classId}`) é desligado na 2.0.0, no `db-push-prod`, sem os 90 dias. O APK 1.8/1.9
+  e a web da `main` deixam de anexar justificativa a partir dali (4.8, #94).
+
+**Decididas em 08/10** (coordenação, oitava rodada; a D40 e a D42 foram revistas na nona):
 
 - **D37:** a 1.9.0 sai antes da 2.0.0; o dono gera e envia o APK, e com a tag `v1.9.0` o #54 é
   mesclado.
 - **D38:** aviso a quem está desatualizado por notificação + aviso ao abrir o app, para todos, em
-  toda versão nova. **Hoje só existe o aviso ao abrir (a partir da 1.9.0)**; não há push de
-  versão nova. A proposta está no handoff `loop/008`, sem implementação.
+  toda versão nova. O aviso ao abrir existe a partir da 1.9.0; o push de versão nova é a D45
+  (#96).
 - **D39:** a 2.0.0 só sai a todos depois do teste do dono no próprio celular, no sistema real.
   Condição: o APK 1.8/1.9 e a web atual seguem funcionando com o banco novo. **Seguem para o
-  aluno; o professor tem as travas da § 15 e três casos fora dela** (4.13). Como conviver com
-  elas são as perguntas P1 e P2 do handoff `loop/008`.
-- **D40:** o texto novo da Política (#78) está aprovado. Depois da 2.0.0: Dados dos termos (prazo
-  dos comprovantes 90 dias, D14) e `npm run legal:publicar -- politica 1.0` (abre o G5; 3.7).
+  aluno; o professor tem as travas da § 15 e três casos fora dela** (4.13). As perguntas P1 e
+  P2 do handoff `loop/008` foram respondidas pela D43 e pela D44.
+- **D40:** o texto novo da Política (#78) está aprovado. Dados dos termos (prazo dos comprovantes
+  90 dias, D14) e `npm run legal:publicar -- politica 1.0` (abre o G5; 3.7), **no mesmo dia do
+  G4, pela D46**.
 - **D41:** o #94 (C11) entra logo antes do `db-push-prod` do G4.
-- **D42:** o anexo legado (`proof_*` gravado pelo aluno) fica ligado por 90 dias depois da 2.0.0
-  e então é desligado. **Data-alvo: a definir** até a 2.0.0 sair. O dono confirma a leitura.
+- ~~**D42:** o anexo legado fica ligado por 90 dias depois da 2.0.0.~~ Substituída pela **D42
+  revista** (acima).
 
 **Decididas em 07/10** (coordenação):
 
@@ -1108,8 +1137,8 @@ depois da 2.0.0** (D13 revisto).
 - **D30:** os **24 altos** que sobram no #92 (`node-forge` 1.4.0 e `braces` 3.0.3, já na última
   versão publicada) são aceitos como resíduo sem correção publicada, sem `overrides` e sem fork; o
   chat confere de novo quando sair versão nova.
-- **APK de ensaio da D26 adiado pelo dono:** ninguém tenta o build sem pedido dele; o #92 continua
-  aberto, verde e sem merge (C18).
+- **APK de ensaio da D26 adiado pelo dono:** ninguém tenta o build sem pedido dele. Em 08/10, a
+  D47 levou o #92 para a `main` sem o ensaio: o teste é o do APK 2.0.0.
 
 **Decididas em 02/10** (coordenação, segunda rodada):
 
@@ -1259,3 +1288,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-10-07 | **4.12b (D26): Expo atualizado, PR aberto até o teste do APK de ensaio.** `expo` 57.0.14 → 57.0.27, `react-native` 0.86.0 → 0.86.3, `jest-expo` 57.0.2 → 57.0.5 e os `expo-*` do SDK 57, mais `npm audit fix` sem `--force`. `npm audit --omit=dev`: **31 → 24 altos** (13 moderados, nenhum crítico). **Não zera:** `node-forge` 1.4.0 e `braces` 3.0.3 são as últimas versões publicadas e continuam vulneráveis, e o SDK 58 e o Metro 0.87 ainda dependem deles; a decisão sobre o resíduo é do dono. Marca de ensaio no versionName (`APP_ENSAIO=d26` → `1.8.0+ensaio.d26.dev.N.sha`), com teste. Contrato intocado; `release/1.9.0` intocada (C18). Nenhum `db-dev reset`; Jest completo verde. |
 | 2026-10-07 | **D30 da coordenação, APK de ensaio adiado e G2 aberto no servidor** (coordenação de 07/10, terceira a sétima rodadas). **D30:** o resíduo do Expo é aceito. O #92 (D26, Expo 57.0.27 e RN 0.86.3) levou o `npm audit --omit=dev` de 31 para **24 altos**; os que sobram descendem do `node-forge` 1.4.0 (`@expo/cli`) e do `braces` 3.0.3 (Metro), que já estão na última versão publicada e continuam vulneráveis também no SDK 58. Ficam documentados como resíduo sem correção publicada, **sem `overrides` e sem fork**; o chat confere de novo quando sair versão nova. Explicação em `docs/planos/ENTREGA-4.12b-atualizar-expo.md` (branch do #92), seção "Por que os 31 não zeram". **APK de ensaio adiado pelo dono:** o build bateu no limite de 260 caracteres na worktree e, no caminho curto `C:\st\d26`, a máquina ficou sem memória; ninguém tenta de novo sem pedido do dono. O **#92 continua aberto, verde e sem merge** (C18), e o roteiro e os comandos ficam na ENTREGA e no handoff `snake-thai\handoff\loop\006 - 07_10_2026 D26 Expo e APK de ensaio.md`. **G2 aberto em 07/10, sem o Cron Job (D34)**, no Registro do `snake-server` (#42, `90bfebc`); a `origin/main` do servidor está em `9be4c5b` (merge do #40), com `POST /v1/justifications/sign-upload { justificationId }` no ar, a D20 nas rotas (#40) e a D27 (#39: o `view-url` de justificativa não pede `attempt` até o G4). Nenhum arquivo é apagado até o dono criar o Cron Job, antes de ter alunos de verdade. **Isso destrava a C11** (4.8), que vai num PR próprio. Nenhum `db-dev reset` ou `test` (só documento; C6). |
 | 2026-10-08 | **D37 a D42 da coordenação registradas e roteiro do G4** (coordenação de 08/10, oitava rodada). **D37:** a 1.9.0 sai antes, e o #54 é mesclado com a tag. **D38:** aviso a quem está desatualizado por push + aviso ao abrir; **o push de versão nova não existe** (`notification_kind` e `send-push` não têm o tipo, e `push_devices` não guarda a versão); a proposta está no handoff `loop/008`. **D39:** a 2.0.0 vai primeiro só ao celular do dono; a ordem nova está no 4.13 e o passo a passo em [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md). **Conferência da condição da D39** (leitura das 24 migrations contra a `v1.8.0`, a `release/1.9.0` e a `main` do `snake-web`, sem build): o aluno segue funcionando no APK antigo e na web; o professor tem as travas da § 15 e três casos fora dela (entrar ou sair de aula já começada, aula com data passada sem professor, edição de aula com chamada); a web atual gera "extra" pelo "Vou" em aula de outra turma, o que trava a chamada no APK antigo. Perguntas P1 e P2 ao dono. **D40:** Política aprovada; G5 depois da 2.0.0 (3.7). **D41:** o #94 entra logo antes do `db-push-prod`. **D42:** o anexo legado fica ligado por 90 dias depois da 2.0.0; **data-alvo a definir** até a 2.0.0 sair. |
+| 2026-10-08 | **D43 a D48 e D42 revista da coordenação registradas; roteiro do G4 refeito** (coordenação de 08/10, nona rodada). **D43:** a equipe (professores e admins) recebe a 2.0.0 junto com o dono; só os alunos esperam o teste (responde à P1 do `loop/008`). **D44:** os três casos do professor fora da § 15 ficam como estão, sem aviso à equipe (responde à P2). **D45:** push de versão nova no **#96**, sem merge até o dia do G4: `versao_nova` em `notification_kind` (migration isolada `20261008120000`), o texto na `send-push` ("Nova versão do app: X.Y.Z" / "Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso.", **espera a aprovação do dono**), a RPC só de admin `avisar_versao_nova(p_versao)` (`20261008120100`; repetir a versão não reenvia) e o contrato **v7** (§ 10 e § 14); regressão `regressao_versao_nova.sql` (V1–V7) e testes de unidade na `send-push` e no roteamento do toque. Só chega com a chave FCM de produção (3.4). **D46:** o G5 sai durante o teste da 2.0.0, antes de liberar aos alunos (Passo 4b do roteiro). **D47:** o **#92 (Expo) mesclado** na `main` (`c336712`), com o CI verde; o merge não publica nada (sem `expo-updates`; os workflows de release só rodam por tag ou à mão). **D48:** a chave `MIGRATIONS_DO_G4_EM_PRODUCAO` do servidor já está ligada; o 502 do anexo até o `db-push-prod` foi aceito. **D42 revista:** o anexo legado é desligado no próprio `db-push-prod`, sem os 90 dias; no **#94** (`d04b30b`), a escrita direta do dono não grava anexo nem pelo caminho legado (`22023` com anexo; só o texto passa), com a errata do contrato. **Roteiro** [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md): ordem 1 → 2 → 3a → 3b → 4 → 4b → 5 → 6, com o site antes do teste (D39), 26 migrations, o `avisar_versao_nova('2.0.0')` depois do release e a consulta do enum com 4 valores. **Leitura do código das tags `v1.8.0` e `v1.9.0`:** o APK antigo mostra a tela "Termos atualizados" depois do `legal:publicar`, na próxima abertura do app (`LegalConsentProvider` + `documentos_legais_pendentes`). |
