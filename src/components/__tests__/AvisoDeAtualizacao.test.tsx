@@ -43,6 +43,10 @@ describe('CartaoDoAvisoDeAtualizacao', () => {
       ),
     ).toBeTruthy();
     expect(getByText('Este aviso aparece uma vez por dia até você atualizar.')).toBeTruthy();
+    // Contrato v4: a dica do mockup, com "Baixe" (o mockup dizia "Baixa").
+    expect(
+      getByText('Baixe o APK oficial do GitHub. Depois, abra o arquivo e toque em Instalar: seus dados continuam.'),
+    ).toBeTruthy();
     expect(getByText('Baixar atualização')).toBeTruthy();
     expect(getByText('Agora não')).toBeTruthy();
   });

@@ -17,6 +17,8 @@ export const TEXTOS_DO_AVISO = {
   baixar: 'Baixar atualização',
   agoraNao: 'Agora não',
   nota: 'Este aviso aparece uma vez por dia até você atualizar.',
+  // Contrato v4 (§ 3 e § 12.3), a dica do mockup aprovado (linha H).
+  dica: 'Baixe o APK oficial do GitHub. Depois, abra o arquivo e toque em Instalar: seus dados continuam.',
 } as const;
 
 const TAMANHO_DO_ICONE = 24;
@@ -75,6 +77,9 @@ export function CartaoDoAvisoDeAtualizacao({
           <Button title={TEXTOS_DO_AVISO.agoraNao} variant="secondary" onPress={onDispensar} />
           <AppText variant="caption" style={styles.nota}>
             {TEXTOS_DO_AVISO.nota}
+          </AppText>
+          <AppText variant="caption" style={styles.nota}>
+            {TEXTOS_DO_AVISO.dica}
           </AppText>
         </View>
       </View>
