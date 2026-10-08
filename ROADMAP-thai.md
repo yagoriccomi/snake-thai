@@ -27,7 +27,7 @@
 | | |
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **2.0.0**, com o aviso de atualização (Fase 3A) e a Fase 4. **Não há 1.9.0** (D52 da coordenação, 08/10) |
-| **`main`** | Em `e52537a` (merge do PR #98, o aviso de atualização da `release/1.9.0`, 08/10, D52 da coordenação), **CI verde**. Abertos e sem merge: #94 (C11 com a D42 revista) e #96 (D49, push de versão nova semanal e contrato v7). Os dois entram no dia do G4, nesta ordem |
+| **`main`** | Em `e52537a` (merge do PR #98, o aviso de atualização da `release/1.9.0`, 08/10, D52 da coordenação), **CI verde**. Abertos e sem merge: #94 (C11 com a D42 revista) e #96 (D49 e D54 a D56, push de versão nova e contrato v7). Os dois entram no dia do G4, nesta ordem |
 | **Branches** | Desde 29/09 este chat mescla os próprios PRs com o CI verde (D2 da coordenação). As branches mescladas são apagadas no GitHub e no disco |
 | **Banco local** | Recriado da `main` em 29/09 às 11:26 (`db-dev test`, 0 falhas) e às 11:27 (`db-dev reset`, com o histórico de demonstração). **G1 conferido nele** |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
@@ -242,7 +242,8 @@ Nada sobe para aluno real sem essa auditoria. [#49][#64]
 
 > **Desde 08/10 (D52 da coordenação): não há APK 1.9.0 nem tag `v1.9.0`.** O aviso entrou na
 > `main` pelo PR #98 (`e52537a`), o #54 foi fechado com comentário, e a tag local foi apagada. O
-> aviso sai na 2.0.0. Quem está na 1.8.0 é avisado pelo push semanal de versão nova (D49, 4.13).
+> aviso sai na 2.0.0. Quem está na 1.8.0 é avisado pelo push de versão nova (D49 e D54 a D56 da
+> coordenação, 4.13).
 > O texto abaixo, até o 3A.5, é o desenho original da fase.
 
 > **Contrato:** § 12.3 (D53, T48) e § 14 ("Antes de tudo"). É a **única exceção ao G0**:
@@ -305,7 +306,7 @@ cedo a 1.9.0 sair, menos gente fica para avisar por fora.
   app abre normal; **Agora não** fecha até o dia seguinte. **O aviso de verdade só aparece
   quando existir uma versão maior que a instalada**. Com a D52, o primeiro APK com o aviso é a
   2.0.0, então a prova final fica para **a versão publicada depois dela** (2.0.1 ou maior), num
-  celular com a 2.0.0.
+  celular com a 2.0.0 (confirmado pela D57 da coordenação).
 - [x] ~~**3A.5** ⚠️👤 **Publicar a 1.9.0**~~ — **revogado pela D52 (08/10)**: o aviso vai na
   2.0.0. O texto original segue abaixo, só como histórico. Publicar a 1.9.0 pelo caminho do `docs/VERSIONAMENTO.md`
   (`npm run versao:minor` → `npm run versao:tag` → push da `main` e da tag), **nunca os dois
@@ -915,7 +916,7 @@ os 7 que têm correção (31 → 24 em produção); os 24 restantes esperam corr
 - a **chave FCM de produção** (3.4) configurada (D51 da coordenação), pelo
   [`docs/CHAVE-FCM-PRODUCAO.md`](docs/CHAVE-FCM-PRODUCAO.md);
 - **não há 1.9.0** (D52 da coordenação): o aviso de atualização dentro do app sai na 2.0.0. Quem
-  está na 1.8.0 é avisado pelo push semanal de versão nova (D49 da coordenação), ou **por outro
+  está na 1.8.0 é avisado pelo push de versão nova (D49 e D54 a D56 da coordenação), ou **por outro
   canal** se o push não chegar (§ 12.3). A equipe recebe a 2.0.0 junto com o dono (D43 da
   coordenação);
 - **o G4 não tem data fixa**: acontece assim que todos os testes de validação passarem, inclusive
@@ -941,9 +942,9 @@ a passo, com os comandos e o que conferir, é o [`docs/planos/ROTEIRO-G4.md`](do
 6. **G5 durante o teste** (D46): Dados dos termos, `legal:publicar -- politica 1.0` e
    `db-push-prod`, antes de liberar aos alunos;
 7. passou o teste: a 2.0.0 sai a todos (tag, release Latest), e o dono roda no SQL Editor
-   `select public.definir_versao_vigente_do_app('2.0.0');` e, para não esperar a segunda-feira,
-   `select public.enfileirar_avisos_de_versao_nova();` (D38 e D49). Daí em diante, o pg_cron
-   repete o push toda segunda às 10h, só para quem continua desatualizado;
+   `select public.definir_versao_vigente_do_app('2.0.0');`, que já envia o aviso aos
+   desatualizados, sem segundo comando (D38, D49 e D55 da coordenação). Daí em diante, o pg_cron
+   repete o push toda sexta às 20h, só para quem continua desatualizado (D54);
 8. conferência do G1 e do G3 no SQL Editor de produção → **"G4 aberto em dd/mm"** e **"G5 aberto
    em dd/mm"** no Registro.
 
@@ -957,7 +958,7 @@ a aula cancelada como normal e não anexa mais arquivo à justificativa (D42 rev
 
 **Depois:** anotar no Registro a data da 2.0.0. A prova final do aviso de atualização (3A.4) fica
 para a próxima versão publicada: num aparelho com a 2.0.0, conferir que o aviso aparece e que o
-link baixa o `snake-thai-vX.Y.Z.apk` da versão nova (D52). Não há mais data-alvo da D42: o legado sai no `db-push-prod` (D42 revista).
+link baixa o `snake-thai-vX.Y.Z.apk` da versão nova (D52 e D57 da coordenação). Não há mais data-alvo da D42: o legado sai no `db-push-prod` (D42 revista).
 
 ### 4.14 Fase B (depois de G6)
 
@@ -1106,6 +1107,23 @@ depois da 2.0.0** (D13 revisto).
 | Limite de recados por dia | Definido no plano do 5.1d | 5.1d |
 | Recado em massa para quem usa iPhone (a web não tem push) | Decidir antes do 5.1d | 5.1d e web 7.1 |
 
+**Decididas em 08/10** (coordenação, décima terceira rodada, 14:45; respondem às premissas do
+handoff `loop/010`):
+
+- **D54** (P1): o push de versão nova se repete **toda sexta, às 20h de São Paulo** (`0 23 * * 5`
+  em UTC), e não mais às segundas, às 10h.
+- **D55** (P2): `definir_versao_vigente_do_app` com a versão nova **já enfileira o aviso** a todos
+  os desatualizados, sem comando extra. O `enfileirar_avisos_de_versao_nova()` à mão saiu do
+  roteiro do G4 (passo 5.2) e do 4.13.
+- **D56** (P3): **cada versão nova gera um aviso novo**, mesmo na semana de outro. O "um por
+  semana" vale só para a repetição da mesma versão. A chave passou a
+  `versao_nova:<X.Y.Z>:<IYYY>-W<IW>`.
+- **D57** (P6): a prova real do aviso dentro do app (3A.4) fica para a versão depois da 2.0.0.
+- **P4 e P5** ficam como assumidas: o aviso é por pessoa e chega se algum aparelho dela estiver
+  desatualizado; quem atualiza entre a fila e o envio recebe mesmo assim.
+- D54 a D56 estão no **#96** (contrato v7, § 10 e § 14), ainda sem merge, logo depois do #94 no
+  G4.
+
 **Decididas em 08/10** (coordenação, décima primeira rodada, 13:00, e a D53, às 13:20):
 
 - **D49:** o push de versão nova vai **só para quem está desatualizado, uma vez por semana**.
@@ -1114,7 +1132,8 @@ depois da 2.0.0** (D13 revisto).
   como desatualizado. A versão vigente fica em `academy_settings.current_app_version`, gravada por
   `definir_versao_vigente_do_app`; o pg_cron `push-versao-nova-semanal` chama
   `enfileirar_avisos_de_versao_nova()` toda segunda às 10h (São Paulo), com a chave da semana ISO,
-  e rodar de novo na mesma semana não reenvia. **Revê a D45**: a RPC `avisar_versao_nova` saiu.
+  e rodar de novo na mesma semana não reenvia (**revisto pelas D54 a D56**: sexta às 20h, aviso já
+  na liberação e chave por versão). **Revê a D45**: a RPC `avisar_versao_nova` saiu.
   **No #96 (`a72f5cc`), contrato v7, sem merge**, até o dia do G4, logo depois do #94.
 - **D50:** o 410 `legacy_upload_removed` do #45 do servidor fica. Nada muda no app.
 - **D51:** a chave FCM de produção (3.4) é configurada **antes do dia do G4**; passo a passo em
@@ -1326,3 +1345,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-10-08 | **D37 a D42 da coordenação registradas e roteiro do G4** (coordenação de 08/10, oitava rodada). **D37:** a 1.9.0 sai antes, e o #54 é mesclado com a tag. **D38:** aviso a quem está desatualizado por push + aviso ao abrir; **o push de versão nova não existe** (`notification_kind` e `send-push` não têm o tipo, e `push_devices` não guarda a versão); a proposta está no handoff `loop/008`. **D39:** a 2.0.0 vai primeiro só ao celular do dono; a ordem nova está no 4.13 e o passo a passo em [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md). **Conferência da condição da D39** (leitura das 24 migrations contra a `v1.8.0`, a `release/1.9.0` e a `main` do `snake-web`, sem build): o aluno segue funcionando no APK antigo e na web; o professor tem as travas da § 15 e três casos fora dela (entrar ou sair de aula já começada, aula com data passada sem professor, edição de aula com chamada); a web atual gera "extra" pelo "Vou" em aula de outra turma, o que trava a chamada no APK antigo. Perguntas P1 e P2 ao dono. **D40:** Política aprovada; G5 depois da 2.0.0 (3.7). **D41:** o #94 entra logo antes do `db-push-prod`. **D42:** o anexo legado fica ligado por 90 dias depois da 2.0.0; **data-alvo a definir** até a 2.0.0 sair. |
 | 2026-10-08 | **D43 a D48 e D42 revista da coordenação registradas; roteiro do G4 refeito** (coordenação de 08/10, nona rodada). **D43:** a equipe (professores e admins) recebe a 2.0.0 junto com o dono; só os alunos esperam o teste (responde à P1 do `loop/008`). **D44:** os três casos do professor fora da § 15 ficam como estão, sem aviso à equipe (responde à P2). **D45:** push de versão nova no **#96**, sem merge até o dia do G4: `versao_nova` em `notification_kind` (migration isolada `20261008120000`), o texto na `send-push` ("Nova versão do app: X.Y.Z" / "Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso.", **espera a aprovação do dono**), a RPC só de admin `avisar_versao_nova(p_versao)` (`20261008120100`; repetir a versão não reenvia) e o contrato **v7** (§ 10 e § 14); regressão `regressao_versao_nova.sql` (V1–V7) e testes de unidade na `send-push` e no roteamento do toque. Só chega com a chave FCM de produção (3.4). **D46:** o G5 sai durante o teste da 2.0.0, antes de liberar aos alunos (Passo 4b do roteiro). **D47:** o **#92 (Expo) mesclado** na `main` (`c336712`), com o CI verde; o merge não publica nada (sem `expo-updates`; os workflows de release só rodam por tag ou à mão). **D48:** a chave `MIGRATIONS_DO_G4_EM_PRODUCAO` do servidor já está ligada; o 502 do anexo até o `db-push-prod` foi aceito. **D42 revista:** o anexo legado é desligado no próprio `db-push-prod`, sem os 90 dias; no **#94** (`d04b30b`), a escrita direta do dono não grava anexo nem pelo caminho legado (`22023` com anexo; só o texto passa), com a errata do contrato. **Roteiro** [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md): ordem 1 → 2 → 3a → 3b → 4 → 4b → 5 → 6, com o site antes do teste (D39), 26 migrations, o `avisar_versao_nova('2.0.0')` depois do release e a consulta do enum com 4 valores. **Leitura do código das tags `v1.8.0` e `v1.9.0`:** o APK antigo mostra a tela "Termos atualizados" depois do `legal:publicar`, na próxima abertura do app (`LegalConsentProvider` + `documentos_legais_pendentes`). |
 | 2026-10-08 | **D49 a D53 da coordenação: 1.9 e 2.0 unificadas, push de versão nova semanal, chave FCM e roteiro do G4** (coordenação de 08/10, décima primeira rodada e 13:20). **D52:** o aviso de atualização da `release/1.9.0` entrou na `main` pelo **#98** (`e52537a`, CI verde), com a 2ª dica (contrato v4, § 12.3); o merge não publica nada (o release só sai por tag), e o `app.json` continua em 1.8.0. O **#54 foi fechado** com comentário, e a tag local `v1.9.0`, apagada; não há APK 1.9.0, e a D37 está revogada. O 3A.5 saiu da fila, e a prova final do 3A.4 passa para a versão seguinte à 2.0.0. **D49:** o **#96 foi refeito** (`a72f5cc`, contrato **v7**, § 10, § 12.1, § 14 e § 15), com `push_devices.app_version` gravada pelo `registrar_dispositivo_push(..., p_versao)` (o APK 1.8 chama com três argumentos e conta como desatualizado), `academy_settings.current_app_version` por `definir_versao_vigente_do_app`, e o pg_cron `push-versao-nova-semanal` (segunda, 10h de São Paulo) chamando `enfileirar_avisos_de_versao_nova()` com a chave da semana ISO. Testes: SQL `regressao_versao_nova` V1–V12, Deno da `send-push` e Jest (1126). Sai a RPC `avisar_versao_nova`. **Continua sem merge**, logo depois do #94 no G4. **D51:** passo a passo da chave FCM em [`docs/CHAVE-FCM-PRODUCAO.md`](docs/CHAVE-FCM-PRODUCAO.md), sem segredo; item 3.4 atualizado. **D53:** o G4 sai quando todos os testes passarem, inclusive o de push. **`ROTEIRO-G4.md` refeito:** o passo 1 virou a chave FCM, o 2.3 termina na `20261008120100_d49_versao_nova_semanal` (26 migrations com o #94), o teste de push é obrigatório no passo 4, e o 5.2 usa a versão vigente e o agendamento. **D50** (410 do servidor) não muda nada no app |
+| 2026-10-08 | **D54 a D57 da coordenação: push de versão nova na liberação e às sextas** (coordenação de 08/10, décima terceira rodada, 14:45). **D54:** o pg_cron `push-versao-nova-semanal` passa a sexta, 20h de São Paulo (`0 23 * * 5`). **D55:** `definir_versao_vigente_do_app` com versão não nula já chama `enfileirar_avisos_de_versao_nova()` na mesma transação; o comando à mão saiu do passo 5.2 do `ROTEIRO-G4.md` e do 4.13. **D56:** a chave passa a `versao_nova:<X.Y.Z>:<IYYY>-W<IW>`, e cada versão nova avisa de novo na mesma semana. As três no **#96** (`ee41e78`, migration `20261008120100` ajustada no lugar, contrato v7 § 10 e § 14, teste V8b novo; `db-dev test` e `reset` verdes, tipos sem diferença), **ainda sem merge**. **D57:** a prova do 3A.4 fica para a versão depois da 2.0.0. P4 e P5 ficam como assumidas. **`.env.example`:** a URL de produção do servidor passa a `https://snake-server-3j25.onrender.com` (a velha `snakethai-api.onrender.com` não existe, apontado pelo servidor no handoff 010 dele) |

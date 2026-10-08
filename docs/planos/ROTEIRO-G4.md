@@ -344,8 +344,8 @@ Confira:
 1.8.0 não o tem. A prova final dele (o 3A.4) fica para a próxima versão publicada: num celular com
 a 2.0.0, ao abrir o app, aparece o aviso, e o link baixa a versão nova.
 
-**5.2 Definir a versão vigente e avisar por push (D49).** Só depois do 5.1, para o link do push já
-apontar a 2.0.0. No **SQL Editor de produção**, rode:
+**5.2 Definir a versão vigente, o que já avisa por push (D49 e D55 da coordenação).** Só depois
+do 5.1, para o link do push já apontar a 2.0.0. No **SQL Editor de produção**, rode:
 
 ```sql
 select public.definir_versao_vigente_do_app('2.0.0');
@@ -353,22 +353,19 @@ select public.definir_versao_vigente_do_app('2.0.0');
 
 O resultado deve ser `2.0.0`. Se o teste do passo 4 tiver virado 2.0.1, use `'2.0.1'`.
 
-Daqui em diante, o agendamento semanal manda o push **toda segunda-feira às 10h**, só para quem
-tem algum aparelho abaixo dessa versão: quem está no APK 1.8 e quem nunca abriu a 2.0.0. Quem
-atualiza para de receber. O texto é "Nova versão disponível" / "Abra o app para baixar.".
+**Esse comando já envia o aviso (D55).** Não há segundo comando. O push vai na hora para quem tem
+algum aparelho abaixo dessa versão: quem está no APK 1.8 e quem nunca abriu a 2.0.0. A equipe, que
+já abriu a 2.0.0 no passo 4, fica de fora. O texto é "Nova versão disponível" / "Abra o app para
+baixar.". Fora do horário de silêncio (22h às 7h), o push sai em até 1 minuto. Dentro dele, sai às
+7h.
 
-**Para não esperar a segunda**, rode logo em seguida:
+Daqui em diante, o agendamento repete o push **toda sexta-feira às 20h** (D54), só para quem
+continua desatualizado. Quem atualiza para de receber. Na sexta da mesma semana da liberação, ele
+não repete o aviso que já saiu; repete a partir da sexta seguinte. Cada versão nova que você
+liberar avisa de novo na hora, mesmo que a pessoa já tenha recebido um aviso naquela semana
+(D56).
 
-```sql
-select public.enfileirar_avisos_de_versao_nova();
-```
-
-O número que aparece é quantas pessoas entraram na fila agora. A equipe, que já abriu a 2.0.0 no
-passo 4, fica de fora. Fora do horário de silêncio (22h às 7h), o push sai em até 1 minuto.
-Dentro dele, sai às 7h. Rodar de novo na mesma semana devolve 0 e não repete o aviso. Na segunda
-seguinte, o agendamento manda de novo para quem continuar desatualizado.
-
-**Para desligar o push semanal**, rode `select public.definir_versao_vigente_do_app(null);`.
+**Para desligar o push de versão nova**, rode `select public.definir_versao_vigente_do_app(null);`.
 
 **Se o push não chegar a alguém**, avise essa pessoa por mensagem, porque a 1.8.0 não mostra o
 aviso ao abrir.
@@ -379,9 +376,11 @@ aviso ao abrir.
 - **Arquivo errado:** troque só o arquivo. A tag publicada não se move.
 - **O `definir_versao_vigente_do_app` deu "Versão inválida":** escreva só os números, como
   `2.0.0`, sem "v" e sem sufixo.
-- **O `enfileirar_avisos_de_versao_nova` devolveu 0 logo na primeira vez:** confira com
+- **Ninguém recebeu o push da liberação:** confira com
   `select current_app_version from public.academy_settings;` se a versão vigente está gravada. Se
-  estiver, pode ser que todos já tenham atualizado.
+  estiver, pode ser que todos já tenham atualizado, ou que a chave FCM de produção (passo 1) não
+  esteja configurada. Não rode o `definir_versao_vigente_do_app` de novo com a mesma versão para
+  reenviar: na mesma semana, ele não repete o aviso.
 
 ---
 
