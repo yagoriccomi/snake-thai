@@ -1,6 +1,6 @@
 # Contrato entre os projetos — Snake Thai
 
-> **Versão:** v6 · 2026-10-05 (v5 de 2026-10-02; v4 de 2026-09-29; v3 de 2026-09-24, revisada em 2026-09-25) · **Estado:** regras de negócio aprovadas
+> **Versão:** v7 · 2026-10-08 (v6 de 2026-10-05; v5 de 2026-10-02; v4 de 2026-09-29; v3 de 2026-09-24, revisada em 2026-09-25) · **Estado:** regras de negócio aprovadas
 > pelo dono (§ 1), **com as perguntas P1–P22 respondidas em 25/09** (§ 16); decisões técnicas
 > vetáveis (§ 2); telas aguardando a aprovação dos mockups ("Mockups Snake Thai — Horário
 > livre", **versão 8**, de 25/09: menu de aulas e troca na linha G; histórico de turma, contato e aviso de atualização na linha H).
@@ -31,6 +31,11 @@
 > muda para o APK 1.8/1.9 e para a web atual (§ 15): **nada quebra**. Nenhum nome de banco nem rota muda.
 > Completada em 06/10 com o inventário do servidor: função ou coluna ausente dá 502; o Auth fora do ar
 > deixa de dar 401; o que depende de migration nova só é ligado com ela em produção (G4).
+>
+> **Novo na v7** (D45 da coordenação, 08/10; **o texto do push espera a aprovação do dono**): o
+> **push de versão nova** (§ 10). Entram o tipo `versao_nova`, a RPC só de admin
+> `avisar_versao_nova(p_versao)` e o texto na `send-push`. O servidor e a web não mudam. O APK
+> instalado não muda: o toque só abre o app.
 >
 > **Caminho absoluto** (para os chats de outros repositórios):
 > `C:\Users\USER\Desktop\GIT\academy\snake-thai\docs\CONTRATO.md`
@@ -1235,7 +1240,8 @@ Não tem tabela nem RPC própria: é a declaração da § 9.2 numa aula **fora d
 
 `'aula_cancelada'`, `'aula_reativada'`, `'justificativa_aprovada'`, `'justificativa_negada'`,
 `'chamada_retificada'`, `'solicitacao_pendente'` e, **na v3**, `'troca_pendente'`,
-`'troca_aprovada'`, `'troca_negada'`, `'troca_aprovada_equipe'`
+`'troca_aprovada'`, `'troca_negada'`, `'troca_aprovada_equipe'` e, **na v7**, `'versao_nova'`
+(migration isolada `20261008120000`)
 
 **Sem coluna nova na fila (v3):** `enfileirar_notificacao` e `notification_outbox` não mudam.
 Nos tipos de troca, o `class_id` da linha é a aula citada no texto, e o id da troca vai **na
@@ -1254,6 +1260,7 @@ chave** (`<tipo>:<swap_id>`), de onde a obsolescência o lê. A `send-push` cont
 | `troca_aprovada` (v3) | o aluno (D50). `class_id` = aula nova; `data = {"permanente": 0\|1, "pela_chamada": 0\|1}`, com `pela_chamada = 1` quando `decided_via = 'roll_call'` (a chamada aprovou, inclusive a volta de expirada, T35) | `troca_aprovada:<swap_id>` | avulsa: "Troca aprovada" / "`<descricaoDaAula>`: esperamos você nesta aula." · avulsa com `pela_chamada = 1`: "Troca aprovada" / "`<descricaoDaAula>`: sua presença confirmou a troca." · permanente: "Troca permanente aprovada" / "Sua grade de aulas mudou. Veja no app." | `frequencia` |
 | `troca_negada` (v3) | o aluno (D50). `class_id` = aula nova | `troca_negada:<swap_id>` | "Troca negada" / "Veja os detalhes no app." | `frequencia` |
 | `troca_aprovada_equipe` (v3) | D50: professores da aula antiga (`data.entrada = 0`, `class_id` = aula antiga) e da aula nova (`entrada = 1`, `class_id` = aula nova); **admins só na permanente** (`entrada = 1`). Quem aprovou (ou fez a chamada que aprovou) fica de fora. Quem está nas duas aulas recebe só o da nova. `data = {"permanente": 0\|1, "entrada": 0\|1, "pela_chamada": 0\|1}` (`pela_chamada` como em `troca_aprovada`) | `troca_aprovada_equipe:<swap_id>` | título: "Troca de aula" (avulsa) ou "Troca permanente" · corpo: entrada 1: "`<descricaoDaAula>`: um aluno vem por troca." · entrada 1 com `pela_chamada = 1`: "`<descricaoDaAula>`: um aluno veio por troca." · entrada 0: "`<descricaoDaAula>`: um aluno trocou esta aula por outra." | `frequencia` |
+| `versao_nova` (v7, D45) | todos os perfis **ativos** e não anonimizados **com aparelho** (aluno, professor e admin), uma linha por perfil. O banco não sabe a versão instalada (D38, opção A): quem já atualizou também recebe. `data = {"major": X, "minor": Y, "patch": Z}`; sem aula, pagamento nem justificativa | `versao_nova:<X.Y.Z>` | "Nova versão do app: `X.Y.Z`" / "Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso." · sem os três números: "Nova versão do app" / o mesmo corpo | `frequencia` |
 
 **Regras:**
 
@@ -1278,6 +1285,22 @@ chave** (`<tipo>:<swap_id>`), de onde a obsolescência o lê. A `send-push` cont
   **não gera** `troca_aprovada` nem `troca_aprovada_equipe` (o aluno recebe o `aula_cancelada`),
   e a volta dela a pendente na reativação não repete o `troca_pendente` (mesma chave); ela
   reaparece em Solicitações. A mudança de turma (T53) não gera push.
+- **`avisar_versao_nova` (v7, D45):**
+  - `public.avisar_versao_nova(p_versao text) returns integer`, `security definer`; executa
+    `authenticated` e `service_role`, nunca `anon`;
+  - só o admin (`is_admin()`) ou o sistema (§ 0.1: o dono no SQL Editor de produção). Outro
+    papel: `42501`, *"Operação negada: só o admin avisa sobre versão nova do aplicativo."*;
+  - `p_versao` no formato `X.Y.Z` (até 4 dígitos cada, sem `v` nem sufixo). Fora dele, ou nulo:
+    `22023`, *"Versão inválida: use o formato 2.0.0, sem "v" e sem sufixo."*;
+  - enfileira por `enfileirar_notificacao` (respeita o silêncio das 22h às 7h) e devolve
+    quantos perfis entraram na fila **agora**. Repetir a mesma versão devolve 0 (a chave já
+    existe; `02.0.0` vira `2.0.0`);
+  - **quando chamar:** uma vez, depois de publicar a release `vX.Y.Z` com o APK, para a
+    `releases/latest` (§ 12.3) já apontar a versão nova quando o aluno abrir o app;
+  - sem obsolescência: o aviso não cai sozinho da fila;
+  - **toque (app):** o roteador não navega (`destinoDaNotificacao` devolve nulo), e o app só
+    abre. A partir da 1.9.0, o aviso de atualização (§ 12.3) mostra o link. No APK 1.8, quem
+    não tem o link pede à academia, como diz o corpo.
 - **Nenhum texto leva nome, motivo, valor nem contato.** O título da aula continua como hoje. O
   contato da academia aparece só nas telas (§ 5.4).
 - **`mensagens.ts` ganha um `default`** que devolve um texto genérico em vez de quebrar o lote
@@ -2116,7 +2139,9 @@ o tiver.
 
 O servidor e a `send-push` vêm antes porque aceitam o banco antigo. As migrations antes da
 `send-push` nova travariam **todo** push: um tipo desconhecido quebra o lote. **Na v3**, a
-`send-push` do passo 2 já precisa ter os quatro tipos de troca (§ 10).
+`send-push` do passo 2 já precisa ter os quatro tipos de troca (§ 10). **Na v7**, também o
+`versao_nova`: a `send-push` antiga mostraria só o texto genérico ("Snake Thai" / "Abra o app para
+ver a novidade."), sem quebrar o lote.
 
 ## 15. Compatibilidade com o que está instalado (até G6)
 
@@ -2225,3 +2250,4 @@ escolher; o caminho vale se o dono não vetar até o G0:
 | v5 | 2026-10-02 | Aprovada pelo dono em 01/10 (D12 da coordenação), com os quatro itens da auditoria da Fase 4 (`REVIEW-FASE4.md`), que já estão no banco desde o 4.12 (#79). **(1) § 9.1 (A1):** decide e lê o atestado de aula só quem já estava na aula quando a justificativa chegou (`class_teachers.created_at <= j.created_at`) ou quem está escalado no horário; a § 13.5 acompanha. **(2) § 9.4 e § 6 (B2):** as FKs de `class_swap_periods` passam a `on delete restrict`; `encerrar_horario_da_grade` recusa, com a data mínima, apagar o horário que tem período; `excluir_turma` só encerra esse horário. **(3)** `quem_sera_avisado(p_class_id)` entra na § 6.1. **(4)** `solicitacao_para_decidir(p_id)` entra na § 9.3. **Nenhum nome mudou, e o servidor e a web não precisam mudar nada:** o 5.5 do servidor chama `pode_decidir_justificativa` com a mesma assinatura da v4 (só a regra ficou mais restrita, C10), e a web não usa nenhuma das quatro partes (conferido na `main` dos dois em 02/10). |
 | v6 | 2026-10-05 | Pedida pelo dono em 02/10 (D20 e C15 da coordenação). **(1) § 13.6:** a política de erros do servidor (um `code` e uma mensagem por erro identificado; 400 `bad_request` e 500 `internal_error` como genéricos; 403 só para falta de permissão) e a tabela de cada rota, montada a partir do servidor em `origin/main`, no #37 (`feature/segunda-barreira-5.5`) e no #36 (`chore/diagnostico-trust-proxy`, que não muda nenhum erro), com a coluna "Hoje" dizendo o que o servidor ainda precisa mudar. **(2) Errata da § 13.5:** falha do Supabase dá 502 (resposta inválida), 503 (fora do ar ou rede) ou 504 (tempo esgotado), nunca 403, e nada é liberado; o alarme de acesso indevido só no 403. A decisão de 25/09 (view-url em banco sem `attempt` → 403) passa a 502. **(3) § 15:** o APK 1.8/1.9 e a web atual não decidem pelo status nem pelo `code` do servidor, então nada quebra e nenhum código antigo é mantido. §§ 13.1 e 13.2 apontam para a § 13.6. Nenhum nome de banco, rota ou corpo de sucesso mudou. |
 | v6 (complemento) | 2026-10-06 | Antes do merge, com o inventário de erros do servidor (`docs/planos/INVENTARIO-erros-D20.md` do #37) e as respostas do dono. **(1)** Os códigos da falha do Supabase passam a ser os do #37: 503 `supabase_unreachable` (rede ou gateway 502/503; o `supabase_unavailable` do primeiro texto some), 504 `supabase_timeout` e 502 `supabase_invalid_response` (no lugar de `supabase_bad_response`), com as mensagens do servidor. **(2)** Pergunta 1 do inventário: função ou coluna ausente é dependência quebrada, 502, já no PR das outras rotas. **(3)** O Auth fora do ar ao validar o token deixa de dar 401 `bad_token` e passa a 503 (504 ou 502 se demorou ou respondeu de forma inesperada). **(4)** A chamada a `pode_decidir_justificativa` (4.8) e a leitura de `attempt` (4.1) só são ligadas no servidor com a migration em produção (G4); a § 13.5 dizia "4.8 na `main`". **(5)** O 429 passa a sair com `traceId`. Continua v6: nenhum chat implementou o texto de 05/10. |
+| v7 | 2026-10-08 | D45 da coordenação (a opção A da D38), **com o texto do push esperando a aprovação do dono**. **§ 10:** o tipo `versao_nova` em `notification_kind` (migration isolada `20261008120000`), a RPC só de admin `avisar_versao_nova(p_versao)` (`20261008120100`), o texto na `send-push` e a regra do toque (o app só abre). **§ 14:** a `send-push` do passo 2 já leva o tipo novo. **O servidor e a web não mudam.** O push só chega com a chave FCM de produção (3.4). |
