@@ -1,4 +1,4 @@
--- Regressão do push de versão nova (D49 e D54 a D56 da coordenação; contrato
+-- Regressão do push de versão nova (D49, D54 a D56 e D58 da coordenação; contrato
 -- v7, § 10; migrations 20261008120000 e 20261008120100). Roda numa transação e
 -- termina em ROLLBACK; mesmo assim, rode SÓ no banco local (scripts\db-dev test).
 --
@@ -138,8 +138,8 @@ reset role;
 set local request.jwt.claims = '';
 do $$
 declare
-  -- definir usa o relógio real: a chave é a da semana de hoje.
-  v_chave text := 'versao_nova:2.10.0:' || to_char(now() at time zone 'America/Sao_Paulo', 'IYYY-"W"IW');
+  -- D58: a liberação tem chave própria, sem a semana.
+  v_chave text := 'versao_nova:2.10.0:liberacao';
 begin
   if (select s.current_app_version from public.academy_settings s) is distinct from '2.10.0' then
     raise exception 'FALHOU V5: versão vigente não gravada';
@@ -152,38 +152,40 @@ begin
             and o.recipient_id in ('d4900000-0000-4000-8000-000000000002', 'd4900000-0000-4000-8000-000000000003')) <> 2 then
     raise exception 'FALHOU V5: definir a versão não enfileirou o aviso aos dois desatualizados';
   end if;
-  raise notice 'OK V5: admin grava a vigente normalizada e já enfileira o aviso (D55); formato ruim recebe 22023';
+  -- Definir de novo a mesma versão não repete o aviso da liberação.
+  if public.enfileirar_avisos_de_versao_nova(p_liberacao => true) <> 0 then
+    raise exception 'FALHOU V5: a liberação da mesma versão avisou duas vezes';
+  end if;
+  raise notice 'OK V5: admin grava a vigente normalizada e já enfileira o aviso com a chave da liberação (D55, D58); formato ruim recebe 22023';
 end $$;
 
--- Os próximos testes usam semanas fixas: sai o aviso da semana real.
-delete from public.notification_outbox o
- where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%';
-
 -- =====================================================================
--- V6 — o envio da semana: só os desatualizados ativos, uma linha cada
+-- V6 — a rotina da semana: só os desatualizados ativos, uma linha cada,
+-- mesmo com o aviso da liberação já na fila (D58)
 --
 -- Sexta, 16/10/2026, 20h em São Paulo = semana ISO 2026-W42 (D54).
 -- =====================================================================
 do $$
 begin
-  if public.enfileirar_avisos_de_versao_nova('2026-10-16 23:00:00+00') < 2 then
-    raise exception 'FALHOU V6: enfileirou menos que os dois desatualizados do teste';
+  if public.enfileirar_avisos_de_versao_nova('2026-10-16 23:00:00+00') <> 2 then
+    raise exception 'FALHOU V6: a rotina não repetiu o aviso da liberação para os dois desatualizados (D58)';
   end if;
   if (select count(*) from public.notification_outbox o
-       where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%') <> 2
+       where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%'
+         and o.dedupe_key = 'versao_nova:2.10.0:2026-W42') <> 2
      or (select count(*) from public.notification_outbox o
-          where o.kind = 'versao_nova'
+          where o.kind = 'versao_nova' and o.dedupe_key = 'versao_nova:2.10.0:2026-W42'
             and o.recipient_id in ('d4900000-0000-4000-8000-000000000002', 'd4900000-0000-4000-8000-000000000003')) <> 2 then
     raise exception 'FALHOU V6: destinatários errados (esperados professor 2.9.5 e aluno com aparelho sem versão)';
   end if;
   if exists (select 1 from public.notification_outbox o
               where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%'
-                and (o.dedupe_key <> 'versao_nova:2.10.0:2026-W42'
+                and (o.dedupe_key not in ('versao_nova:2.10.0:liberacao', 'versao_nova:2.10.0:2026-W42')
                      or o.data <> '{}'::jsonb
                      or o.class_id is not null or o.payment_id is not null or o.justification_id is not null)) then
     raise exception 'FALHOU V6: chave ou data fora da § 10';
   end if;
-  raise notice 'OK V6: só os desatualizados (comparação numérica, sem versão conta), com a chave da versão e da semana';
+  raise notice 'OK V6: a rotina repete a liberação só para os desatualizados (comparação numérica, sem versão conta), com a chave da versão e da semana';
 end $$;
 
 -- =====================================================================
@@ -219,30 +221,42 @@ begin
 end $$;
 
 -- =====================================================================
--- V8b — D56: versão nova na mesma semana avisa de novo; a repetição da
--- mesma versão continua uma por semana
+-- V8b — D56 e D58: versão nova na mesma semana avisa de novo; liberada
+-- na sexta antes das 20h, a rotina repete às 20h; a repetição da mesma
+-- versão continua uma por semana
 --
--- Na W43, o aluno já recebeu o aviso da 2.10.0 (V8). A 2.11.0 sai no
--- sábado, 24/10 (ainda W43): aluno, professor e admin (os dois em 2.10.0)
--- recebem.
+-- Na W44 (26/10 a 01/11), o aluno recebe a rotina da 2.10.0 na quarta,
+-- à mão. A 2.11.0 sai na sexta, 30/10, às 18h em São Paulo: aluno,
+-- professor e admin (os dois em 2.10.0) recebem a liberação, e a rotina
+-- das 20h repete para os três (premissa do caso de borda da D58).
 -- O update direto, e não definir, porque definir usa o relógio real.
 -- =====================================================================
+do $$
+begin
+  if public.enfileirar_avisos_de_versao_nova('2026-10-28 15:00:00+00') <> 1 then
+    raise exception 'FALHOU V8b: a rotina da 2.10.0 na W44 não avisou só o aluno';
+  end if;
+end $$;
 update public.academy_settings set current_app_version = '2.11.0' where id;
 do $$
 begin
-  if public.enfileirar_avisos_de_versao_nova('2026-10-24 15:00:00+00') <> 3 then
+  if public.enfileirar_avisos_de_versao_nova('2026-10-30 21:00:00+00', p_liberacao => true) <> 3 then
     raise exception 'FALHOU V8b: a versão nova não avisou os três desatualizados na mesma semana';
   end if;
   if (select count(*) from public.notification_outbox o
-       where o.dedupe_key = 'versao_nova:2.11.0:2026-W43'
+       where o.dedupe_key = 'versao_nova:2.11.0:liberacao'
          and o.recipient_id in ('d4900000-0000-4000-8000-000000000001', 'd4900000-0000-4000-8000-000000000002',
                                 'd4900000-0000-4000-8000-000000000003')) <> 3 then
-    raise exception 'FALHOU V8b: chave da versão nova errada';
+    raise exception 'FALHOU V8b: chave da liberação da versão nova errada';
   end if;
-  if public.enfileirar_avisos_de_versao_nova('2026-10-25 20:00:00+00') <> 0 then
-    raise exception 'FALHOU V8b: a mesma versão nova repetiu na mesma semana';
+  if public.enfileirar_avisos_de_versao_nova('2026-10-30 23:00:00+00') <> 3 then
+    raise exception 'FALHOU V8b: liberada na sexta às 18h, a rotina das 20h não repetiu';
   end if;
-  raise notice 'OK V8b: cada versão nova avisa de novo; a mesma versão, uma vez por semana (D56)';
+  if public.enfileirar_avisos_de_versao_nova('2026-11-02 02:30:00+00') <> 0
+     or public.enfileirar_avisos_de_versao_nova('2026-11-01 15:00:00+00', p_liberacao => true) <> 0 then
+    raise exception 'FALHOU V8b: a mesma versão nova repetiu na mesma semana ou na liberação';
+  end if;
+  raise notice 'OK V8b: cada versão nova avisa de novo (D56); liberada na sexta antes das 20h, repete às 20h (D58); a mesma versão, uma vez por semana';
 end $$;
 
 -- =====================================================================
@@ -259,7 +273,7 @@ begin
   if (select s.current_app_version from public.academy_settings s) is not null then
     raise exception 'FALHOU V9: o sistema não desligou a versão vigente';
   end if;
-  if public.enfileirar_avisos_de_versao_nova('2026-10-30 23:00:00+00') <> 0
+  if public.enfileirar_avisos_de_versao_nova('2026-11-06 23:00:00+00') <> 0
      or (select count(*) from public.notification_outbox o where o.kind = 'versao_nova') <> v_antes then
     raise exception 'FALHOU V9: enfileirou sem versão vigente';
   end if;
@@ -322,8 +336,8 @@ reset role;
 set local request.jwt.claims = '';
 do $$
 begin
-  if has_function_privilege('anon', 'public.enfileirar_avisos_de_versao_nova(timestamptz)', 'execute')
-     or has_function_privilege('authenticated', 'public.enfileirar_avisos_de_versao_nova(timestamptz)', 'execute') then
+  if has_function_privilege('anon', 'public.enfileirar_avisos_de_versao_nova(timestamptz, boolean)', 'execute')
+     or has_function_privilege('authenticated', 'public.enfileirar_avisos_de_versao_nova(timestamptz, boolean)', 'execute') then
     raise exception 'FALHOU V12: o app consegue disparar o push semanal';
   end if;
   if has_function_privilege('anon', 'public.normalizar_versao_do_app(text)', 'execute')

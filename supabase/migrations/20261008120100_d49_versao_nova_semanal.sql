@@ -1,6 +1,6 @@
 -- ============================================================================
--- D49 e D54 a D56 da coordenação (08/10; contrato v7, § 10) — push de versão
--- nova
+-- D49 e D54 a D56 e D58 da coordenação (08/10; contrato v7, § 10) — push de
+-- versão nova
 --
 -- Substitui o aviso único da D45 (avisar_versao_nova, nunca publicado): o
 -- push vai só para quem tem aparelho DESATUALIZADO, na hora em que a versão é
@@ -13,8 +13,10 @@
 --      admin (ou o dono, no SQL Editor) define ao liberar uma versão; definir
 --      já enfileira o aviso (D55);
 --   3. o pg_cron roda enfileirar_avisos_de_versao_nova toda sexta às 20h
---      (São Paulo, D54). A chave é a versão mais a semana ISO: a mesma versão
---      não repete na mesma semana, e uma versão nova avisa de novo (D56).
+--      (São Paulo, D54). A chave da rotina é a versão mais a semana ISO: a
+--      mesma versão não repete na mesma semana, e uma versão nova avisa de
+--      novo (D56). O aviso da liberação tem chave própria, uma por versão, e
+--      não conta como a repetição da semana (D58).
 --
 -- Compatibilidade (§ 15): o APK 1.8 chama registrar_dispositivo_push com três
 -- argumentos nomeados, e o quarto tem padrão; academy_settings ganha a coluna
@@ -168,7 +170,7 @@ begin
   -- D55: liberar a versão já avisa os desatualizados, sem comando extra. Na
   -- mesma transação: se a fila falhar, a versão não muda.
   if v_versao is not null then
-    perform public.enfileirar_avisos_de_versao_nova();
+    perform public.enfileirar_avisos_de_versao_nova(p_liberacao => true);
   end if;
 
   return v_versao;
@@ -184,13 +186,17 @@ grant execute on function public.definir_versao_vigente_do_app(text) to authenti
 -- ----------------------------------------------------------------------------
 -- 5. O push semanal
 -- ----------------------------------------------------------------------------
-create function public.enfileirar_avisos_de_versao_nova(p_agora timestamptz default now())
+create function public.enfileirar_avisos_de_versao_nova(
+  p_agora timestamptz default now(),
+  p_liberacao boolean default false
+)
 returns integer
 language plpgsql
 security definer
 set search_path = ''
 as $funcao$
 declare
+  c_momento_da_liberacao constant text := 'liberacao';
   v_versao text;
   v_vigente integer[];
   v_chave text;
@@ -204,11 +210,14 @@ begin
   end if;
 
   v_vigente := string_to_array(v_versao, '.')::integer[];
-  -- Versão + semana ISO em São Paulo. A mesma versão tem a mesma chave na
-  -- semana inteira: a rotina de sexta não repete o aviso dado na liberação
-  -- daquela semana (D54/D55). Uma versão nova muda a chave e avisa de novo,
-  -- mesmo na mesma semana (D56).
-  v_chave := 'versao_nova:' || v_versao || ':' || to_char(p_agora at time zone 'America/Sao_Paulo', 'IYYY-"W"IW');
+  -- Duas chaves, para a liberação não contar como a repetição da semana
+  -- (D58): liberada na quarta, avisa na quarta e repete na sexta. A da
+  -- liberação vale uma vez por versão; a da rotina, uma vez por versão e
+  -- semana ISO em São Paulo. A versão está nas duas, então uma versão nova
+  -- avisa de novo, mesmo na mesma semana (D56).
+  v_chave := 'versao_nova:' || v_versao || ':'
+             || case when p_liberacao then c_momento_da_liberacao
+                     else to_char(p_agora at time zone 'America/Sao_Paulo', 'IYYY-"W"IW') end;
 
   -- Um aviso por perfil com ALGUM aparelho desatualizado: a fila é por
   -- pessoa, e o despacho manda para todos os aparelhos dela.
@@ -228,11 +237,12 @@ begin
 end;
 $funcao$;
 
-comment on function public.enfileirar_avisos_de_versao_nova(timestamptz) is
-  'D49 e D56 (contrato v7, § 10): enfileira versao_nova para os perfis ativos com aparelho sem versão ou abaixo da vigente, com a chave da versão e da semana ISO (São Paulo). Sem versão vigente, não faz nada. Devolve quantos entraram na fila agora.';
+comment on function public.enfileirar_avisos_de_versao_nova(timestamptz, boolean) is
+  'D49, D56 e D58 (contrato v7, § 10): enfileira versao_nova para os perfis ativos com aparelho sem versão ou abaixo da vigente. Chave da rotina: versão e semana ISO (São Paulo); com p_liberacao, a da liberação (uma por versão), que não conta como a repetição da semana. Sem versão vigente, não faz nada. Devolve quantos entraram na fila agora.';
 
--- Como as outras rotinas do pg_cron: só o sistema (o cron e o SQL Editor).
-revoke execute on function public.enfileirar_avisos_de_versao_nova(timestamptz) from public, anon, authenticated;
+-- Como as outras rotinas do pg_cron: só o sistema (o cron, o SQL Editor e
+-- definir_versao_vigente_do_app, que é security definer).
+revoke execute on function public.enfileirar_avisos_de_versao_nova(timestamptz, boolean) from public, anon, authenticated;
 
 -- D54: sexta-feira, 23:00 UTC = 20:00 em São Paulo (sem horário de verão desde
 -- 2019), fora do silêncio das 22h às 7h.

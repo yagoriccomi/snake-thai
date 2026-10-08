@@ -1444,7 +1444,7 @@ isOneToOne: false
 { Args: { "p_agora"?: string }; Returns: number
                            },
 "enfileirar_avisos_de_versao_nova":
-{ Args: { "p_agora"?: string }; Returns: number
+{ Args: { "p_agora"?: string,"p_liberacao"?: boolean }; Returns: number
                            },
 "enfileirar_comprovantes_expirados":
 { Args: Record<PropertyKey, never>; Returns: number
