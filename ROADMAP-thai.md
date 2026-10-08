@@ -27,7 +27,7 @@
 | | |
 | --- | --- |
 | **Versão publicada** | **1.8.0** (releases 1.7.0, 1.7.1 e 1.8.0 entre 21 e 23/09). A próxima é a **2.0.0**, com o aviso de atualização (Fase 3A) e a Fase 4. **Não há 1.9.0** (D52 da coordenação, 08/10) |
-| **`main`** | Em `e52537a` (merge do PR #98, o aviso de atualização da `release/1.9.0`, 08/10, D52 da coordenação), **CI verde**. Abertos e sem merge: #94 (C11 com a D42 revista) e #96 (D49 e D54 a D56, push de versão nova e contrato v7). Os dois entram no dia do G4, nesta ordem |
+| **`main`** | Em `b468d98` (merge do PR #100, o registro das D54 a D57 da coordenação, 08/10), **CI verde**. Abertos e sem merge: #94 (C11 com a D42 revista) e #96 (D49, D54 a D56 e D58 da coordenação, push de versão nova e contrato v7). Os dois entram no dia do G4, nesta ordem |
 | **Branches** | Desde 29/09 este chat mescla os próprios PRs com o CI verde (D2 da coordenação). As branches mescladas são apagadas no GitHub e no disco |
 | **Banco local** | Recriado da `main` em 29/09 às 11:26 (`db-dev test`, 0 falhas) e às 11:27 (`db-dev reset`, com o histórico de demonstração). **G1 conferido nele** |
 | **Produção** | **Alcançou a 1.8.0 em 24/09:** as duas migrations foram aplicadas pelo `db-push-prod.bat` e a `create-student` foi publicada. Faltam as conferências 1.1 e 1.4 |
@@ -944,7 +944,8 @@ a passo, com os comandos e o que conferir, é o [`docs/planos/ROTEIRO-G4.md`](do
 7. passou o teste: a 2.0.0 sai a todos (tag, release Latest), e o dono roda no SQL Editor
    `select public.definir_versao_vigente_do_app('2.0.0');`, que já envia o aviso aos
    desatualizados, sem segundo comando (D38, D49 e D55 da coordenação). Daí em diante, o pg_cron
-   repete o push toda sexta às 20h, só para quem continua desatualizado (D54);
+   repete o push toda sexta às 20h, só para quem continua desatualizado (D54), já a partir da
+   primeira sexta, mesmo na semana da liberação (D58 da coordenação);
 8. conferência do G1 e do G3 no SQL Editor de produção → **"G4 aberto em dd/mm"** e **"G5 aberto
    em dd/mm"** no Registro.
 
@@ -1107,6 +1108,18 @@ depois da 2.0.0** (D13 revisto).
 | Limite de recados por dia | Definido no plano do 5.1d | 5.1d |
 | Recado em massa para quem usa iPhone (a web não tem push) | Decidir antes do 5.1d | 5.1d e web 7.1 |
 
+**Decidida em 08/10** (coordenação, décima quarta rodada, 15:20; responde à P7 do handoff
+`loop/011`):
+
+- **D58 da coordenação** (P7): a rotina de sexta **repete já na primeira sexta depois da
+  liberação**, mesmo na semana do aviso da publicação. Liberada na quarta, o aviso sai na quarta e
+  se repete na sexta, dois dias depois, para quem continuar desatualizado. No banco, o aviso da
+  liberação ganhou chave própria, `versao_nova:<X.Y.Z>:liberacao` (uma por versão), e a rotina
+  continua com `versao_nova:<X.Y.Z>:<IYYY>-W<IW>` (uma por semana). A rotina segue sem repetir duas
+  vezes na mesma semana, e cada versão nova avisa de novo (D56). **Caso de borda, premissa do
+  handoff `loop/012`:** liberada na própria sexta antes das 20h, a rotina repete às 20h mesmo assim
+  (o caminho mais simples). No **#96**, sem merge, logo depois do #94 no G4.
+
 **Decididas em 08/10** (coordenação, décima terceira rodada, 14:45; respondem às premissas do
 handoff `loop/010`):
 
@@ -1117,7 +1130,8 @@ handoff `loop/010`):
   roteiro do G4 (passo 5.2) e do 4.13.
 - **D56** (P3): **cada versão nova gera um aviso novo**, mesmo na semana de outro. O "um por
   semana" vale só para a repetição da mesma versão. A chave passou a
-  `versao_nova:<X.Y.Z>:<IYYY>-W<IW>`.
+  `versao_nova:<X.Y.Z>:<IYYY>-W<IW>` (**revista pela D58 da coordenação**: a liberação tem chave
+  própria e não conta como a repetição da semana).
 - **D57** (P6): a prova real do aviso dentro do app (3A.4) fica para a versão depois da 2.0.0.
 - **P4 e P5** ficam como assumidas: o aviso é por pessoa e chega se algum aparelho dela estiver
   desatualizado; quem atualiza entre a fila e o envio recebe mesmo assim.
@@ -1346,3 +1360,4 @@ contato da academia por WhatsApp e/ou e-mail (D52); P1–P22 respondidas (D56–
 | 2026-10-08 | **D43 a D48 e D42 revista da coordenação registradas; roteiro do G4 refeito** (coordenação de 08/10, nona rodada). **D43:** a equipe (professores e admins) recebe a 2.0.0 junto com o dono; só os alunos esperam o teste (responde à P1 do `loop/008`). **D44:** os três casos do professor fora da § 15 ficam como estão, sem aviso à equipe (responde à P2). **D45:** push de versão nova no **#96**, sem merge até o dia do G4: `versao_nova` em `notification_kind` (migration isolada `20261008120000`), o texto na `send-push` ("Nova versão do app: X.Y.Z" / "Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso.", **espera a aprovação do dono**), a RPC só de admin `avisar_versao_nova(p_versao)` (`20261008120100`; repetir a versão não reenvia) e o contrato **v7** (§ 10 e § 14); regressão `regressao_versao_nova.sql` (V1–V7) e testes de unidade na `send-push` e no roteamento do toque. Só chega com a chave FCM de produção (3.4). **D46:** o G5 sai durante o teste da 2.0.0, antes de liberar aos alunos (Passo 4b do roteiro). **D47:** o **#92 (Expo) mesclado** na `main` (`c336712`), com o CI verde; o merge não publica nada (sem `expo-updates`; os workflows de release só rodam por tag ou à mão). **D48:** a chave `MIGRATIONS_DO_G4_EM_PRODUCAO` do servidor já está ligada; o 502 do anexo até o `db-push-prod` foi aceito. **D42 revista:** o anexo legado é desligado no próprio `db-push-prod`, sem os 90 dias; no **#94** (`d04b30b`), a escrita direta do dono não grava anexo nem pelo caminho legado (`22023` com anexo; só o texto passa), com a errata do contrato. **Roteiro** [`docs/planos/ROTEIRO-G4.md`](docs/planos/ROTEIRO-G4.md): ordem 1 → 2 → 3a → 3b → 4 → 4b → 5 → 6, com o site antes do teste (D39), 26 migrations, o `avisar_versao_nova('2.0.0')` depois do release e a consulta do enum com 4 valores. **Leitura do código das tags `v1.8.0` e `v1.9.0`:** o APK antigo mostra a tela "Termos atualizados" depois do `legal:publicar`, na próxima abertura do app (`LegalConsentProvider` + `documentos_legais_pendentes`). |
 | 2026-10-08 | **D49 a D53 da coordenação: 1.9 e 2.0 unificadas, push de versão nova semanal, chave FCM e roteiro do G4** (coordenação de 08/10, décima primeira rodada e 13:20). **D52:** o aviso de atualização da `release/1.9.0` entrou na `main` pelo **#98** (`e52537a`, CI verde), com a 2ª dica (contrato v4, § 12.3); o merge não publica nada (o release só sai por tag), e o `app.json` continua em 1.8.0. O **#54 foi fechado** com comentário, e a tag local `v1.9.0`, apagada; não há APK 1.9.0, e a D37 está revogada. O 3A.5 saiu da fila, e a prova final do 3A.4 passa para a versão seguinte à 2.0.0. **D49:** o **#96 foi refeito** (`a72f5cc`, contrato **v7**, § 10, § 12.1, § 14 e § 15), com `push_devices.app_version` gravada pelo `registrar_dispositivo_push(..., p_versao)` (o APK 1.8 chama com três argumentos e conta como desatualizado), `academy_settings.current_app_version` por `definir_versao_vigente_do_app`, e o pg_cron `push-versao-nova-semanal` (segunda, 10h de São Paulo) chamando `enfileirar_avisos_de_versao_nova()` com a chave da semana ISO. Testes: SQL `regressao_versao_nova` V1–V12, Deno da `send-push` e Jest (1126). Sai a RPC `avisar_versao_nova`. **Continua sem merge**, logo depois do #94 no G4. **D51:** passo a passo da chave FCM em [`docs/CHAVE-FCM-PRODUCAO.md`](docs/CHAVE-FCM-PRODUCAO.md), sem segredo; item 3.4 atualizado. **D53:** o G4 sai quando todos os testes passarem, inclusive o de push. **`ROTEIRO-G4.md` refeito:** o passo 1 virou a chave FCM, o 2.3 termina na `20261008120100_d49_versao_nova_semanal` (26 migrations com o #94), o teste de push é obrigatório no passo 4, e o 5.2 usa a versão vigente e o agendamento. **D50** (410 do servidor) não muda nada no app |
 | 2026-10-08 | **D54 a D57 da coordenação: push de versão nova na liberação e às sextas** (coordenação de 08/10, décima terceira rodada, 14:45). **D54:** o pg_cron `push-versao-nova-semanal` passa a sexta, 20h de São Paulo (`0 23 * * 5`). **D55:** `definir_versao_vigente_do_app` com versão não nula já chama `enfileirar_avisos_de_versao_nova()` na mesma transação; o comando à mão saiu do passo 5.2 do `ROTEIRO-G4.md` e do 4.13. **D56:** a chave passa a `versao_nova:<X.Y.Z>:<IYYY>-W<IW>`, e cada versão nova avisa de novo na mesma semana. As três no **#96** (`ee41e78`, migration `20261008120100` ajustada no lugar, contrato v7 § 10 e § 14, teste V8b novo; `db-dev test` e `reset` verdes, tipos sem diferença), **ainda sem merge**. **D57:** a prova do 3A.4 fica para a versão depois da 2.0.0. P4 e P5 ficam como assumidas. **`.env.example`:** a URL de produção do servidor passa a `https://snake-server-3j25.onrender.com` (a velha `snakethai-api.onrender.com` não existe, apontado pelo servidor no handoff 010 dele) |
+| 2026-10-08 | **D58 da coordenação: a rotina de sexta repete já na semana da liberação** (coordenação de 08/10, décima quarta rodada, 15:20; responde à P7 do handoff `loop/011`). O aviso da liberação deixou de contar como a repetição da semana: liberada na quarta, o aviso sai na quarta e se repete na sexta para quem continuar desatualizado. No **#96** (`7ae9638`, migration `20261008120100` ajustada no lugar): `enfileirar_avisos_de_versao_nova` ganhou `p_liberacao boolean default false`, que só `definir_versao_vigente_do_app` passa; a liberação usa a chave `versao_nova:<X.Y.Z>:liberacao` (uma por versão), e a rotina continua com `versao_nova:<X.Y.Z>:<IYYY>-W<IW>` (uma por semana; D56 mantida); o cron não muda. Contrato v7 (§ 10, § 14 e histórico), regressão `regressao_versao_nova.sql` (V5, V6, V8b e V12 ajustados) e tipos regenerados; `db-dev test` e `reset` verdes, Jest 1126 no hook. **Caso de borda, premissa do handoff `loop/012`:** liberada na sexta antes das 20h, a rotina repete às 20h mesmo assim. **Ainda sem merge**, logo depois do #94 no G4. Passo 5.2 do `ROTEIRO-G4.md` ajustado |

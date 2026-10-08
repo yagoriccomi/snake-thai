@@ -19,7 +19,9 @@ publicada (G5) no mesmo dia. Ele junta as decisões da coordenação de 08/10:
 - **D52:** não há APK 1.9.0. O aviso de atualização que seria da 1.9.0 já está na `main` e vai
   na 2.0.0. A D37 (a 1.9.0 sai antes) foi revogada;
 - **D53:** o G4 acontece assim que todos os testes de validação passarem, inclusive o de push com
-  a chave FCM de produção. Não há data fixa.
+  a chave FCM de produção. Não há data fixa;
+- **D54 a D56 e D58:** o push sai na hora da liberação e se repete toda sexta às 20h, já na
+  primeira sexta, para quem continuar desatualizado. Cada versão nova avisa de novo.
 
 O texto do push de versão nova é fixo (D49): **"Nova versão disponível"**, com o corpo **"Abra o
 app para baixar."**. Não falta aprovação de texto.
@@ -360,9 +362,11 @@ baixar.". Fora do horário de silêncio (22h às 7h), o push sai em até 1 minut
 7h.
 
 Daqui em diante, o agendamento repete o push **toda sexta-feira às 20h** (D54), só para quem
-continua desatualizado. Quem atualiza para de receber. Na sexta da mesma semana da liberação, ele
-não repete o aviso que já saiu; repete a partir da sexta seguinte. Cada versão nova que você
-liberar avisa de novo na hora, mesmo que a pessoa já tenha recebido um aviso naquela semana
+continua desatualizado. Quem atualiza para de receber. A primeira repetição já é na sexta da
+mesma semana da liberação (D58 da coordenação): liberada na quarta, o aviso sai na quarta e se
+repete na sexta. Se você liberar na própria sexta, antes das 20h, a pessoa recebe o aviso na hora
+e de novo às 20h. Para evitar isso, libere em outro dia ou depois das 20h. Cada versão nova que
+você liberar avisa de novo na hora, mesmo que a pessoa já tenha recebido um aviso naquela semana
 (D56).
 
 **Para desligar o push de versão nova**, rode `select public.definir_versao_vigente_do_app(null);`.
@@ -380,7 +384,8 @@ aviso ao abrir.
   `select current_app_version from public.academy_settings;` se a versão vigente está gravada. Se
   estiver, pode ser que todos já tenham atualizado, ou que a chave FCM de produção (passo 1) não
   esteja configurada. Não rode o `definir_versao_vigente_do_app` de novo com a mesma versão para
-  reenviar: na mesma semana, ele não repete o aviso.
+  reenviar: o aviso da liberação sai uma vez por versão. Quem continuar desatualizado recebe a
+  repetição na sexta, às 20h.
 
 ---
 
