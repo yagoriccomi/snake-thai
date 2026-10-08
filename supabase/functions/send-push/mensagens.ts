@@ -27,7 +27,7 @@ export type TipoDeNotificacao =
   | 'troca_aprovada'
   | 'troca_negada'
   | 'troca_aprovada_equipe'
-  // Contrato v7, § 10 (D45).
+  // Contrato v7, § 10 (D45, revista pela D49).
   | 'versao_nova';
 
 /** Canais Android criados pelo app: dá para silenciar cada um nas configurações. */
@@ -72,13 +72,6 @@ export function quandoFoiAAula(dataHoraIso: string | null): string | null {
 function numero(data: Record<string, unknown> | null, campo: string): number | null {
   const valor = data?.[campo];
   return typeof valor === 'number' && Number.isFinite(valor) ? valor : null;
-}
-
-/** "2.0.0" a partir de `data = {major, minor, patch}` (§ 10, v7); nulo se faltar um. */
-export function versaoDoAviso(data: Record<string, unknown> | null): string | null {
-  const partes = [numero(data, 'major'), numero(data, 'minor'), numero(data, 'patch')];
-  if (partes.some((parte) => parte === null || parte < 0 || !Number.isInteger(parte))) return null;
-  return partes.join('.');
 }
 
 function dias(n: number): string {
@@ -242,17 +235,15 @@ export function conteudoDaNotificacao(n: NotificacaoDaFila, quantidade = 1): Con
         data: payload,
       };
     }
-    case 'versao_nova': {
-      // O banco não sabe a versão de cada aparelho (D38, opção A): quem já
-      // atualizou também recebe, e o texto diz para ignorar.
-      const versao = versaoDoAviso(n.data);
+    case 'versao_nova':
+      // Só sai para quem tem aparelho desatualizado (D49): o texto não precisa
+      // dizer a versão nem "ignore se já atualizou". O aviso do app mostra o link.
       return {
-        title: versao !== null ? `Nova versão do app: ${versao}` : 'Nova versão do app',
-        body: 'Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso.',
+        title: 'Nova versão disponível',
+        body: 'Abra o app para baixar.',
         channelId: 'frequencia',
         data: { tipo: n.kind },
       };
-    }
     default:
       // Tipo que esta versão não conhece (o banco pode sair antes): texto
       // genérico em vez de derrubar o lote inteiro (§ 10, § 14).

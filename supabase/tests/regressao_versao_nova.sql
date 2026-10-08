@@ -1,157 +1,295 @@
--- Regressão do push de versão nova (D45 da coordenação; contrato v7, § 10;
--- migrations 20261008120000 e 20261008120100). Roda numa transação e termina
--- em ROLLBACK; mesmo assim, rode SÓ no banco local (scripts\db-dev test).
+-- Regressão do push semanal de versão nova (D49 da coordenação; contrato v7,
+-- § 10; migrations 20261008120000 e 20261008120100). Roda numa transação e
+-- termina em ROLLBACK; mesmo assim, rode SÓ no banco local (scripts\db-dev test).
 --
---   ADM admin com aparelho · PROF professor com aparelho · ALU aluno com dois
---   aparelhos · ALU2 aluno sem aparelho · ALUI inativo com aparelho
+-- Versão vigente nos testes: 2.10.0 — de propósito com dois dígitos, para
+-- pegar comparação de texto ("2.9.5" > "2.10.0" como texto).
+--
+--   ADM  admin, aparelho 2.10.0 (em dia)
+--   PROF professor, aparelho 2.9.5 (desatualizado)
+--   ALU  aluno, um aparelho 2.10.0 e outro sem versão (APK 1.8)
+--   ALU2 aluno sem aparelho
+--   ALUI inativo, aparelho sem versão
+--   ALU3 aluno, aparelho 3.0.0 (acima da vigente)
 \set ON_ERROR_STOP on
 
 begin;
 
+insert into public.academy_settings (id) values (true) on conflict (id) do nothing;
+
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, created_at, updated_at)
-select ('d4500000-0000-4000-8000-0000000000' || n)::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated',
+select ('d4900000-0000-4000-8000-0000000000' || n)::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated',
        'authenticated', 'versao-' || n || '@t.invalid', 'x', now(), now(), now()
-  from unnest(array['01','02','03','04','05']) as n;
+  from unnest(array['01','02','03','04','05','06']) as n;
 
 insert into public.profiles (id, role, name, cpf, is_first_login, status, group_id, color) values
-  ('d4500000-0000-4000-8000-000000000001','admin','Admin Versao','45000000001',false,'active',null,null),
-  ('d4500000-0000-4000-8000-000000000002','professor','Prof Versao','45000000002',false,'active',null,'#454545'),
-  ('d4500000-0000-4000-8000-000000000003','user','Aluno Versao','45000000003',false,'active',null,null),
-  ('d4500000-0000-4000-8000-000000000004','user','Aluno Sem Aparelho','45000000004',false,'active',null,null);
+  ('d4900000-0000-4000-8000-000000000001','admin','Admin Versao','49000000001',false,'active',null,null),
+  ('d4900000-0000-4000-8000-000000000002','professor','Prof Versao','49000000002',false,'active',null,'#494949'),
+  ('d4900000-0000-4000-8000-000000000003','user','Aluno Versao','49000000003',false,'active',null,null),
+  ('d4900000-0000-4000-8000-000000000004','user','Aluno Sem Aparelho','49000000004',false,'active',null,null),
+  ('d4900000-0000-4000-8000-000000000006','user','Aluno Adiantado','49000000006',false,'active',null,null);
 
 insert into public.profiles (id, role, name, cpf, is_first_login, status, deactivated_at)
-values ('d4500000-0000-4000-8000-000000000005','user','Aluno Inativo Versao','45000000005',false,'inactive', now());
+values ('d4900000-0000-4000-8000-000000000005','user','Aluno Inativo Versao','49000000005',false,'inactive', now());
 
-insert into public.push_devices (user_id, expo_token, platform, app_variant) values
-  ('d4500000-0000-4000-8000-000000000001', 'ExponentPushToken[v45adm]', 'android', 'production'),
-  ('d4500000-0000-4000-8000-000000000002', 'ExponentPushToken[v45prof]', 'android', 'production'),
-  ('d4500000-0000-4000-8000-000000000003', 'ExponentPushToken[v45alu]', 'android', 'production'),
-  ('d4500000-0000-4000-8000-000000000003', 'ExponentPushToken[v45alub]', 'android', 'production'),
-  ('d4500000-0000-4000-8000-000000000005', 'ExponentPushToken[v45alui]', 'android', 'production');
+insert into public.push_devices (user_id, expo_token, platform, app_variant, app_version) values
+  ('d4900000-0000-4000-8000-000000000001', 'ExponentPushToken[v49adm]', 'android', 'production', '2.10.0'),
+  ('d4900000-0000-4000-8000-000000000002', 'ExponentPushToken[v49prof]', 'android', 'production', '2.9.5'),
+  ('d4900000-0000-4000-8000-000000000003', 'ExponentPushToken[v49alu]', 'android', 'production', '2.10.0'),
+  ('d4900000-0000-4000-8000-000000000003', 'ExponentPushToken[v49alub]', 'android', 'production', null),
+  ('d4900000-0000-4000-8000-000000000005', 'ExponentPushToken[v49alui]', 'android', 'production', null),
+  ('d4900000-0000-4000-8000-000000000006', 'ExponentPushToken[v49alu3]', 'android', 'production', '3.0.0');
 
 -- =====================================================================
--- V1 e V2 — aluno e professor não avisam
+-- V1 — o formato da versão
+-- =====================================================================
+do $$
+declare
+  v_ruim text;
+begin
+  if public.normalizar_versao_do_app('02.10.00') <> '2.10.0' or public.normalizar_versao_do_app('2.0.0') <> '2.0.0' then
+    raise exception 'FALHOU V1: normalização errada';
+  end if;
+  foreach v_ruim in array array['v2.0.0', '2.0', '2.0.0-beta', '2.0.0+1', ' 2.0.0', '', 'abc', '12345.0.0'] loop
+    if public.normalizar_versao_do_app(v_ruim) is not null then
+      raise exception 'FALHOU V1: "%" foi aceita', v_ruim;
+    end if;
+  end loop;
+  -- '02.0.0' normaliza para outra coisa; 'v2.0.0' normaliza para nulo, que
+  -- num CHECK comum passaria.
+  foreach v_ruim in array array['02.0.0', 'v2.0.0'] loop
+    begin
+      insert into public.push_devices (user_id, expo_token, platform, app_variant, app_version)
+      values ('d4900000-0000-4000-8000-000000000004', 'ExponentPushToken[v49ruim]', 'android', 'production', v_ruim);
+      raise exception 'FALHOU V1: push_devices aceitou "%"', v_ruim;
+    exception when check_violation then null;
+    end;
+  end loop;
+  begin
+    update public.academy_settings set current_app_version = 'v2.0.0' where id;
+    raise exception 'FALHOU V1: academy_settings aceitou versão fora do formato';
+  exception when check_violation then null;
+  end;
+  raise notice 'OK V1: só X.Y.Z normalizado, nas funções e nas duas colunas';
+end $$;
+
+-- =====================================================================
+-- V2 a V4 — aluno, professor e anônimo não definem a versão vigente
 -- =====================================================================
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"d4500000-0000-4000-8000-000000000003","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"d4900000-0000-4000-8000-000000000003","role":"authenticated"}';
 do $$
 begin
   begin
-    perform public.avisar_versao_nova('2.0.0');
-    raise exception 'FALHOU V1: aluno avisou versão nova';
+    perform public.definir_versao_vigente_do_app('2.10.0');
+    raise exception 'FALHOU V2: aluno definiu a versão vigente';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'OK V1: aluno recebe 42501';
+  raise notice 'OK V2: aluno recebe 42501';
 end $$;
 
-set local request.jwt.claims = '{"sub":"d4500000-0000-4000-8000-000000000002","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"d4900000-0000-4000-8000-000000000002","role":"authenticated"}';
 do $$
 begin
   begin
-    perform public.avisar_versao_nova('2.0.0');
-    raise exception 'FALHOU V2: professor avisou versão nova';
+    perform public.definir_versao_vigente_do_app('2.10.0');
+    raise exception 'FALHOU V3: professor definiu a versão vigente';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'OK V2: professor recebe 42501';
+  raise notice 'OK V3: professor recebe 42501';
 end $$;
 
--- =====================================================================
--- V3 — anônimo nem executa
--- =====================================================================
 reset role;
 set local role anon;
 set local request.jwt.claims = '{"role":"anon"}';
 do $$
 begin
   begin
-    perform public.avisar_versao_nova('2.0.0');
-    raise exception 'FALHOU V3: anônimo executou avisar_versao_nova';
+    perform public.definir_versao_vigente_do_app('2.10.0');
+    raise exception 'FALHOU V4: anônimo definiu a versão vigente';
   exception when insufficient_privilege then null;
   end;
-  raise notice 'OK V3: anônimo sem execute';
+  raise notice 'OK V4: anônimo sem execute';
 end $$;
 
 -- =====================================================================
--- V4 a V6 — admin: formato, destinatários e chave
+-- V5 — admin: formato inválido é erro; válido é gravado normalizado
 -- =====================================================================
 reset role;
--- O banco local pode ter outros perfis com aparelho: a conta é do banco todo,
--- feita aqui porque a RLS de push_devices só mostra ao admin o aparelho dele.
-select set_config('teste.esperados', count(distinct d.user_id)::text, true)
-  from public.push_devices d join public.profiles p on p.id = d.user_id
- where p.status = 'active' and p.anonymized_at is null;
 set local role authenticated;
-set local request.jwt.claims = '{"sub":"d4500000-0000-4000-8000-000000000001","role":"authenticated"}';
+set local request.jwt.claims = '{"sub":"d4900000-0000-4000-8000-000000000001","role":"authenticated"}';
 do $$
 declare
   v_ruim text;
 begin
-  foreach v_ruim in array array['v2.0.0', '2.0', '2.0.0-beta', '2.0.0+1', ' 2.0.0', '', 'abc'] loop
+  foreach v_ruim in array array['v2.0.0', '2.0', '2.0.0-beta', '2.0.0+1', '', 'abc'] loop
     begin
-      perform public.avisar_versao_nova(v_ruim);
-      raise exception 'FALHOU V4: versão "%" foi aceita', v_ruim;
+      perform public.definir_versao_vigente_do_app(v_ruim);
+      raise exception 'FALHOU V5: versão "%" foi aceita', v_ruim;
     exception when invalid_parameter_value then null;
     end;
   end loop;
-  begin
-    perform public.avisar_versao_nova(null);
-    raise exception 'FALHOU V4: versão nula foi aceita';
-  exception when invalid_parameter_value then null;
-  end;
-  raise notice 'OK V4: versão fora de X.Y.Z recebe 22023';
-
-  -- A mesma versão, inclusive com zero à esquerda, não repete.
-  perform set_config('teste.avisados', public.avisar_versao_nova('2.0.0')::text, true);
-  perform set_config('teste.repetidos',
-    (public.avisar_versao_nova('2.0.0') + public.avisar_versao_nova('02.0.00'))::text, true);
+  if public.definir_versao_vigente_do_app('02.10.00') <> '2.10.0' then
+    raise exception 'FALHOU V5: não devolveu a versão normalizada';
+  end if;
 end $$;
 
--- A fila só mostra ao admin as linhas dele: a conferência é do sistema.
 reset role;
 set local request.jwt.claims = '';
 do $$
 begin
-  if current_setting('teste.avisados') <> current_setting('teste.esperados') then
-    raise exception 'FALHOU V5: avisou % de % perfis ativos com aparelho',
-      current_setting('teste.avisados'), current_setting('teste.esperados');
+  if (select s.current_app_version from public.academy_settings s) is distinct from '2.10.0' then
+    raise exception 'FALHOU V5: versão vigente não gravada';
   end if;
-  if (select count(*) from public.notification_outbox o
-       where o.kind = 'versao_nova' and o.recipient_id::text like 'd4500000-%') <> 3
-     or exists (select 1 from public.notification_outbox o
-                 where o.kind = 'versao_nova'
-                   and o.recipient_id in ('d4500000-0000-4000-8000-000000000004', 'd4500000-0000-4000-8000-000000000005')) then
-    raise exception 'FALHOU V5: destinatários errados (esperados admin, professor e aluno, uma linha cada)';
-  end if;
-  if exists (select 1 from public.notification_outbox o
-              where o.kind = 'versao_nova' and o.recipient_id::text like 'd4500000-%'
-                and (o.dedupe_key <> 'versao_nova:2.0.0'
-                     or o.data <> '{"major":2,"minor":0,"patch":0}'::jsonb
-                     or o.class_id is not null or o.payment_id is not null or o.justification_id is not null)) then
-    raise exception 'FALHOU V5: chave ou data fora da § 10';
-  end if;
-  raise notice 'OK V5: um aviso por perfil ativo com aparelho, com a chave e os três números';
-
-  if current_setting('teste.repetidos') <> '0' then
-    raise exception 'FALHOU V6: a mesma versão avisou de novo';
-  end if;
-  raise notice 'OK V6: repetir a versão não repete o aviso';
+  raise notice 'OK V5: admin grava a vigente normalizada; formato ruim recebe 22023';
 end $$;
 
 -- =====================================================================
--- V7 — o dono, no SQL Editor (sem usuário), avisa outra versão
+-- V6 — o envio da semana: só os desatualizados ativos, uma linha cada
+--
+-- Segunda, 12/10/2026, 10h em São Paulo = semana ISO 2026-W42.
 -- =====================================================================
 do $$
 begin
-  if public.avisar_versao_nova('2.0.1') < 3 then
-    raise exception 'FALHOU V7: o sistema não avisou a versão 2.0.1';
+  if public.enfileirar_avisos_de_versao_nova('2026-10-12 13:00:00+00') < 2 then
+    raise exception 'FALHOU V6: enfileirou menos que os dois desatualizados do teste';
   end if;
+  if (select count(*) from public.notification_outbox o
+       where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%') <> 2
+     or (select count(*) from public.notification_outbox o
+          where o.kind = 'versao_nova'
+            and o.recipient_id in ('d4900000-0000-4000-8000-000000000002', 'd4900000-0000-4000-8000-000000000003')) <> 2 then
+    raise exception 'FALHOU V6: destinatários errados (esperados professor 2.9.5 e aluno com aparelho sem versão)';
+  end if;
+  if exists (select 1 from public.notification_outbox o
+              where o.kind = 'versao_nova' and o.recipient_id::text like 'd4900000-%'
+                and (o.dedupe_key <> 'versao_nova:2026-W42'
+                     or o.data <> '{}'::jsonb
+                     or o.class_id is not null or o.payment_id is not null or o.justification_id is not null)) then
+    raise exception 'FALHOU V6: chave ou data fora da § 10';
+  end if;
+  raise notice 'OK V6: só os desatualizados (comparação numérica, sem versão conta), com a chave da semana';
+end $$;
+
+-- =====================================================================
+-- V7 — de novo na mesma semana não reenvia (até domingo 23:30 em SP)
+-- =====================================================================
+do $$
+begin
+  if public.enfileirar_avisos_de_versao_nova('2026-10-12 13:00:00+00') <> 0
+     or public.enfileirar_avisos_de_versao_nova('2026-10-19 02:30:00+00') <> 0 then
+    raise exception 'FALHOU V7: reenviou na mesma semana';
+  end if;
+  raise notice 'OK V7: a mesma semana (no fuso de São Paulo) não reenvia';
+end $$;
+
+-- =====================================================================
+-- V8 — na semana seguinte, quem continua desatualizado recebe de novo
+-- =====================================================================
+update public.push_devices set app_version = '2.10.0' where expo_token = 'ExponentPushToken[v49prof]';
+do $$
+begin
+  perform public.enfileirar_avisos_de_versao_nova('2026-10-19 13:00:00+00');
   if not exists (select 1 from public.notification_outbox o
-                  where o.recipient_id = 'd4500000-0000-4000-8000-000000000003'
-                    and o.dedupe_key = 'versao_nova:2.0.1'
-                    and o.data = '{"major":2,"minor":0,"patch":1}'::jsonb) then
-    raise exception 'FALHOU V7: aviso da 2.0.1 ausente';
+                  where o.recipient_id = 'd4900000-0000-4000-8000-000000000003'
+                    and o.dedupe_key = 'versao_nova:2026-W43')
+     or exists (select 1 from public.notification_outbox o
+                 where o.recipient_id = 'd4900000-0000-4000-8000-000000000002'
+                   and o.dedupe_key = 'versao_nova:2026-W43') then
+    raise exception 'FALHOU V8: a semana seguinte não seguiu quem continua (ou não) desatualizado';
   end if;
-  raise notice 'OK V7: sistema (SQL Editor) avisa e versão nova tem chave nova';
+  raise notice 'OK V8: semana nova avisa de novo só quem não atualizou';
+end $$;
+
+-- =====================================================================
+-- V9 — sem versão vigente, o push semanal fica desligado
+-- =====================================================================
+do $$
+begin
+  -- Duas instruções: na mesma, a leitura usaria o snapshot de antes do update.
+  if public.definir_versao_vigente_do_app(null) is not null then
+    raise exception 'FALHOU V9: desligar não devolveu nulo';
+  end if;
+  if (select s.current_app_version from public.academy_settings s) is not null then
+    raise exception 'FALHOU V9: o sistema não desligou a versão vigente';
+  end if;
+  if public.enfileirar_avisos_de_versao_nova('2026-10-26 13:00:00+00') <> 0 then
+    raise exception 'FALHOU V9: enfileirou sem versão vigente';
+  end if;
+  raise notice 'OK V9: o sistema (SQL Editor) desliga com nulo, e nada é enfileirado';
+end $$;
+
+-- =====================================================================
+-- V10 — o app informa a versão ao registrar o aparelho
+-- =====================================================================
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"d4900000-0000-4000-8000-000000000004","role":"authenticated"}';
+do $$
+begin
+  perform public.registrar_dispositivo_push('ExponentPushToken[v49reg]', 'android', 'production', '02.1.0');
+  perform set_config('teste.v10_com', (select d.app_version from public.push_devices d
+                                         where d.expo_token = 'ExponentPushToken[v49reg]'), true);
+  -- O APK 1.8 chama com três argumentos: volta a nulo (desatualizado).
+  perform public.registrar_dispositivo_push(p_token => 'ExponentPushToken[v49reg]', p_plataforma => 'android', p_variante => 'production');
+  perform set_config('teste.v10_sem', coalesce((select d.app_version from public.push_devices d
+                                                  where d.expo_token = 'ExponentPushToken[v49reg]'), 'nulo'), true);
+  begin
+    perform public.registrar_dispositivo_push('ExponentPushToken[v49reg]', 'android', 'production', '2.1.0+5');
+    raise exception 'FALHOU V10: aceitou versão com sufixo';
+  exception when invalid_parameter_value then null;
+  end;
+end $$;
+
+reset role;
+set local request.jwt.claims = '';
+do $$
+begin
+  if current_setting('teste.v10_com') <> '2.1.0' then
+    raise exception 'FALHOU V10: versão informada não gravada normalizada (%)', current_setting('teste.v10_com');
+  end if;
+  if current_setting('teste.v10_sem') <> 'nulo' then
+    raise exception 'FALHOU V10: a chamada sem versão manteve a versão antiga';
+  end if;
+  raise notice 'OK V10: grava a versão normalizada, três argumentos gravam nulo, inválida recebe 22023';
+end $$;
+
+-- =====================================================================
+-- V11 — portabilidade: a versão aparece nos aparelhos do export
+-- =====================================================================
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"d4900000-0000-4000-8000-000000000006","role":"authenticated"}';
+do $$
+declare
+  v jsonb := public.export_my_data();
+begin
+  if v->'aparelhos_com_notificacao'->0->>'versao_do_app' is distinct from '3.0.0' then
+    raise exception 'FALHOU V11: export sem versao_do_app';
+  end if;
+  raise notice 'OK V11: export traz a versão do app do aparelho';
+end $$;
+
+-- =====================================================================
+-- V12 — permissões e o agendamento
+-- =====================================================================
+reset role;
+set local request.jwt.claims = '';
+do $$
+begin
+  if has_function_privilege('anon', 'public.enfileirar_avisos_de_versao_nova(timestamptz)', 'execute')
+     or has_function_privilege('authenticated', 'public.enfileirar_avisos_de_versao_nova(timestamptz)', 'execute') then
+    raise exception 'FALHOU V12: o app consegue disparar o push semanal';
+  end if;
+  if has_function_privilege('anon', 'public.normalizar_versao_do_app(text)', 'execute')
+     or has_function_privilege('anon', 'public.registrar_dispositivo_push(text, public.push_platform, public.app_variant, text)', 'execute') then
+    raise exception 'FALHOU V12: anônimo executa função de versão';
+  end if;
+  if not exists (select 1 from cron.job j
+                  where j.jobname = 'push-versao-nova-semanal'
+                    and j.schedule = '0 13 * * 1'
+                    and j.command like '%enfileirar_avisos_de_versao_nova()%') then
+    raise exception 'FALHOU V12: agendamento semanal ausente';
+  end if;
+  raise notice 'OK V12: só o sistema dispara; o cron roda segunda 13:00 UTC (10h em SP)';
 end $$;
 
 rollback;

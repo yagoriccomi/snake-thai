@@ -11,7 +11,7 @@ import {
   montarEnvios,
   type OpcoesDaExpo,
 } from './expo.ts';
-import { conteudoDaNotificacao, type NotificacaoDaFila, quandoFoiAAula, versaoDoAviso } from './mensagens.ts';
+import { conteudoDaNotificacao, type NotificacaoDaFila, quandoFoiAAula } from './mensagens.ts';
 
 function igual(recebido: unknown, esperado: unknown, contexto = ''): void {
   const a = JSON.stringify(recebido);
@@ -171,22 +171,18 @@ Deno.test('a justificativa semanal não tem aula', () => {
   igual(conteudoDaNotificacao(base('justificativa_pendente')).body, 'Justificativa semanal para revisar.');
 });
 
-Deno.test('contrato v7: versao_nova monta a versão dos três números e diz para ignorar se já atualizou', () => {
-  const aviso = conteudoDaNotificacao(base('versao_nova', { data: { major: 2, minor: 0, patch: 0 } }));
-  igual(aviso.title, 'Nova versão do app: 2.0.0');
-  igual(aviso.body, 'Abra o app para baixar ou peça o link na academia. Se já atualizou, ignore este aviso.');
+Deno.test('contrato v7 (D49): versao_nova tem o texto fixo e só diz o tipo no data', () => {
+  const aviso = conteudoDaNotificacao(base('versao_nova'));
+  igual(aviso.title, 'Nova versão disponível');
+  igual(aviso.body, 'Abra o app para baixar.');
   igual(aviso.channelId, 'frequencia');
   igual(aviso.data, { tipo: 'versao_nova' });
 });
 
-Deno.test('versao_nova sem os três números válidos cai no título sem versão', () => {
-  igual(conteudoDaNotificacao(base('versao_nova')).title, 'Nova versão do app');
-  igual(versaoDoAviso(null), null);
-  igual(versaoDoAviso({ major: 2, minor: 0 }), null);
-  igual(versaoDoAviso({ major: 2, minor: '0', patch: 0 }), null);
-  igual(versaoDoAviso({ major: 2, minor: -1, patch: 0 }), null);
-  igual(versaoDoAviso({ major: 2, minor: 0.5, patch: 0 }), null);
-  igual(versaoDoAviso({ major: 2, minor: 10, patch: 3 }), '2.10.3');
+Deno.test('versao_nova ignora o que vier em data e não cita versão', () => {
+  const aviso = conteudoDaNotificacao(base('versao_nova', { data: { major: 2, minor: 0, patch: 0 } }));
+  igual(aviso.title, 'Nova versão disponível');
+  igual(aviso.data, { tipo: 'versao_nova' });
 });
 
 Deno.test('tipo desconhecido vira texto genérico e não derruba o lote', () => {
